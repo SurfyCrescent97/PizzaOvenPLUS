@@ -1,3 +1,4 @@
+using SharpCompress.Compressors.Xz;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -7,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
+using System.Windows;
 
 namespace PizzaOven
 {
@@ -100,11 +102,116 @@ namespace PizzaOven
 			catch (Exception e)
             {
 				failed = false;
-				Global.logger.WriteLine($"{e}", LoggerType.Info);
 				
 			}
 			return failed;
 		}
+
+        private static string AFOMfilepath()
+        {
+            var modsfolder = $@"{Global.assemblyLocation}{Global.s}Mods";
+            const string AFOMHomepage = "https://gamebanana.com/mods/466970";
+
+            if (!Directory.Exists(modsfolder))
+                return "";
+
+            foreach (var modDir in Directory.GetDirectories(modsfolder))
+            {
+                var modJsonPath = Path.Combine(modDir, "mod.json");
+
+                if (!File.Exists(modJsonPath))
+                    continue;
+
+                try
+                {
+                    string json = File.ReadAllText(modJsonPath);
+                    using JsonDocument doc = JsonDocument.Parse(json);
+
+                    if (doc.RootElement.TryGetProperty("homepage", out var homepage) &&
+                        homepage.GetString() == AFOMHomepage)
+                    {
+                        return modDir; 
+                    }
+                }
+                catch
+                {
+                    continue;
+                }
+            }
+
+            return ""; 
+        }
+
+
+        public static bool BuildAFOM(string mod)
+		{
+			if (AFOMfilepath() == "")
+			{
+				Global.logger.WriteLine($"You must have AFOM installed to access this", LoggerType.Error);
+				return false;
+			} 
+            else
+            {
+                string sourceDir = "";
+                foreach (var dir in Directory.GetDirectories(mod, "*", SearchOption.AllDirectories))
+                {
+                    if (Directory.Exists(Path.Combine(dir, "levels")))
+                    {
+                        sourceDir = dir;
+                        break;
+                    }
+                }
+
+                if (sourceDir == "")
+                    return false;
+                string towersPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),"PizzaTower_GM2","towers");
+
+                if (!Directory.Exists(towersPath))
+                    return false;
+
+                string modName = Path.GetFileName(mod);
+                string baseName = $"{modName}";
+                string destDir = Path.Combine(towersPath, baseName);
+
+                var result = MessageBox.Show(
+                    $"The folder \"{Path.GetFileName(destDir)}\" already exists.\n\nReplace it?","AFOM Tower already exists in your folder",MessageBoxButton.YesNo,MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    Directory.Delete(destDir, true); 
+                }
+                else
+                {
+                    var index = 0;
+                    while (Directory.Exists(destDir))
+                    {
+                        index++;
+                        destDir = Path.Combine(towersPath, $"{baseName} ({index})");
+                    }
+                }
+
+                Directory.CreateDirectory(destDir);
+
+                foreach (var dir in Directory.GetDirectories(sourceDir, "*", SearchOption.AllDirectories))
+                {
+                    Directory.CreateDirectory(dir.Replace(sourceDir, destDir));
+                }
+
+                foreach (var file in Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories))
+                {
+                    File.Copy(file,file.Replace(sourceDir, destDir),true);
+                }
+                Global.logger.WriteLine($"Moved AFOM files successfully", LoggerType.Info);
+                if (!Build(AFOMfilepath()))
+                {
+                    Global.logger.WriteLine($"Failed to build AFOM...", LoggerType.Error);
+                    return false;
+                }
+            }
+            return true;
+        }
+
         // Copy over mod files in order of ModList
         public static bool Build(string mod)
         {

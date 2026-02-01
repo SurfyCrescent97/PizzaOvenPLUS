@@ -176,7 +176,19 @@ namespace PizzaOven
             var currentModDirectory = $@"{Global.assemblyLocation}{Global.s}Mods";
             // Add new folders found in Mods to the ModList
             var EXTRASfolder = EXTRASSavesystem.read_ini_section("Folder");
-            var EXTRAScurrentfolder = ModFolderCombo.SelectedItem as string;
+            string EXTRAScurrentfolder;
+
+            try
+            {
+                EXTRAScurrentfolder = (string)ModFolderCombo.SelectedItem;
+                if (string.IsNullOrEmpty(EXTRAScurrentfolder))
+                    EXTRAScurrentfolder = "All";
+            }
+            catch
+            {
+                EXTRAScurrentfolder = "All";
+            }
+
             var EXTRASskiplist = new List<string>();
 
             if (EXTRAScurrentfolder != "All")
@@ -190,8 +202,19 @@ namespace PizzaOven
                             EXTRASskiplist.Add(EXTRASfolder[i, 0]);
                         }
                     }
-                } 
+                }
+                foreach (var mod in Directory.GetDirectories(currentModDirectory))
+                {
+                    Mod m = new Mod();
+                    m.name = Path.GetFileName(mod);
+                    if (EXTRASSavesystem.read_ini("Folder", m.name, "All") == "All")
+                    {
+                        EXTRASskiplist.Add(m.name);
+                    }
+                }
             }
+
+
 
 
             foreach (var mod in Directory.GetDirectories(currentModDirectory))
@@ -385,6 +408,7 @@ namespace PizzaOven
                         try
                         {
                             await Task.Run(() => Directory.Delete($@"{Global.assemblyLocation}{Global.s}Mods{Global.s}{row.name}", true));
+                            ModFolderCombo.SelectedItem = "All";
                             Global.logger.WriteLine($@"Deleting {row.name}.", LoggerType.Info);
                             ShowMetadata(null);
                         }
@@ -395,7 +419,6 @@ namespace PizzaOven
                     }
                 }
         }
-
         private void FolderName_Click(object sender, RoutedEventArgs e)
         {
             var selectedMods = ModGrid.SelectedItems;
@@ -426,25 +449,41 @@ namespace PizzaOven
                 if (!ModLoader.Restart())
                     return false;
                 string patchPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"Downgrades",downgradename + ".xdelta");
-                if (!Path.Exists(patchPath))
+                if (!Path.Exists(patchPath) && PizzaTowerVersion != downgradename)
                 {
                     Global.logger.WriteLine($"Unable to find {patchPath}", LoggerType.Error);
                 }
-                if (PizzaTowerVersion != downgradename)
+                var mods = Global.config.ModList.Where(x => x.enabled).ToList();
+                if (mods.Count == 0)
+                    return true;
+
+                string modType = EXTRASModType($@"{Global.assemblyLocation}{Global.s}Mods{Global.s}{mods[0].name}");
+                var modTypeNormalized = (modType ?? string.Empty).Trim();
+
+                bool isAFOM = string.Equals(modTypeNormalized, "AFOM", StringComparison.OrdinalIgnoreCase);
+                if (!isAFOM)
                 {
-                    if (!ModLoader.Downgrade(patchPath))
+                    if (PizzaTowerVersion != downgradename)
                     {
-                        Global.logger.WriteLine($"Failed to Downgrade to {downgradename}", LoggerType.Error);
-                        return false;
-                    }
-                    else
-                    {
-                        Global.logger.WriteLine($"Sucessfully Downgraded to {downgradename}", LoggerType.Info);
+                        if (!ModLoader.Downgrade(patchPath))
+                        {
+                            Global.logger.WriteLine($"Failed to Downgrade to {downgradename}", LoggerType.Error);
+                            return false;
+                        }
+                        else
+                        {
+                            Global.logger.WriteLine($"Sucessfully Downgraded to {downgradename}", LoggerType.Info);
+                        }
                     }
                 }
-                var mods = Global.config.ModList.Where(x => x.enabled).ToList();
+
                 if (mods.Count == 1)
-                    return ModLoader.Build($@"{Global.assemblyLocation}{Global.s}Mods{Global.s}{mods[0].name}");
+                {
+                    if (isAFOM)
+                        return ModLoader.BuildAFOM($@"{Global.assemblyLocation}{Global.s}Mods{Global.s}{mods[0].name}");
+                    else
+                        return ModLoader.Build($@"{Global.assemblyLocation}{Global.s}Mods{Global.s}{mods[0].name}");
+                }
                 else if (mods.Count == 0)
                     return true;
                 else
@@ -1625,7 +1664,44 @@ namespace PizzaOven
         {
             Dispatcher.BeginInvoke((Action)(() => EXTRASrefresh()));
         }
+        private string EXTRASModType(string path)
+        {
+        var exts = Directory.EnumerateFiles(
+                path,
+                "*.*",
+                new EnumerationOptions
+                {
+                    RecurseSubdirectories = true,
+                    IgnoreInaccessible = true
+                })
+            .Where(file => !string.Equals(
+                Path.GetFileName(file),
+                "mod.json",
+                StringComparison.OrdinalIgnoreCase))
+            .Select(Path.GetExtension)
+            .Where(ext => !string.IsNullOrEmpty(ext))
+            .Select(ext => ext.TrimStart('.').ToLowerInvariant())
+            .Distinct()
+            .ToArray();
+
+            bool hasLevelsDir = Directory.EnumerateDirectories(path, "*", SearchOption.AllDirectories)
+            .Any(dir => string.Equals(
+                Path.GetFileName(dir),
+                "levels",
+                StringComparison.OrdinalIgnoreCase
+            ));
 
 
-}
+            if (exts.Contains("xdelta"))
+            {
+                return "Normal";
+            } 
+            else if (hasLevelsDir && exts.Contains("json") && exts.Contains("ini"))
+            {
+                return "AFOM";
+            }
+            return "Unknown";
+        }
+
+    }
 }

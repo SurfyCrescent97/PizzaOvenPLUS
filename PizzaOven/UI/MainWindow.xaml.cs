@@ -35,6 +35,7 @@ namespace PizzaOven
     public partial class MainWindow : Window
     {
         public string version;
+        public static string PizzaTowerVersion = "1.1.280";
         // Separated from Global.config so that order is updated when datagrid is modified
         public List<string> exes;
         private FileSystemWatcher ModsWatcher;
@@ -46,6 +47,33 @@ namespace PizzaOven
             InitializeComponent();
             Global.logger = new Logger(ConsoleWindow);
             Global.config = new();
+
+
+            string DowngradePath = Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory, 
+                "Downgrades"                           
+            );
+
+            if (Directory.Exists(DowngradePath))
+            {
+                string[] files = Directory.GetFiles(DowngradePath);
+
+                DowngradeCombo.Items.Clear();
+
+                for (int i = 0; i < files.Length; i++)
+                {
+                    string fileName = Path.GetFileName(files[i]);
+
+                    string nameWithoutExt = Path.GetFileNameWithoutExtension(fileName);
+
+                    if (fileName.ToLower().Contains("xdelta")) 
+                    {
+                        DowngradeCombo.Items.Add(nameWithoutExt);
+                    }
+                }
+                DowngradeCombo.Items.Add(PizzaTowerVersion);
+                DowngradeCombo.SelectedItem = PizzaTowerVersion;
+            }
 
             // Get Version Number
             var PizzaOvenVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
@@ -251,7 +279,8 @@ namespace PizzaOven
                 Refresh();
                 Directory.CreateDirectory(Global.config.ModsFolder);
                 Global.logger.WriteLine($"Cooking mods for Pizza Tower", LoggerType.Info);
-                if (!await Build(Global.config.ModsFolder))
+
+                if (!await Build(Global.config.ModsFolder, DowngradeCombo.SelectedItem as string))
                 {
                     Global.logger.WriteLine($"Pizza Oven failed to cook the selected mod and will not launch the game", LoggerType.Error);
                     ModGrid.IsEnabled = true;
@@ -359,12 +388,29 @@ namespace PizzaOven
                 }
         }
 
-        private async Task<bool> Build(string path)
+        private async Task<bool> Build(string path, string downgradename)
         {
-            return await Task.Run(() =>
+            return await Task.Run(async () =>
             {
                 if (!ModLoader.Restart())
                     return false;
+                string patchPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"Downgrades",downgradename + ".xdelta");
+                if (!Path.Exists(patchPath))
+                {
+                    Global.logger.WriteLine($"Unable to find {patchPath}", LoggerType.Error);
+                }
+                if (PizzaTowerVersion != downgradename)
+                {
+                    if (!ModLoader.Downgrade(patchPath))
+                    {
+                        Global.logger.WriteLine($"Failed to Downgrade to {downgradename}", LoggerType.Error);
+                        return false;
+                    }
+                    else
+                    {
+                        Global.logger.WriteLine($"Sucessfully Downgraded to {downgradename}", LoggerType.Info);
+                    }
+                }
                 var mods = Global.config.ModList.Where(x => x.enabled).ToList();
                 if (mods.Count == 1)
                     return ModLoader.Build($@"{Global.assemblyLocation}{Global.s}Mods{Global.s}{mods[0].name}");

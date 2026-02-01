@@ -55,6 +55,13 @@
   </ItemGroup>
   
   <ItemGroup>
+    <None Include="Downgrades\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  
+  <ItemGroup>
     <None Update="Downgrades">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

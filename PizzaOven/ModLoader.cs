@@ -80,6 +80,31 @@ namespace PizzaOven
                 }
             return true;
         }
+		
+		
+		public static bool Downgrade(string path)
+        {
+			var failed = true;
+			Global.logger.WriteLine($"Attempting to patch {Path.GetFileName(path)} with data.win...", LoggerType.Info);
+			try
+            {
+				var xdelta = $"{Global.assemblyLocation}{Global.s}Dependencies{Global.s}xdelta.exe";
+				var source = $"{Global.config.ModsFolder}{Global.s}data.win";
+				var downgradefile = path;
+				File.Copy(source, $"{source}.downgradepo", true);
+				if (!File.Exists($"{source}.po"))
+					File.Copy(source, $"{source}.po", true);
+				Patch(source,downgradefile,$"{source}.temp",xdelta);
+				File.Move($"{source}.temp", source, true);				
+			}
+			catch (Exception e)
+            {
+				failed = false;
+				Global.logger.WriteLine($"{e}", LoggerType.Info);
+				
+			}
+			return failed;
+		}
         // Copy over mod files in order of ModList
         public static bool Build(string mod)
         {
@@ -95,6 +120,7 @@ namespace PizzaOven
                 Global.logger.WriteLine($"{xdelta} is not found. Please try redownloading Pizza Oven", LoggerType.Error);
                 return false;
             }
+
             foreach (var modFile in Directory.GetFiles(mod, "*", SearchOption.AllDirectories))
             {
                 var extension = Path.GetExtension(modFile);
@@ -245,6 +271,16 @@ namespace PizzaOven
             }
             if (successes == 0)
                 Global.logger.WriteLine($"No file was used from the current mod", LoggerType.Error);
+			if (File.Exists($"{Global.config.ModsFolder}{Global.s}data.win.downgradepo"))
+			{
+                if (errors != 0 || successes < 0)
+                {
+                    File.Move($"{Global.config.ModsFolder}{Global.s}data.win.downgradepo", $"{Global.config.ModsFolder}{Global.s}data.win", true);
+                    Global.logger.WriteLine("Undowngrading the patch", LoggerType.Warning);
+                }
+                else
+                    File.Delete($"{Global.config.ModsFolder}{Global.s}data.win.downgradepo");
+			}
             return errors == 0 && successes > 0;
         }
 

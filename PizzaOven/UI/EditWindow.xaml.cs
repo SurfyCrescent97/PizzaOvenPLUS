@@ -39,7 +39,7 @@ namespace PizzaOven.UI
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
-            Close();
+			Close();
         }
 
         private void ConfirmButton_Click(object sender, RoutedEventArgs e)
@@ -49,6 +49,7 @@ namespace PizzaOven.UI
                     EditFolderName();
                 else
                     CreateName();
+			Close();
 
         }
         private void CreateName()

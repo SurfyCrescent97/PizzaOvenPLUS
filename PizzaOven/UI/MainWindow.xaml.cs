@@ -39,6 +39,7 @@ namespace PizzaOven
         // Separated from Global.config so that order is updated when datagrid is modified
         public List<string> exes;
         private FileSystemWatcher ModsWatcher;
+        private List<FileSystemWatcher> EXTRASWatchers = new List<FileSystemWatcher>();
         private FlowDocument defaultFlow = new FlowDocument();
         private string defaultText = "No mod is currently selected. Pressing launch will start a vanilla Pizza Tower. \n\nyou can also go the Launcher Settings to play on the older verisons that EXTRAS provides (if you wish you can even put your own downgrade patch in Downgrades folder.)\n\n" +
             "Start downloading and using mods in the Browse Mods tab on top. Only one mod can be selected at a time.";
@@ -48,32 +49,8 @@ namespace PizzaOven
             Global.logger = new Logger(ConsoleWindow);
             Global.config = new();
 
-
-            string DowngradePath = Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory, 
-                "Downgrades"                           
-            );
-
-            if (Directory.Exists(DowngradePath))
-            {
-                string[] files = Directory.GetFiles(DowngradePath);
-
-                DowngradeCombo.Items.Clear();
-
-                for (int i = 0; i < files.Length; i++)
-                {
-                    string fileName = Path.GetFileName(files[i]);
-
-                    string nameWithoutExt = Path.GetFileNameWithoutExtension(fileName);
-
-                    if (fileName.ToLower().Contains("xdelta")) 
-                    {
-                        DowngradeCombo.Items.Add(nameWithoutExt);
-                    }
-                }
-                DowngradeCombo.Items.Add(PizzaTowerVersion);
-                DowngradeCombo.SelectedItem = PizzaTowerVersion;
-            }
+            EXTRASrefresh();
+            EXTRASWatcher();
 
             // Get Version Number
             var PizzaOvenVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
@@ -157,6 +134,7 @@ namespace PizzaOven
                 }
             }
         }
+
         private void WindowLoaded(object sender, RoutedEventArgs e)
         {
 
@@ -197,6 +175,25 @@ namespace PizzaOven
         {
             var currentModDirectory = $@"{Global.assemblyLocation}{Global.s}Mods";
             // Add new folders found in Mods to the ModList
+            var EXTRASfolder = EXTRASSavesystem.read_ini_section("Folder");
+            var EXTRAScurrentfolder = ModFolderCombo.SelectedItem as string;
+            var EXTRASskiplist = new List<string>();
+
+            if (EXTRAScurrentfolder != "All")
+            {
+                for (int i = 0; i < EXTRASfolder.GetLength(0); i++)
+                {
+                    if (EXTRASfolder[i, 1] != EXTRAScurrentfolder)
+                    {
+                        if (!EXTRASskiplist.Contains(EXTRASfolder[i, 0]))
+                        {
+                            EXTRASskiplist.Add(EXTRASfolder[i, 0]);
+                        }
+                    }
+                } 
+            }
+
+
             foreach (var mod in Directory.GetDirectories(currentModDirectory))
             {
                 if (Global.ModList.ToList().Where(x => x.name == Path.GetFileName(mod)).Count() == 0)
@@ -221,7 +218,10 @@ namespace PizzaOven
                     Global.logger.WriteLine($"Added {Path.GetFileName(mod)}", LoggerType.Info);
                 }
             }
-            // Remove deleted folders that are still in the ModList
+
+            
+
+            // Remove deleted folders that are still in the ModList AS WELL AS FOLDER FILTERS
             foreach (var mod in Global.ModList.ToList())
             {
                 if (!Directory.GetDirectories(currentModDirectory).ToList().Select(x => Path.GetFileName(x)).Contains(mod.name))
@@ -231,6 +231,14 @@ namespace PizzaOven
                         Global.ModList.Remove(mod);
                     });
                     Global.logger.WriteLine($"Deleted {mod.name}", LoggerType.Info);
+                    continue;
+                }
+                if (EXTRASskiplist.Contains(mod.name))
+                {
+                    App.Current.Dispatcher.Invoke((Action)delegate
+                    {
+                        Global.ModList.Remove(mod);
+                    });
                     continue;
                 }
             }
@@ -282,7 +290,7 @@ namespace PizzaOven
 
                 if (!await Build(Global.config.ModsFolder, DowngradeCombo.SelectedItem as string))
                 {
-                    Global.logger.WriteLine($"Pizza Oven failed to cook the selected mod and will not launch the game", LoggerType.Error);
+                    Global.logger.WriteLine($"Pizza Oven EXTRAS failed to cook the selected mod and will not launch the game", LoggerType.Error);
                     ModGrid.IsEnabled = true;
                     ConfigButton.IsEnabled = true;
                     LaunchButton.IsEnabled = true;
@@ -386,6 +394,29 @@ namespace PizzaOven
                         }
                     }
                 }
+        }
+
+        private void FolderName_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedMods = ModGrid.SelectedItems;
+            var temp = new Mod[selectedMods.Count];
+            selectedMods.CopyTo(temp, 0);
+
+            ModsWatcher.EnableRaisingEvents = false;
+            foreach (var row in temp)
+            {
+                if (row != null)
+                {
+                    var ew = new ExtraFolderwindow(row.name, true);
+                    ew.ShowDialog();
+                }
+            }
+            ModsWatcher.EnableRaisingEvents = true;
+
+            Global.UpdateConfig();
+            Refresh();
+            EXTRASrefresh();
+            ModGrid.Items.Refresh();
         }
 
         private async Task<bool> Build(string path, string downgradename)
@@ -1156,6 +1187,112 @@ namespace PizzaOven
         }
         private static bool filterSelect;
         private static bool searched = false;
+        private bool modManagerRefreshed = false;
+
+        private void OnModManagerSelected(object sender, RoutedEventArgs e)
+        {
+            if (!modManagerRefreshed)
+            {
+                Refresh();
+                EXTRASrefresh();
+                modManagerRefreshed = true;
+            }
+        }
+
+        private void OnModManagerUnselected(object sender, RoutedEventArgs e)
+        {
+            modManagerRefreshed = false;
+        }
+
+        private void EXTRASrefresh()
+        {
+            string DowngradePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"Downgrades");
+            if (Directory.Exists(DowngradePath))
+            {
+                string[] files = Directory.GetFiles(DowngradePath);
+
+                var DowngradeSave = DowngradeCombo.SelectedItem as string;
+                if (string.IsNullOrEmpty(DowngradeSave))
+                {
+                    DowngradeSave = null;
+                }
+                DowngradeCombo.Items.Clear();
+
+                for (int i = 0; i < files.Length; i++)
+                {
+                    string fileName = Path.GetFileName(files[i]);
+
+                    string nameWithoutExt = Path.GetFileNameWithoutExtension(fileName);
+
+                    if (fileName.ToLower().Contains("xdelta"))
+                    {
+                        DowngradeCombo.Items.Add(nameWithoutExt);
+                    }
+                }
+                DowngradeCombo.Items.Add(PizzaTowerVersion);
+                if (string.IsNullOrEmpty(DowngradeCombo.SelectedItem as string))
+                {
+                    bool hasDowngradeSaved = false;
+                    if (!string.IsNullOrEmpty(DowngradeSave))
+                        hasDowngradeSaved = DowngradeCombo.Items.Cast<object>().Any(i => string.Equals(i?.ToString(), DowngradeSave, StringComparison.OrdinalIgnoreCase));
+
+                    if (DowngradeSave == null || !hasDowngradeSaved)
+                    {
+                        DowngradeCombo.SelectedItem = PizzaTowerVersion;
+                    }
+                    else
+                    {
+                        var match = DowngradeCombo.Items.Cast<object>().FirstOrDefault(i => string.Equals(i?.ToString(), DowngradeSave, StringComparison.OrdinalIgnoreCase));
+                        if (match != null)
+                            DowngradeCombo.SelectedItem = match;
+                    }
+                }
+
+            }
+            var ModFolderSave = ModFolderCombo.SelectedItem as string;
+            if (string.IsNullOrEmpty(ModFolderSave))
+                ModFolderSave = null;
+
+            ModFolderCombo.Items.Clear();
+            ModFolderCombo.Items.Add("All");
+            var allfoldername = EXTRASSavesystem.read_ini_section("Folder");
+            if (allfoldername != null && allfoldername.GetLength(0) > 0)
+            {
+                for (int i = 0; i < allfoldername.GetLength(0); i++)
+                {
+                    string foldername = allfoldername[i, 0];
+                    ModFolderCombo.Items.Add(foldername);
+                }
+            }
+
+            bool hasModFolderSaved = false;
+            if (!string.IsNullOrEmpty(ModFolderSave))
+                hasModFolderSaved = ModFolderCombo.Items.Cast<object>().Any(i => string.Equals(i?.ToString(), ModFolderSave, StringComparison.OrdinalIgnoreCase));
+
+            if (!hasModFolderSaved)
+            {
+                ModFolderCombo.SelectedItem = "All";
+            }
+            else
+            {
+                var match = ModFolderCombo.Items.Cast<object>().FirstOrDefault(i => string.Equals(i?.ToString(), ModFolderSave, StringComparison.OrdinalIgnoreCase));
+                if (match != null)
+                    ModFolderCombo.SelectedItem = match;
+            }
+
+            // Refresh the ModGrid UI so changes are visible immediately
+            try
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    ModGrid.ItemsSource = Global.ModList;
+                    ModGrid.Items.Refresh();
+                    if (ModGrid.Items.Count > 0)
+                        ModGrid.ScrollIntoView(ModGrid.Items[0]);
+                });
+            }
+            catch { }
+        }
         private async void RefreshFilter()
         {
             NSFWCheckbox.IsEnabled = false;
@@ -1451,5 +1588,44 @@ namespace PizzaOven
             ModGrid_SearchBar.Clear();
         }
 
-    }
+        public void EXTRASWatcher()
+        {
+            string[] foldersToWatch = new string[]
+            {
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Downgrades"),
+            };
+
+            foreach (var folder in foldersToWatch)
+            {
+                if (Directory.Exists(folder))
+                {
+                    var watcher = new FileSystemWatcher();
+                    watcher.Path = folder;
+                    watcher.Filter = "*.*";
+                    watcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite;
+
+                    watcher.Created += EXTRASWatcher_Changed;
+                    watcher.Deleted += EXTRASWatcher_Changed;
+                    watcher.Changed += EXTRASWatcher_Changed;
+                    watcher.Renamed += EXTRASWatcher_Renamed;
+
+                    watcher.EnableRaisingEvents = true;
+
+                    EXTRASWatchers.Add(watcher);
+                }
+            }
+        }
+
+        private void EXTRASWatcher_Changed(object sender, FileSystemEventArgs e)
+        {
+            Dispatcher.BeginInvoke((Action)(() => EXTRASrefresh()));
+        }
+
+        private void EXTRASWatcher_Renamed(object sender, RenamedEventArgs e)
+        {
+            Dispatcher.BeginInvoke((Action)(() => EXTRASrefresh()));
+        }
+
+
+}
 }

@@ -40,7 +40,7 @@ namespace PizzaOven
         public List<string> exes;
         private FileSystemWatcher ModsWatcher;
         private FlowDocument defaultFlow = new FlowDocument();
-        private string defaultText = "No mod is currently selected. Pressing launch will start a vanilla Pizza Tower. " +
+        private string defaultText = "No mod is currently selected. Pressing launch will start a vanilla Pizza Tower. \n\nyou can also go the Launcher Settings to play on the older verisons that EXTRAS provides (if you wish you can even put your own downgrade patch in Downgrades folder.)\n\n" +
             "Start downloading and using mods in the Browse Mods tab on top. Only one mod can be selected at a time.";
         public MainWindow()
         {
@@ -1223,7 +1223,7 @@ namespace PizzaOven
                 ErrorPanel.Visibility = Visibility.Visible;
                 BrowserRefreshButton.Visibility = Visibility.Collapsed;
                 BrowserMessage.Visibility = Visibility.Visible;
-                BrowserMessage.Text = "Pizza Oven couldn't find any mods.";
+                BrowserMessage.Text = "Pizza Oven EXTRAS couldn't find any mods.";
             }
             PageBox.ItemsSource = Enumerable.Range(1, (int)(FeedGenerator.CurrentFeed.TotalPages));
 

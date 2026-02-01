@@ -49,7 +49,7 @@ namespace PizzaOven
                     }
                     if (UpdateAvailable(onlineVersion, localVersion))
                     {
-                        ChangelogBox notification = new ChangelogBox(updates[0], "Pizza Oven", $"A new version of Pizza Oven is available (v{onlineVersion})!", null);
+                        ChangelogBox notification = new ChangelogBox(updates[0], "Pizza Oven EXTRAS", $"A new version of Pizza Oven EXTRAS is available (v{onlineVersion})!", null);
                         notification.ShowDialog();
                         notification.Activate();
                         if (notification.YesNo)

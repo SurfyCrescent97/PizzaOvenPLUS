@@ -41,7 +41,7 @@ namespace PizzaOven
         private FileSystemWatcher ModsWatcher;
         private List<FileSystemWatcher> PLUSWatchers = new List<FileSystemWatcher>();
         private FlowDocument defaultFlow = new FlowDocument();
-        private string defaultText = "No mod is currently selected. Pressing launch will start a vanilla Pizza Tower. \n\nyou can also go the Launcher Settings to play on the older verisons that EXTRAS provides (if you wish you can even put your own downgrade patch in Downgrades folder.)\n\n" +
+        private string defaultText = "No mod is currently selected. Pressing launch will start a vanilla Pizza Tower. \n\nyou can also go the Launcher Settings to play on the older verisons that PLUS provides (if you wish you can even put your own downgrade patch in Downgrades folder.)\n\n" +
             "Start downloading and using mods in the Browse Mods tab on top. Only one mod can be selected at a time.";
         public MainWindow()
         {

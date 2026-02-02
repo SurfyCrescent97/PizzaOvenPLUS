@@ -49,7 +49,7 @@ namespace PizzaOven
                     }
                     if (UpdateAvailable(onlineVersion, localVersion))
                     {
-                        ChangelogBox notification = new ChangelogBox(updates[0], "Pizza Oven EXTRAS", $"A new version of Pizza Oven EXTRAS is available (v{onlineVersion})!", null);
+                        ChangelogBox notification = new ChangelogBox(updates[0], "Pizza Oven+", $"A new version of Pizza Oven+ is available (v{onlineVersion})!", null);
                         notification.ShowDialog();
                         notification.Activate();
                         if (notification.YesNo)
@@ -60,7 +60,7 @@ namespace PizzaOven
                             // Download the update
                             await DownloadPizzaOven(downloadUrl, fileName, onlineVersion, new Progress<DownloadProgress>(ReportUpdateProgress), cancellationToken);
                             // Notify that the update is about to happen
-                            MessageBox.Show($"Finished downloading {fileName}!\nPizza Oven EXTRAS will now restart.", "Notification", MessageBoxButton.OK);
+                            MessageBox.Show($"Finished downloading {fileName}!\nPizza Oven+ will now restart.", "Notification", MessageBoxButton.OK);
                             // Update PizzaOven
                             UpdateManager updateManager = new UpdateManager(AssemblyMetadata.FromAssembly(Assembly.GetEntryAssembly(), Process.GetCurrentProcess().MainModule.FileName),
                                 new LocalPackageResolver($"{Global.assemblyLocation}{Global.s}Downloads{Global.s}PizzaOvenUpdate"), new ZipExtractor());

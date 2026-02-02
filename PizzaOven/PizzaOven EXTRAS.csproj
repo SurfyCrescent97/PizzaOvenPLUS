@@ -9,7 +9,7 @@
     <AssemblyName>PizzaOven</AssemblyName>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </PropertyGroup>
-
+  
   <ItemGroup>
     <None Remove="Assets\PizzaOvenLogo.png" />
     <None Remove="Assets\PizzaOvenPreview.png" />

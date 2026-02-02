@@ -310,7 +310,6 @@ namespace PizzaOven
                 Refresh();
                 Directory.CreateDirectory(Global.config.ModsFolder);
                 Global.logger.WriteLine($"Cooking mods for Pizza Tower", LoggerType.Info);
-
                 if (!await Build(Global.config.ModsFolder, DowngradeCombo.SelectedItem as string))
                 {
                     Global.logger.WriteLine($"Pizza Oven EXTRAS failed to cook the selected mod and will not launch the game", LoggerType.Error);
@@ -334,6 +333,7 @@ namespace PizzaOven
                 Global.logger.WriteLine("Please click Setup before starting!", LoggerType.Warning);
                 return;
             }
+
             // Launch game
             if (Global.config.Launcher != null && File.Exists(Global.config.Launcher))
             {

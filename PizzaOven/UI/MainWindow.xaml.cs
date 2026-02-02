@@ -39,7 +39,7 @@ namespace PizzaOven
         // Separated from Global.config so that order is updated when datagrid is modified
         public List<string> exes;
         private FileSystemWatcher ModsWatcher;
-        private List<FileSystemWatcher> EXTRASWatchers = new List<FileSystemWatcher>();
+        private List<FileSystemWatcher> PLUSWatchers = new List<FileSystemWatcher>();
         private FlowDocument defaultFlow = new FlowDocument();
         private string defaultText = "No mod is currently selected. Pressing launch will start a vanilla Pizza Tower. \n\nyou can also go the Launcher Settings to play on the older verisons that EXTRAS provides (if you wish you can even put your own downgrade patch in Downgrades folder.)\n\n" +
             "Start downloading and using mods in the Browse Mods tab on top. Only one mod can be selected at a time.";
@@ -49,8 +49,8 @@ namespace PizzaOven
             Global.logger = new Logger(ConsoleWindow);
             Global.config = new();
 
-            EXTRASrefresh();
-            EXTRASWatcher();
+            PLUSrefresh();
+            PLUSWatcher();
 
             // Get Version Number
             var PizzaOvenVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
@@ -175,31 +175,31 @@ namespace PizzaOven
         {
             var currentModDirectory = $@"{Global.assemblyLocation}{Global.s}Mods";
             // Add new folders found in Mods to the ModList
-            var EXTRASfolder = EXTRASSavesystem.read_ini_section("Folder");
+            var PLUSfolder = EXTRASSavesystem.read_ini_section("Folder");
             string EXTRAScurrentfolder;
 
             try
             {
-                EXTRAScurrentfolder = (string)ModFolderCombo.SelectedItem;
-                if (string.IsNullOrEmpty(EXTRAScurrentfolder))
-                    EXTRAScurrentfolder = "All";
+                PLUScurrentfolder = (string)ModFolderCombo.SelectedItem;
+                if (string.IsNullOrEmpty(PLUScurrentfolder))
+                    PLUScurrentfolder = "All";
             }
             catch
             {
-                EXTRAScurrentfolder = "All";
+                PLUScurrentfolder = "All";
             }
 
-            var EXTRASskiplist = new List<string>();
+            var PLUSskiplist = new List<string>();
 
-            if (EXTRAScurrentfolder != "All")
+            if (PLUScurrentfolder != "All")
             {
-                for (int i = 0; i < EXTRASfolder.GetLength(0); i++)
+                for (int i = 0; i < PLUSfolder.GetLength(0); i++)
                 {
-                    if (EXTRASfolder[i, 1] != EXTRAScurrentfolder)
+                    if (PLUSfolder[i, 1] != PLUScurrentfolder)
                     {
-                        if (!EXTRASskiplist.Contains(EXTRASfolder[i, 0]))
+                        if (!PLUSskiplist.Contains(PLUSfolder[i, 0]))
                         {
-                            EXTRASskiplist.Add(EXTRASfolder[i, 0]);
+                            PLUSskiplist.Add(PLUSfolder[i, 0]);
                         }
                     }
                 }
@@ -207,9 +207,9 @@ namespace PizzaOven
                 {
                     Mod m = new Mod();
                     m.name = Path.GetFileName(mod);
-                    if (EXTRASSavesystem.read_ini("Folder", m.name, "All") == "All")
+                    if (PLUSSavesystem.read_ini("Folder", m.name, "All") == "All")
                     {
-                        EXTRASskiplist.Add(m.name);
+                        PLUSskiplist.Add(m.name);
                     }
                 }
             }
@@ -256,7 +256,7 @@ namespace PizzaOven
                     Global.logger.WriteLine($"Deleted {mod.name}", LoggerType.Info);
                     continue;
                 }
-                if (EXTRASskiplist.Contains(mod.name))
+                if (PLUSskiplist.Contains(mod.name))
                 {
                     App.Current.Dispatcher.Invoke((Action)delegate
                     {
@@ -312,7 +312,7 @@ namespace PizzaOven
                 Global.logger.WriteLine($"Cooking mods for Pizza Tower", LoggerType.Info);
                 if (!await Build(Global.config.ModsFolder, DowngradeCombo.SelectedItem as string))
                 {
-                    Global.logger.WriteLine($"Pizza Oven EXTRAS failed to cook the selected mod and will not launch the game", LoggerType.Error);
+                    Global.logger.WriteLine($"Pizza Oven+ failed to cook the selected mod and will not launch the game", LoggerType.Error);
                     ModGrid.IsEnabled = true;
                     ConfigButton.IsEnabled = true;
                     LaunchButton.IsEnabled = true;
@@ -438,7 +438,7 @@ namespace PizzaOven
 
             Global.UpdateConfig();
             Refresh();
-            EXTRASrefresh();
+            PLUSrefresh();
             ModGrid.Items.Refresh();
         }
 
@@ -457,7 +457,7 @@ namespace PizzaOven
                 if (mods.Count == 0)
                     return true;
 
-                string modType = EXTRASModType($@"{Global.assemblyLocation}{Global.s}Mods{Global.s}{mods[0].name}");
+                string modType = PLUSModType($@"{Global.assemblyLocation}{Global.s}Mods{Global.s}{mods[0].name}");
                 var modTypeNormalized = (modType ?? string.Empty).Trim();
 
                 bool isAFOM = string.Equals(modTypeNormalized, "AFOM", StringComparison.OrdinalIgnoreCase);
@@ -1233,7 +1233,7 @@ namespace PizzaOven
             if (!modManagerRefreshed)
             {
                 Refresh();
-                EXTRASrefresh();
+                PLUSrefresh();
                 modManagerRefreshed = true;
             }
         }
@@ -1243,7 +1243,7 @@ namespace PizzaOven
             modManagerRefreshed = false;
         }
 
-        private void EXTRASrefresh()
+        private void PLUSrefresh()
         {
             string DowngradePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"Downgrades");
             if (Directory.Exists(DowngradePath))
@@ -1294,7 +1294,7 @@ namespace PizzaOven
 
             ModFolderCombo.Items.Clear();
             ModFolderCombo.Items.Add("All");
-            var allfoldername = EXTRASSavesystem.read_ini_section("Folder");
+            var allfoldername = PLUSSavesystem.read_ini_section("Folder");
             if (allfoldername != null && allfoldername.GetLength(0) > 0)
             {
                 for (int i = 0; i < allfoldername.GetLength(0); i++)
@@ -1399,7 +1399,7 @@ namespace PizzaOven
                 ErrorPanel.Visibility = Visibility.Visible;
                 BrowserRefreshButton.Visibility = Visibility.Collapsed;
                 BrowserMessage.Visibility = Visibility.Visible;
-                BrowserMessage.Text = "Pizza Oven EXTRAS couldn't find any mods.";
+                BrowserMessage.Text = "Pizza Oven+ couldn't find any mods.";
             }
             PageBox.ItemsSource = Enumerable.Range(1, (int)(FeedGenerator.CurrentFeed.TotalPages));
 
@@ -1627,7 +1627,7 @@ namespace PizzaOven
             ModGrid_SearchBar.Clear();
         }
 
-        public void EXTRASWatcher()
+        public void PLUSWatcher()
         {
             string[] foldersToWatch = new string[]
             {
@@ -1643,28 +1643,28 @@ namespace PizzaOven
                     watcher.Filter = "*.*";
                     watcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite;
 
-                    watcher.Created += EXTRASWatcher_Changed;
-                    watcher.Deleted += EXTRASWatcher_Changed;
-                    watcher.Changed += EXTRASWatcher_Changed;
-                    watcher.Renamed += EXTRASWatcher_Renamed;
+                    watcher.Created += PLUSWatcher_Changed;
+                    watcher.Deleted += PLUSWatcher_Changed;
+                    watcher.Changed += PLUSWatcher_Changed;
+                    watcher.Renamed += PLUSWatcher_Renamed;
 
                     watcher.EnableRaisingEvents = true;
 
-                    EXTRASWatchers.Add(watcher);
+                    PLUSWatchers.Add(watcher);
                 }
             }
         }
 
-        private void EXTRASWatcher_Changed(object sender, FileSystemEventArgs e)
+        private void PLUSWatcher_Changed(object sender, FileSystemEventArgs e)
         {
             Dispatcher.BeginInvoke((Action)(() => EXTRASrefresh()));
         }
 
-        private void EXTRASWatcher_Renamed(object sender, RenamedEventArgs e)
+        private void PLUSWatcher_Renamed(object sender, RenamedEventArgs e)
         {
             Dispatcher.BeginInvoke((Action)(() => EXTRASrefresh()));
         }
-        private string EXTRASModType(string path)
+        private string PLUSModType(string path)
         {
         var exts = Directory.EnumerateFiles(
                 path,

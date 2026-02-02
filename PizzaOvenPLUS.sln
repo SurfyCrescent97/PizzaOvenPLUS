@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.33103.201
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PizzaOven EXTRAS", "PizzaOven\PizzaOven EXTRAS.csproj", "{BC84D94C-194C-4856-8121-9E94A06E555D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PizzaOvenPLUS", "PizzaOven\PizzaOvenPLUS.csproj", "{BC84D94C-194C-4856-8121-9E94A06E555D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

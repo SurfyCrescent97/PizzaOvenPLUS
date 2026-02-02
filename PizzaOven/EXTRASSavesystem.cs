@@ -14,7 +14,7 @@ using System.Text.Json;
 
 namespace PizzaOven
 {
-    public class EXTRASSavesystem
+    public class PLUSSavesystem
     {
         private static readonly string FolderPath =
             Path.Combine(

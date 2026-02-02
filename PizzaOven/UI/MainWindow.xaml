@@ -6,7 +6,7 @@
         xmlns:dd="urn:gong-wpf-dragdrop"
         xmlns:fa5="http://schemas.fontawesome.com/icons/"
         Background="#131313"
-        Title="Pizza Oven EXTRAS" SizeChanged="OnResize"
+        Title="Pizza Oven+" SizeChanged="OnResize"
         mc:Ignorable="d" Closing="Window_Closing" WindowStartupLocation="CenterScreen"
         Height="750" Width="1280" MinHeight="750" MinWidth="1280" Loaded="WindowLoaded" KeyDown="Window_KeyDown">
     <Window.Resources>
@@ -802,7 +802,7 @@
                     </Border>
                 </Grid>
             </TabItem>
-			<TabItem Name="Settings" Header="EXTRAS' Settings" FontSize="18">
+			<TabItem Name="Settings" Header="PLUS' Settings" FontSize="18">
 				<ScrollViewer VerticalScrollBarVisibility="Auto">
 					<StackPanel Margin="10" Orientation="Vertical" VerticalAlignment="Top" >
 						<StackPanel Orientation="Vertical" Margin="0,0,0,10">

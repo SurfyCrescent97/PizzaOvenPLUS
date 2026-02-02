@@ -11,16 +11,16 @@ using System.Windows.Input;
 namespace PizzaOven.UI
 {
     /// <summary>
-    /// Interaction logic for ExtraFolderwindow.xaml
+    /// Interaction logic for PLUSFolderwindow.xaml
     /// </summary>
-    public partial class ExtraFolderwindow : Window
+    public partial class PLUSFolderwindow : Window
     {
         public string _name;
         public bool _folder;
         public string directory = null;
         public string newName;
         public string loadout = null;
-        public ExtraFolderwindow(string name, bool folder)
+        public PLUSFolderwindow(string name, bool folder)
         {
             InitializeComponent();
             _folder = folder;

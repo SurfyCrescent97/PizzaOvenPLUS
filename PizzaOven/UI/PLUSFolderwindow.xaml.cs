@@ -49,7 +49,7 @@ namespace PizzaOven.UI
         }
         private void EditFolderName()
         {
-            EXTRASSavesystem.write_ini("Folder", _name, NameBox.Text as string);
+            PLUSSavesystem.write_ini("Folder", _name, NameBox.Text as string);
         }
     }
 }

@@ -175,8 +175,8 @@ namespace PizzaOven
         {
             var currentModDirectory = $@"{Global.assemblyLocation}{Global.s}Mods";
             // Add new folders found in Mods to the ModList
-            var PLUSfolder = EXTRASSavesystem.read_ini_section("Folder");
-            string EXTRAScurrentfolder;
+            var PLUSfolder = PLUSSavesystem.read_ini_section("Folder");
+            string PLUScurrentfolder;
 
             try
             {
@@ -430,7 +430,7 @@ namespace PizzaOven
             {
                 if (row != null)
                 {
-                    var ew = new ExtraFolderwindow(row.name, true);
+                    var ew = new PLUSFolderwindow(row.name, true);
                     ew.ShowDialog();
                 }
             }
@@ -1657,12 +1657,12 @@ namespace PizzaOven
 
         private void PLUSWatcher_Changed(object sender, FileSystemEventArgs e)
         {
-            Dispatcher.BeginInvoke((Action)(() => EXTRASrefresh()));
+            Dispatcher.BeginInvoke((Action)(() => PLUSrefresh()));
         }
 
         private void PLUSWatcher_Renamed(object sender, RenamedEventArgs e)
         {
-            Dispatcher.BeginInvoke((Action)(() => EXTRASrefresh()));
+            Dispatcher.BeginInvoke((Action)(() => PLUSrefresh()));
         }
         private string PLUSModType(string path)
         {

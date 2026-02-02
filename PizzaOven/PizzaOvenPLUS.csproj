@@ -5,7 +5,7 @@
     <TargetFramework>net7.0-windows</TargetFramework>
     <RootNamespace>PizzaOven</RootNamespace>
     <UseWPF>true</UseWPF>
-    <ApplicationIcon>Assets\PizzaOvenIcon.ico</ApplicationIcon>
+    <ApplicationIcon>Assets\PizzaOvenPLUSIcon.ico</ApplicationIcon>
     <AssemblyName>PizzaOven</AssemblyName>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </PropertyGroup>
@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Assets\PizzaOvenIcon.ico" />
+    <Content Include="Assets\PizzaOvenPLUSIcon.ico" />
   </ItemGroup>
 
   <ItemGroup>

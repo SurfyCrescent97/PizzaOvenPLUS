@@ -449,15 +449,17 @@ namespace PizzaOven
                 if (!ModLoader.Restart())
                     return false;
                 string patchPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"Downgrades",downgradename + ".xdelta");
-                if (!Path.Exists(patchPath) && PizzaTowerVersion != downgradename)
-                {
-                    Global.logger.WriteLine($"Unable to find {patchPath}", LoggerType.Error);
-                }
-                var mods = Global.config.ModList.Where(x => x.enabled).ToList();
-                if (mods.Count == 0)
-                    return true;
 
-                string modType = PLUSModType($@"{Global.assemblyLocation}{Global.s}Mods{Global.s}{mods[0].name}");
+                var mods = Global.config.ModList.Where(x => x.enabled).ToList();
+                string modType = "";
+                try
+                {
+                    modType = PLUSModType($@"{Global.assemblyLocation}{Global.s}Mods{Global.s}{mods[0].name}");
+                }
+                catch
+                {
+                    modType = "Normal";
+                }
                 var modTypeNormalized = (modType ?? string.Empty).Trim();
 
                 bool isAFOM = string.Equals(modTypeNormalized, "AFOM", StringComparison.OrdinalIgnoreCase);
@@ -476,6 +478,9 @@ namespace PizzaOven
                         }
                     }
                 }
+
+                if (mods.Count == 0)
+                    return true;
 
                 if (mods.Count == 1)
                 {
@@ -1702,6 +1707,53 @@ namespace PizzaOven
             }
             return "Unknown";
         }
+        private static IEnumerable<T> FindVisualChildren<T>(DependencyObject depObj) where T : DependencyObject
+        {
+            if (depObj == null) yield break;
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(depObj); i++)
+            {
+                var child = VisualTreeHelper.GetChild(depObj, i);
+                if (child is T t) yield return t;
+                foreach (var childOfChild in FindVisualChildren<T>(child))
+                    yield return childOfChild;
+            }
+        }
+
+        private void UpdatePLUSfilter(object sender, TextChangedEventArgs e)
+        {
+            string filter = (PLUS_SearchBar?.Text ?? string.Empty).Trim();
+
+            var settingsContent = Settings?.Content as DependencyObject;
+            if (settingsContent == null)
+                return;
+
+            var stackPanels = FindVisualChildren<StackPanel>(settingsContent).ToList();
+            if (!stackPanels.Any())
+                return;
+
+            foreach (var panel in stackPanels)
+            {
+                string searchable = panel.Tag?.ToString() ?? panel.Name ?? string.Empty;
+
+                if (string.IsNullOrWhiteSpace(searchable))
+                {
+                    var tb = panel.Children.OfType<TextBlock>().FirstOrDefault();
+                    if (tb != null)
+                        searchable = tb.Text ?? string.Empty;
+                }
+
+                if (string.IsNullOrEmpty(searchable))
+                    continue; 
+
+                bool match = string.IsNullOrEmpty(filter) ||
+                             searchable.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0;
+
+                panel.Visibility = match ? Visibility.Visible : Visibility.Collapsed;
+            }
+        }
+
+
+
 
     }
 }

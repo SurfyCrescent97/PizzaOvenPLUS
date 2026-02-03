@@ -1,31 +1,34 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Text.Json;
-using System.Diagnostics;
-using System.Reflection;
-using System.Windows.Documents;
-using System.Text.RegularExpressions;
-using System.Windows.Media.Imaging;
-using System.Xml.Linq;
-using System.Net.Http;
-using System.Windows.Media;
+﻿using Microsoft.Win32;
 using PizzaOven.UI;
-using System.Windows.Controls.Primitives;
-using System.Security.Cryptography;
-using Microsoft.Win32;
-using System.Windows.Input;
-using System.Windows.Data;
 using SharpCompress.Archives.SevenZip;
 using SharpCompress.Common;
 using SharpCompress.Readers;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Reflection;
+using System.Security.Cryptography;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
+using System.Xml.Linq;
+using static System.Collections.Specialized.BitVector32;
+using Path = System.IO.Path;
 
 namespace PizzaOven
 {
@@ -1719,6 +1722,20 @@ namespace PizzaOven
             }
         }
 
+        private static IEnumerable<T> FindLogicalChildren<T>(DependencyObject root) where T : DependencyObject
+        {
+            if (root == null) yield break;
+            foreach (var child in LogicalTreeHelper.GetChildren(root))
+            {
+                if (child is DependencyObject dep)
+                {
+                    if (child is T t) yield return t;
+                    foreach (var descendant in FindLogicalChildren<T>(dep))
+                        yield return descendant;
+                }
+            }
+        }
+
         private void UpdatePLUSfilter(object sender, TextChangedEventArgs e)
         {
             string filter = (PLUS_SearchBar?.Text ?? string.Empty).Trim();
@@ -1727,23 +1744,39 @@ namespace PizzaOven
             if (settingsContent == null)
                 return;
 
-            var stackPanels = FindVisualChildren<StackPanel>(settingsContent).ToList();
+            var visual = FindVisualChildren<StackPanel>(settingsContent);
+            var logical = FindLogicalChildren<StackPanel>(settingsContent);
+            var stackPanels = visual.Concat(logical).Distinct().ToList();
             if (!stackPanels.Any())
                 return;
 
             foreach (var panel in stackPanels)
             {
+                if (PLUS_SearchBar != null)
+                {
+                    bool containsSearch =
+                        panel == (DependencyObject)PLUS_SearchBar ||
+                        FindVisualChildren<DependencyObject>(panel).Any(c => c == (DependencyObject)PLUS_SearchBar) ||
+                        FindLogicalChildren<DependencyObject>(panel).Any(c => c == (DependencyObject)PLUS_SearchBar);
+
+                    if (containsSearch)
+                    {
+                        panel.Visibility = Visibility.Visible;
+                        continue;
+                    }
+                }
+
                 string searchable = panel.Tag?.ToString() ?? panel.Name ?? string.Empty;
 
                 if (string.IsNullOrWhiteSpace(searchable))
                 {
-                    var tb = panel.Children.OfType<TextBlock>().FirstOrDefault();
+                    var tb = FindVisualChildren<TextBlock>(panel).FirstOrDefault();
                     if (tb != null)
                         searchable = tb.Text ?? string.Empty;
                 }
 
                 if (string.IsNullOrEmpty(searchable))
-                    continue; 
+                    continue;
 
                 bool match = string.IsNullOrEmpty(filter) ||
                              searchable.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0;
@@ -1752,7 +1785,65 @@ namespace PizzaOven
             }
         }
 
+        private void CleanPO_click(object sender, RoutedEventArgs e)
+        {
+            var path = Global.config.ModsFolder;
+            if (Directory.Exists(path))
+            {
+                foreach (var file in Directory.GetFiles(path, "*.po", SearchOption.AllDirectories))
+                {
+                try
+                {
+                    File.Move(file, Path.ChangeExtension(file, String.Empty), true);
+                }
+                catch (Exception ex)
+                {
+                    if (ex is System.UnauthorizedAccessException)
+                        Global.logger.WriteLine($"Access denied when trying to restore {Path.GetFileName(file)}. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven in administrator mode", LoggerType.Error);
+                    else
+                        throw;
+                }
+                }
+                foreach (var file in Directory.GetFiles(path, "*.downgradepo", SearchOption.AllDirectories))
+                {
+                    try
+                    {
+                        File.Delete(file);
+                    }
+                    catch (Exception ex)
+                    {
+                        if (ex is System.UnauthorizedAccessException)
+                            Global.logger.WriteLine($"Access denied when trying to restore {Path.GetFileName(file)}. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven in administrator mode", LoggerType.Error);
+                        else
+                            throw;
+                    }
+                }
+            }
+        }
 
+        private void DeleteModFolder_Click(object sender, RoutedEventArgs e)
+        {
+            if (ModFolderCombo.SelectedItem as string == "All")
+            {
+                MessageBoxResult allresult = MessageBox.Show("Do you want to delete ALL folders?", "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (allresult == MessageBoxResult.No)
+                    return;
+                PLUSSavesystem.delete_ini_section("Folder");
+                return;
+            }
+            MessageBoxResult result = MessageBox.Show("Do you want to delete this folder?","Confirm Delete", MessageBoxButton.YesNo,MessageBoxImage.Question);
+            if (result == MessageBoxResult.No)
+                return;
+            var saves = PLUSSavesystem.read_ini_section("Folder");
+            for (int i = 0; i < saves.GetLength(0); i++)
+            {
+                if (saves[i, 0] == ModFolderCombo.SelectedItem as string)
+                {
+                    PLUSSavesystem.delete_ini("Folder", saves[i, 0]);
+                }
+            }
+            ModFolderCombo.SelectedItem = "All";
+        }
 
 
     }

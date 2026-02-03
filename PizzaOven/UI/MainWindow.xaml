@@ -820,14 +820,33 @@
 								</TextBlock.Style>
 							</TextBlock>
 						</Grid>
+						<StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="Clean PO. Files">
+							<TextBlock Text="Clean PO. Files:" Margin="0,5,0,2" Foreground="#f2f2f2"/>
+							<Button Content="Clean" Width="200" Height="30" HorizontalAlignment="Left" Click="CleanPO_click"/>
+						</StackPanel>
 						<StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="Patch Version">
 							<TextBlock Text="Patch Version:" Margin="0,5,0,2" Foreground="#f2f2f2"/>
 							<ComboBox Name="DowngradeCombo" Width="200" Height="30" HorizontalAlignment="Left" />
 						</StackPanel>
 
 						<StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="Mod Folder">
-							<TextBlock Text="Mod Folder (You can set folders by selecting the mod, right clicking and adding a folder name):" Margin="0,5,0,2" Foreground="#f2f2f2"/>
-							<ComboBox Name="ModFolderCombo" Width="200" Height="30" HorizontalAlignment="Left" />
+							<TextBlock Text="Mod Folder (You can set folders by selecting the mod, right clicking and adding a folder name):"
+									   Margin="0,5,0,2" Foreground="#f2f2f2"/>
+
+							<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+								<ComboBox x:Name="ModFolderCombo" Width="200" Height="30" HorizontalAlignment="Left">
+
+								</ComboBox>
+
+								<Button x:Name="DeleteModFolderButton" Content="X" Width="25" Height="25" Margin="5,0,0,0" Click="DeleteModFolder_Click">
+									<Button.Style>
+										<Style TargetType="Button">
+											<Setter Property="Foreground" Value="Black"/>
+											<Setter Property="IsEnabled" Value="True"/>
+										</Style>
+									</Button.Style>
+								</Button>
+							</StackPanel>
 						</StackPanel>
 					</StackPanel>
 				</ScrollViewer>

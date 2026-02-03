@@ -3,13 +3,6 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using PizzaOven;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 
 namespace PizzaOven
@@ -19,7 +12,7 @@ namespace PizzaOven
         private static readonly string FolderPath =
             Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "PizzaOvenEXTRAS"
+                "PizzaOvenPLUS"
             );
 
         private static readonly string IniPath =
@@ -52,32 +45,91 @@ namespace PizzaOven
 
             return defaultValue;
         }
-		
-		public static string[,] read_ini_section(string section)
-		{
-			var data = read_all();
 
-			if (!data.TryGetValue(section, out var sectionData) || sectionData.Count == 0)
-				return new string[0, 0]; 
+        public static string[,] read_ini_section(string section)
+        {
+            var data = read_all();
 
-			var keys = sectionData.Keys.ToArray();
-			var values = sectionData.Values.ToArray();
+            if (!data.TryGetValue(section, out var sectionData) || sectionData.Count == 0)
+                return new string[0, 0];
 
-			var result = new string[sectionData.Count, 2];
+            var keys = sectionData.Keys.ToArray();
+            var values = sectionData.Values.ToArray();
 
-			for (int i = 0; i < sectionData.Count; i++)
-			{
-				result[i, 0] = keys[i];   
-				result[i, 1] = values[i];  
-			}
+            var result = new string[sectionData.Count, 2];
 
-			return result;
-		}
+            for (int i = 0; i < sectionData.Count; i++)
+            {
+                result[i, 0] = keys[i];
+                result[i, 1] = values[i];
+            }
 
+            return result;
+        }
+
+        public static void delete_ini(string section, string key)
+        {
+            if (string.IsNullOrWhiteSpace(section) || string.IsNullOrWhiteSpace(key))
+                return;
+
+            var data = read_all();
+
+            if (!data.TryGetValue(section, out var sectionData))
+                return;
+
+            if (sectionData.Remove(key))
+            {
+                if (sectionData.Count == 0)
+                    data.Remove(section);
+
+                if (data.Count == 0)
+                {
+                    try
+                    {
+                        if (File.Exists(IniPath))
+                            File.Delete(IniPath);
+                    }
+                    catch
+                    {
+                    }
+                }
+                else
+                {
+                    save_all(data);
+                }
+            }
+        }
+
+        public static void delete_ini_section(string section)
+        {
+            if (string.IsNullOrWhiteSpace(section))
+                return;
+
+            var data = read_all();
+
+            if (!data.Remove(section))
+                return;
+
+            if (data.Count == 0)
+            {
+                try
+                {
+                    if (File.Exists(IniPath))
+                        File.Delete(IniPath);
+                }
+                catch
+                {
+                }
+            }
+            else
+            {
+                save_all(data);
+            }
+        }
 
         private static Dictionary<string, Dictionary<string, string>> read_all()
         {
-            var result = new Dictionary<string, Dictionary<string, string>>();
+            var result = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
             if (!File.Exists(IniPath))
                 return result;
 
@@ -94,7 +146,7 @@ namespace PizzaOven
                 {
                     currentSection = trimmed[1..^1];
                     if (!result.ContainsKey(currentSection))
-                        result[currentSection] = new Dictionary<string, string>();
+                        result[currentSection] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 }
                 else
                 {
@@ -112,10 +164,12 @@ namespace PizzaOven
             return result;
         }
 
-
         private static void save_all(Dictionary<string, Dictionary<string, string>> data)
         {
-            using var writer = new StreamWriter(IniPath);
+            if (!Directory.Exists(FolderPath))
+                Directory.CreateDirectory(FolderPath);
+
+            using var writer = new StreamWriter(IniPath, false);
 
             foreach (var section in data)
             {

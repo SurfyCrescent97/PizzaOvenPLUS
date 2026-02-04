@@ -66,18 +66,11 @@
     </None>
   </ItemGroup>
   
-  <ItemGroup>
-    <None Include="CustomAssets\**\*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
+	<ItemGroup>
+	  <EmbeddedResource Include="Custom Assets\**\*" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <None Update="CustomAssets">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
- 
+  
   <ItemGroup>
     <Page Update="UI\ChoiceWindow.xaml">
       <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>

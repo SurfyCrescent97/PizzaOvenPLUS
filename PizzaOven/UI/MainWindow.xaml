@@ -6,7 +6,7 @@
         xmlns:dd="urn:gong-wpf-dragdrop"
         xmlns:fa5="http://schemas.fontawesome.com/icons/"
         Background="#131313"
-        Title="Pizza Oven+" SizeChanged="OnResize"
+        Title="Pizza Oven+ | An Extenstion by SurfyCrescent97" SizeChanged="OnResize"
         mc:Ignorable="d" Closing="Window_Closing" WindowStartupLocation="CenterScreen"
         Height="750" Width="1280" MinHeight="750" MinWidth="1280" Loaded="WindowLoaded" KeyDown="Window_KeyDown">
     <Window.Resources>
@@ -824,6 +824,7 @@
 							<TextBlock Text="Clean PO. Files:" Margin="0,5,0,2" Foreground="#f2f2f2"/>
 							<Button Content="Clean" Width="200" Height="30" HorizontalAlignment="Left" Click="CleanPO_click"/>
 						</StackPanel>
+                        
 						<StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="Patch Version">
 							<TextBlock Text="Patch Version:" Margin="0,5,0,2" Foreground="#f2f2f2"/>
 							<ComboBox Name="DowngradeCombo" Width="200" Height="30" HorizontalAlignment="Left" />
@@ -848,7 +849,11 @@
 								</Button>
 							</StackPanel>
 						</StackPanel>
-					</StackPanel>
+
+ 
+
+
+                    </StackPanel>
 				</ScrollViewer>
 			</TabItem>
 

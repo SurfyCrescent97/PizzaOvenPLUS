@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Windows;
 
 namespace PizzaOven
@@ -301,7 +302,9 @@ namespace PizzaOven
                             successes++;
                         }
                     }
-                    // Font .png files
+					
+                    // Font .png files [PIZZA OVEN ORIGINAL CODE]
+					/*
                     else if (extension.Equals(".png", StringComparison.InvariantCultureIgnoreCase))
                     {
                         // Check if png is in fonts folder
@@ -315,6 +318,8 @@ namespace PizzaOven
                             successes++;
                         }
                     }
+					*/
+					
                     // Copy over .win file in case modder provides entire file instead of .xdelta patch
                     else if (extension.Equals(".win", StringComparison.InvariantCultureIgnoreCase))
                     {
@@ -366,6 +371,112 @@ namespace PizzaOven
                         File.Copy(modFile, $"{Global.config.ModsFolder}{Global.s}{Path.GetFileName(modFile)}", true);
                         Global.logger.WriteLine($"Copied over {Path.GetFileName(modFile)} to game folder", LoggerType.Info);
                         successes++;
+                    }
+                }
+                catch (Exception e)
+                {
+                    if (e is System.UnauthorizedAccessException)
+                        Global.logger.WriteLine($"Access denied when trying to apply {Path.GetFileName(modFile)}. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven in administrator mode", LoggerType.Error);
+                    else
+                        throw;
+                }
+            }
+            var langfolder = $"{Global.config.ModsFolder}{Global.s}lang{Global.s}";
+            var langFiles = Directory
+                .GetFiles(langfolder, "*.txt", SearchOption.TopDirectoryOnly)
+                .OrderBy(f => f) 
+                .ToList();
+
+            List<string> langlist = new();
+            List<string> langlistfile = new();
+
+            foreach (var file in langFiles)
+            {
+                string text = File.ReadAllText(file);
+
+                Match match = Regex.Match(
+                    text,
+                    @"lang\s*=\s*""([^""]+)""",
+                    RegexOptions.IgnoreCase
+                );
+
+                if (match.Success)
+                {
+                    langlist.Add(match.Groups[1].Value);
+                    langlistfile.Add(Path.GetFileNameWithoutExtension(file));
+                }
+            }
+
+
+            // PIZZAOVEN+ check 2
+            foreach (var modFile in Directory.GetFiles(mod, "*", SearchOption.AllDirectories))
+            {
+                var extension = Path.GetExtension(modFile);
+                var basename = Path.GetFileNameWithoutExtension(modFile);
+                try
+                {
+                    if (extension.Equals(".ttf", StringComparison.InvariantCultureIgnoreCase) || extension.Equals(".otf", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        // Copy over file to fonts folder
+                        File.Copy(modFile, $"{Global.config.ModsFolder}{Global.s}lang{Global.s}fonts{Global.s}{Path.GetFileName(modFile)}", true);
+                        Global.logger.WriteLine($"Copied over {Path.GetFileName(modFile)} to fonts folder", LoggerType.Info);
+                        successes++;
+                    }
+                    else if (extension.Equals(".def", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        // Copy over file to lang folder
+                        File.Copy(modFile, $"{Global.config.ModsFolder}{Global.s}lang{Global.s}{Path.GetFileName(modFile)}", true);
+                        Global.logger.WriteLine($"Copied over {Path.GetFileName(modFile)} to language folder", LoggerType.Info);
+                        successes++;
+                    }
+                    // wow updated png code!!
+                    else if (extension.Equals(".png", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        // Removes numbers at the end
+                        basename = Regex.Replace(basename, @"\d+$", "");
+                        bool pngcopied = false;
+                        if (langlist.Contains(basename))
+                        {
+                            // Copy over file to graphics folder
+                            File.Copy(modFile, $"{Global.config.ModsFolder}{Global.s}lang{Global.s}graphics{Global.s}{Path.GetFileName(modFile)}", true);
+                            Global.logger.WriteLine($"Copied over {Path.GetFileName(modFile)} to graphics folder", LoggerType.Info);
+                            pngcopied = true;
+                            successes++;
+                        }
+                        else
+                        {
+                            for (int i = 0; i < langlist.Count; i++)
+                            {
+                                if (!pngcopied && (basename.EndsWith($"_{langlist[i]}") || basename.EndsWith($"_{langlistfile[i]}")))
+                                {
+                                    // Copy over file to fonts folder
+                                    File.Copy(modFile,$"{Global.config.ModsFolder}{Global.s}lang{Global.s}fonts{Global.s}{Path.GetFileName(modFile)}",true);
+                                    Global.logger.WriteLine( $"Copied over {Path.GetFileName(modFile)} to fonts folder",LoggerType.Info);
+                                    successes++;
+                                    pngcopied = true;
+                                    break; 
+                                }
+                            }
+
+                        }
+                        if (!pngcopied)
+                        {
+                            Global.logger.WriteLine($"Found {Path.GetFileName(modFile)} but doesn't seem to have an attached language file so skipping", LoggerType.Warning);
+                        }
+                    }
+                    else if (extension.Equals(".json", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        if (langlist.Contains(basename) || langlistfile.Contains(basename))
+                        {
+                            // Copy over file to graphics folder
+                            File.Copy(modFile, $"{Global.config.ModsFolder}{Global.s}lang{Global.s}graphics{Global.s}{Path.GetFileName(modFile)}", true);
+                            Global.logger.WriteLine($"Copied over {Path.GetFileName(modFile)} to graphics folder", LoggerType.Info);
+                            successes++;
+                        }
+                        else
+                        {
+                            Global.logger.WriteLine($"Found {Path.GetFileName(modFile)} but doesn't seem to have an attached language file so skipping", LoggerType.Warning);
+                        }
                     }
                 }
                 catch (Exception e)

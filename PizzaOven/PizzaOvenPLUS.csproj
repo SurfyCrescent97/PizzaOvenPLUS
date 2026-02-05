@@ -55,6 +55,12 @@
   </ItemGroup>
   
   <ItemGroup>
+    <None Update=".disable_gb1click">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  
+  <ItemGroup>
     <None Include="Downgrades\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -84,5 +90,14 @@
       <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
     </Page>
   </ItemGroup>
+  <ItemGroup>
+	<PackageReference Include="DiscordRichPresence" Version="1.6.1.70" />
+  </ItemGroup>
+  
+	<ItemGroup>
+	  <Resource Include="PLUSSECRETS.json" />
+	</ItemGroup>
+
+
 
 </Project>

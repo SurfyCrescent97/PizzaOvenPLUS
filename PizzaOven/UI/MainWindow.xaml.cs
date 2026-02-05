@@ -50,6 +50,13 @@ namespace PizzaOven
         public MainWindow()
         {
             InitializeComponent();
+            try
+            {
+                PLUSRPC.DiscordPresenceService.Initialize();
+            } 
+            catch 
+            { 
+            }
             Global.logger = new Logger(ConsoleWindow);
             Global.config = new();
 

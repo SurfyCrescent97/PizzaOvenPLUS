@@ -25,6 +25,7 @@
   <ItemGroup>
     <PackageReference Include="FontAwesome5" Version="2.1.0" />
     <PackageReference Include="gong-wpf-dragdrop" Version="2.3.2" />
+    <PackageReference Include="NAudio" Version="2.2.1" />
     <PackageReference Include="Onova" Version="2.6.2" />
     <PackageReference Include="SevenZipExtractor" Version="1.0.17" />
     <PackageReference Include="SharpCompress" Version="0.28.1" />
@@ -94,9 +95,9 @@
 	<PackageReference Include="DiscordRichPresence" Version="1.6.1.70" />
   </ItemGroup>
   
-	<ItemGroup>
-	  <Resource Include="PLUSSECRETS.json" />
-	</ItemGroup>
+  <ItemGroup>
+    <Resource Include="PLUSSECRETS.json" Condition="Exists('PLUSSECRETS.json')" />  
+  </ItemGroup>
 
 
 

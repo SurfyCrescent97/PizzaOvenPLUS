@@ -1,19 +1,16 @@
 ﻿using DiscordRPC;
 using DiscordRPC.Logging;
-using System;
 using System.IO;
 using System.Reflection;
 using System.Text.Json;
-using System.Windows;
 
 namespace PizzaOven
 {
     internal class PLUSRPC
     {
-        private static DiscordRpcClient? client;
-
         public static class DiscordPresenceService
         {
+            private static DiscordRpcClient? client;
 
             public static void Initialize()
 			{

@@ -53,7 +53,8 @@ namespace PizzaOven
             try
             {
                 PLUSRPC.DiscordPresenceService.Initialize();
-            } 
+                PLUSMUSIC.InitializeAsync();
+            }
             catch 
             { 
             }

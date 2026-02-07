@@ -9,19 +9,14 @@ namespace PizzaOven
 {
     public class PLUSSavesystem
     {
-        private static readonly string FolderPath =
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "PizzaOvenPLUS"
-            );
+        private static readonly string folderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),"PizzaOvenPLUS");
 
-        private static readonly string IniPath =
-            Path.Combine(FolderPath, "settings.ini");
+        private static readonly string IniPath = Path.Combine(folderPath, "settings.ini");
 
         public static void write_ini(string section, string key, string value)
         {
-            if (!Directory.Exists(FolderPath))
-                Directory.CreateDirectory(FolderPath);
+            if (!Directory.Exists(folderPath))
+                Directory.CreateDirectory(folderPath);
 
             var data = read_all();
 
@@ -166,8 +161,8 @@ namespace PizzaOven
 
         private static void save_all(Dictionary<string, Dictionary<string, string>> data)
         {
-            if (!Directory.Exists(FolderPath))
-                Directory.CreateDirectory(FolderPath);
+            if (!Directory.Exists(folderPath))
+                Directory.CreateDirectory(folderPath);
 
             using var writer = new StreamWriter(IniPath, false);
 

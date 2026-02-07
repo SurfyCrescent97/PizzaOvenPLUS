@@ -820,7 +820,13 @@
 								</TextBlock.Style>
 							</TextBlock>
 						</Grid>
-						<StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="Clean PO. Files">
+                        <StackPanel Orientation="Vertical" Margin="0,0,0,30" Tag="Hey wanna suggest something!" HorizontalAlignment="Left">
+                            <TextBlock Text="Hey wanna suggest something!" Margin="0,5,0,10" Foreground="#f2f2f2"/>
+                            <Button x:Name="OpenSuggestForm"  Content="Open Suggestion Form" Width="300" Height="35" HorizontalAlignment="Left" Click="OpenSuggestForm_Click">
+                            </Button>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="Clean PO. Files">
 							<TextBlock Text="Clean PO. Files:" Margin="0,5,0,2" Foreground="#f2f2f2"/>
 							<Button Content="Clean" Width="200" Height="30" HorizontalAlignment="Left" Click="CleanPO_click"/>
 						</StackPanel>
@@ -849,7 +855,18 @@
 								</Button>
 							</StackPanel>
 						</StackPanel>
+                        
+                        <StackPanel Orientation="Vertical" Margin="0,0,0,20" Tag="Custom Assets">
+                            <TextBlock Text="Custom Assets:"
+									   Margin="0,5,0,2" Foreground="#f2f2f2"/>
+                        <Button x:Name="AssetsFolder" Foreground="#f2f2f2" Content="Open Assets Folder" Width="300" Height="35" HorizontalAlignment="Left" Click="AssetsFolder_Click"/>
+                            <Button x:Name="RestoreMissingAssets" Foreground="#f2f2f2" Content="Restore Missing Assets" Width="300" Height="35" HorizontalAlignment="Left" Click="RestoreMissingAssets_Click"/>
+                            <Button x:Name="RestoreALLAssets" Foreground="#f2f2f2" Content="Restore All Assets" Width="300" Height="35" HorizontalAlignment="Left" Click="RestoreALLAssets_Click"/>
+                        <Button x:Name="MuteButton" Foreground="#f2f2f2" Content="Enable Mute?" Width="300" Height="35" HorizontalAlignment="Left" Click="Mute_Click"/>
+						<Button x:Name="UnfocusedMuteButton" Foreground="#f2f2f2" Content="Enable Unfocused Mute?" Width="300" Height="35" HorizontalAlignment="Left" Click="UnfocusedMute_Click"/>
 
+
+                        </StackPanel>
  
 
 

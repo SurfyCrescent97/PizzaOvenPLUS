@@ -72,13 +72,13 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-  
-	<ItemGroup>
-	  <EmbeddedResource Include="Custom Assets\**\*" />
-	</ItemGroup>
+<ItemGroup>
+	<EmbeddedResource Include="CustomAssets\**\*">
+	</EmbeddedResource>
+</ItemGroup>
 
-  
-  <ItemGroup>
+
+	<ItemGroup>
     <Page Update="UI\ChoiceWindow.xaml">
       <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
       <SubType>Designer</SubType>

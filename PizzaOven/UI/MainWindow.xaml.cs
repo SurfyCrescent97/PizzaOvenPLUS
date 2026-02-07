@@ -50,13 +50,30 @@ namespace PizzaOven
         public MainWindow()
         {
             InitializeComponent();
+
             try
             {
                 PLUSRPC.DiscordPresenceService.Initialize();
                 PLUSMUSIC.InitializeAsync();
+                if (PLUSSavesystem.read_ini("Audio", "UnfocusedMute", "true") == "true")
+                {
+                    UnfocusedMuteButton.Content = "Disable Unfocused Mute?";
+                }
+                else
+                {
+                    UnfocusedMuteButton.Content = "Enable Unfocused Mute?";
+                }
+                if (PLUSSavesystem.read_ini("Audio", "Mute", "true") == "true")
+                {
+                    MuteButton.Content = "Disable Mute?";
+                }
+                else
+                {
+                    MuteButton.Content = "Enable Mute?";
+                }
             }
-            catch 
-            { 
+            catch
+            {
             }
             Global.logger = new Logger(ConsoleWindow);
             Global.config = new();
@@ -163,7 +180,7 @@ namespace PizzaOven
         }
         private async void SelectItem()
         {
-           
+
             await Task.Run(() =>
             {
                 App.Current.Dispatcher.Invoke((Action)delegate
@@ -254,7 +271,7 @@ namespace PizzaOven
                 }
             }
 
-            
+
 
             // Remove deleted folders that are still in the ModList AS WELL AS FOLDER FILTERS
             foreach (var mod in Global.ModList.ToList())
@@ -460,7 +477,7 @@ namespace PizzaOven
             {
                 if (!ModLoader.Restart())
                     return false;
-                string patchPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"Downgrades",downgradename + ".xdelta");
+                string patchPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Downgrades", downgradename + ".xdelta");
 
                 var mods = Global.config.ModList.Where(x => x.enabled).ToList();
                 string modType = "";
@@ -819,7 +836,7 @@ namespace PizzaOven
                         BitmapImage bm = new BitmapImage(metadata.upic);
                         Image image = new Image();
                         image.Source = bm;
-                        image.Height= 25;
+                        image.Height = 25;
                         para.Inlines.Add(image);
                     }
                     else
@@ -841,8 +858,8 @@ namespace PizzaOven
                     Preview.Source = bitmap;
                     PreviewBG.Source = null;
                 }
-                    para = new Paragraph();
-                    para.Inlines.Add("Category: ");
+                para = new Paragraph();
+                para.Inlines.Add("Category: ");
                 if (metadata.caticon != null && metadata.caticon.ToString().Length > 0)
                 {
                     BitmapImage bm = new BitmapImage(metadata.caticon);
@@ -1272,7 +1289,7 @@ namespace PizzaOven
 
         private void PLUSrefresh()
         {
-            string DowngradePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"Downgrades");
+            string DowngradePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Downgrades");
             if (Directory.Exists(DowngradePath))
             {
                 string[] files = Directory.GetFiles(DowngradePath);
@@ -1615,15 +1632,15 @@ namespace PizzaOven
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
             if (IsLoaded && ModGridSearchButton.IsEnabled)
-            if (e.KeyboardDevice.IsKeyDown(Key.LeftCtrl) || e.KeyboardDevice.IsKeyDown(Key.RightCtrl))
-            {
-                switch (e.Key)
+                if (e.KeyboardDevice.IsKeyDown(Key.LeftCtrl) || e.KeyboardDevice.IsKeyDown(Key.RightCtrl))
                 {
-                    case Key.F:
-                        ModGrid_SearchBar.Focus();
-                        break;
+                    switch (e.Key)
+                    {
+                        case Key.F:
+                            ModGrid_SearchBar.Focus();
+                            break;
+                    }
                 }
-            }
         }
 
         private void ModGrid_SearchBar_KeyDown(object sender, KeyEventArgs e)
@@ -1638,9 +1655,9 @@ namespace PizzaOven
                 string text = ModGrid_SearchBar.Text;
                 Global.ModList = new ObservableCollection<Mod>(Global.ModList.Where(mod => mod.name.Contains(text, StringComparison.InvariantCultureIgnoreCase))
                     .Concat(Global.ModList.Where(mod => !mod.name.Contains(text, StringComparison.InvariantCultureIgnoreCase))));
-                
+
                 Refresh();
-                ModGrid.ScrollIntoView(ModGrid.Items[0]);             
+                ModGrid.ScrollIntoView(ModGrid.Items[0]);
             }
         }
 
@@ -1693,23 +1710,23 @@ namespace PizzaOven
         }
         private string PLUSModType(string path)
         {
-        var exts = Directory.EnumerateFiles(
-                path,
-                "*.*",
-                new EnumerationOptions
-                {
-                    RecurseSubdirectories = true,
-                    IgnoreInaccessible = true
-                })
-            .Where(file => !string.Equals(
-                Path.GetFileName(file),
-                "mod.json",
-                StringComparison.OrdinalIgnoreCase))
-            .Select(Path.GetExtension)
-            .Where(ext => !string.IsNullOrEmpty(ext))
-            .Select(ext => ext.TrimStart('.').ToLowerInvariant())
-            .Distinct()
-            .ToArray();
+            var exts = Directory.EnumerateFiles(
+                    path,
+                    "*.*",
+                    new EnumerationOptions
+                    {
+                        RecurseSubdirectories = true,
+                        IgnoreInaccessible = true
+                    })
+                .Where(file => !string.Equals(
+                    Path.GetFileName(file),
+                    "mod.json",
+                    StringComparison.OrdinalIgnoreCase))
+                .Select(Path.GetExtension)
+                .Where(ext => !string.IsNullOrEmpty(ext))
+                .Select(ext => ext.TrimStart('.').ToLowerInvariant())
+                .Distinct()
+                .ToArray();
 
             bool hasLevelsDir = Directory.EnumerateDirectories(path, "*", SearchOption.AllDirectories)
             .Any(dir => string.Equals(
@@ -1722,7 +1739,7 @@ namespace PizzaOven
             if (exts.Contains("xdelta"))
             {
                 return "Normal";
-            } 
+            }
             else if (hasLevelsDir && exts.Contains("json") && exts.Contains("ini"))
             {
                 return "AFOM";
@@ -1811,17 +1828,17 @@ namespace PizzaOven
             {
                 foreach (var file in Directory.GetFiles(path, "*.po", SearchOption.AllDirectories))
                 {
-                try
-                {
-                    File.Move(file, Path.ChangeExtension(file, String.Empty), true);
-                }
-                catch (Exception ex)
-                {
-                    if (ex is System.UnauthorizedAccessException)
-                        Global.logger.WriteLine($"Access denied when trying to restore {Path.GetFileName(file)}. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven in administrator mode", LoggerType.Error);
-                    else
-                        throw;
-                }
+                    try
+                    {
+                        File.Move(file, Path.ChangeExtension(file, String.Empty), true);
+                    }
+                    catch (Exception ex)
+                    {
+                        if (ex is System.UnauthorizedAccessException)
+                            Global.logger.WriteLine($"Access denied when trying to restore {Path.GetFileName(file)}. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven in administrator mode", LoggerType.Error);
+                        else
+                            throw;
+                    }
                 }
                 foreach (var file in Directory.GetFiles(path, "*.downgradepo", SearchOption.AllDirectories))
                 {
@@ -1850,7 +1867,7 @@ namespace PizzaOven
                 PLUSSavesystem.delete_ini_section("Folder");
                 return;
             }
-            MessageBoxResult result = MessageBox.Show("Do you want to delete this folder?","Confirm Delete", MessageBoxButton.YesNo,MessageBoxImage.Question);
+            MessageBoxResult result = MessageBox.Show("Do you want to delete this folder?", "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (result == MessageBoxResult.No)
                 return;
             var saves = PLUSSavesystem.read_ini_section("Folder");
@@ -1863,7 +1880,132 @@ namespace PizzaOven
             }
             ModFolderCombo.SelectedItem = "All";
         }
+        private void OpenSuggestForm_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "https://docs.google.com/forms/d/e/1FAIpQLScI-8L6-ATpE6_ip3gzESXAWi4B_0pwHiHI5g83fb3SlLTM_A/viewform?usp=dialog",
+                UseShellExecute = true
+            });
+        }
+
+        private void UnfocusedMute_Click(object sender, RoutedEventArgs e)
+        {
+
+            bool enabled = PLUSSavesystem.read_ini("Audio", "UnfocusedMute", "true") != "true";
+            PLUSSavesystem.write_ini("Audio", "UnfocusedMute", enabled.ToString().ToLowerInvariant());
+            PLUSMUSIC.unfocusedMuteEnabled = enabled;
+            PLUSMUSIC.ApplyCurrentVolume();
+            if (enabled)
+            {
+                UnfocusedMuteButton.Content = "Disable Unfocused Mute?";
+            }
+            else
+            {
+                UnfocusedMuteButton.Content = "Enable Unfocused Mute?";
+            }
+        }
+
+        private void Mute_Click(object sender, RoutedEventArgs e)
+        {
+            bool enabled = PLUSSavesystem.read_ini("Audio", "Mute", "true") != "true";
+            PLUSSavesystem.write_ini("Audio", "Mute", enabled.ToString().ToLowerInvariant());
+            PLUSMUSIC.MuteEnabled = enabled;
+            PLUSMUSIC.ApplyCurrentVolume();
+            if (enabled)
+            {
+                MuteButton.Content = "Disable Mute?";
+            }
+            else
+            {
+                MuteButton.Content = "Enable Mute?";
+            }
+        }
+
+        private void AssetsFolder_Click(object sender, RoutedEventArgs e)
+        {
+            Process process = Process.Start("explorer.exe", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaOvenPLUS", "CustomAssets"));
+        }
+
+        private void RestoreMissingAssets_Click(object sender, RoutedEventArgs e)
+        {
+            string appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),"PizzaOvenPLUS","CustomAssets");
+
+            Directory.CreateDirectory(appDataPath);
+
+            Assembly assembly = Assembly.GetExecutingAssembly();
+
+            string assetPrefix = "PizzaOven.CustomAssets.";
+
+            var resources = assembly
+                .GetManifestResourceNames()
+                .Where(r => r.StartsWith(assetPrefix));
+
+            foreach (string resourceName in resources)
+            {
+                string relativePath = resourceName
+                    .Substring(assetPrefix.Length)
+                    .Replace('.', Path.DirectorySeparatorChar);
+
+                int lastSeparator = relativePath.LastIndexOf(Path.DirectorySeparatorChar);
+                if (lastSeparator != -1)
+                {
+                    relativePath =
+                        relativePath[..lastSeparator] + "." +
+                        relativePath[(lastSeparator + 1)..];
+                }
+
+                string outputPath = Path.Combine(appDataPath, relativePath);
+                Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
+
+                if (File.Exists(outputPath))
+                    continue;
+
+                using Stream resourceStream =
+                    assembly.GetManifestResourceStream(resourceName)!;
+
+                using FileStream fileStream =
+                    new FileStream(outputPath, FileMode.Create, FileAccess.Write);
+
+                resourceStream.CopyTo(fileStream);
+                PLUSMUSIC.InitializeAsync();
+            }
+        }
+
+        private void RestoreALLAssets_Click(object sender, RoutedEventArgs e)
+        {
+            string folderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaOvenPLUS","CustomAssets");
+            if (Directory.Exists(folderPath))
+            {
+                foreach (string file in Directory.GetFiles(folderPath, "*", SearchOption.AllDirectories))
+                {
+                    try
+                    {
+                        File.Delete(file);
+                    }
+                    catch
+                    { 
+                    }
+                }
+                foreach (string dir in Directory.GetDirectories(folderPath, "*", SearchOption.AllDirectories))
+                {
+                    try
+                    {
+                        if (Directory.GetFiles(dir).Length == 0 && Directory.GetDirectories(dir).Length == 0)
+                            Directory.Delete(dir);
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+
+            Directory.CreateDirectory(folderPath);
+            RestoreMissingAssets_Click(sender, e);
+            PLUSMUSIC.InitializeAsync();
+        }
 
 
     }
 }
+

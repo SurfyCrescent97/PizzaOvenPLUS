@@ -1,8 +1,10 @@
 ﻿using DiscordRPC;
 using DiscordRPC.Logging;
+using System;
 using System.IO;
 using System.Reflection;
 using System.Text.Json;
+using System.Windows;
 
 namespace PizzaOven
 {
@@ -14,9 +16,7 @@ namespace PizzaOven
 
             public static void Initialize()
 			{
-				using var stream = Application.GetResourceStream(
-					new Uri("pack://application:,,,/PizzaOven;component/PLUSSECRETS.json")
-				)!.Stream;
+				using var stream = Application.GetResourceStream(new Uri("pack://application:,,,/PizzaOven;component/PLUSSECRETS.json"))!.Stream;
 
 				using var reader = new StreamReader(stream);
 				var json = reader.ReadToEnd();
@@ -39,9 +39,9 @@ namespace PizzaOven
 				{
 					Details = "PizzaOven but More",
 					State = "Tool by SurfyCrescent97",
-					Assets = new Assets
+                    Assets = new Assets
 					{
-						LargeImageText = "Pizza Oven+"
+                        LargeImageText = "Pizza Oven+"
 					},
 					Timestamps = Timestamps.Now
 				});

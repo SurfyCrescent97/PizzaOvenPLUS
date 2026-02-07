@@ -159,10 +159,7 @@ namespace PizzaOven
         public static void StartMusicWatcher()
         {
             string customAssets = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "PizzaOvenPLUS",
-                "CustomAssets"
-            );
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaOvenPLUS","CustomAssets");
 
             if (!Directory.Exists(customAssets))
                 Directory.CreateDirectory(customAssets);
@@ -175,6 +172,8 @@ namespace PizzaOven
                 IncludeSubdirectories = false
             };
 
+            bgMusicWatcher.Created += OnMusicFileChanged;
+            bgMusicWatcher.Deleted += OnMusicFileChanged;
             bgMusicWatcher.Changed += OnMusicFileChanged;
             bgMusicWatcher.Renamed += OnMusicFileChanged;
         }

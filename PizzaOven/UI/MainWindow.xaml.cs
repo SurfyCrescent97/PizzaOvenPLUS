@@ -50,9 +50,57 @@ namespace PizzaOven
         public MainWindow()
         {
             InitializeComponent();
+            // Get Version Number
+            var PizzaOvenVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            version = PizzaOvenVersion.Substring(0, PizzaOvenVersion.LastIndexOf('.'));
 
             try
             {
+                if (PLUSSavesystem.read_ini("Init","AssetsVer","-1") != PizzaOvenVersion)
+                {
+                    string appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaOvenPLUS", "CustomAssets");
+
+                    Directory.CreateDirectory(appDataPath);
+
+                    Assembly assembly = Assembly.GetExecutingAssembly();
+
+                    string assetPrefix = "PizzaOven.CustomAssets.";
+
+                    var resources = assembly
+                        .GetManifestResourceNames()
+                        .Where(r => r.StartsWith(assetPrefix));
+
+                    foreach (string resourceName in resources)
+                    {
+                        string relativePath = resourceName
+                            .Substring(assetPrefix.Length)
+                            .Replace('.', Path.DirectorySeparatorChar);
+
+                        int lastSeparator = relativePath.LastIndexOf(Path.DirectorySeparatorChar);
+                        if (lastSeparator != -1)
+                        {
+                            relativePath =
+                                relativePath[..lastSeparator] + "." +
+                                relativePath[(lastSeparator + 1)..];
+                        }
+
+                        string outputPath = Path.Combine(appDataPath, relativePath);
+                        Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
+
+                        if (File.Exists(outputPath))
+                            continue;
+
+                        using Stream resourceStream =
+                            assembly.GetManifestResourceStream(resourceName)!;
+
+                        using FileStream fileStream =
+                            new FileStream(outputPath, FileMode.Create, FileAccess.Write);
+
+                        resourceStream.CopyTo(fileStream);
+                        PLUSMUSIC.InitializeAsync();
+                    }
+                    PLUSSavesystem.write_ini("Init", "AssetsVer", PizzaOvenVersion);
+                }
                 PLUSRPC.DiscordPresenceService.Initialize();
                 PLUSMUSIC.InitializeAsync();
                 if (PLUSSavesystem.read_ini("Audio", "UnfocusedMute", "true") == "true")
@@ -81,9 +129,7 @@ namespace PizzaOven
             PLUSrefresh();
             PLUSWatcher();
 
-            // Get Version Number
-            var PizzaOvenVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            version = PizzaOvenVersion.Substring(0, PizzaOvenVersion.LastIndexOf('.'));
+
 
             Global.logger.WriteLine($"Launched PizzaOven+ Mod Manager v{version}!", LoggerType.Info);
             // Get Global.config if it exists

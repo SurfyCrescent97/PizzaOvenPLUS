@@ -29,7 +29,7 @@ namespace PizzaOven
             var localVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             try
             {
-                var requestUrl = $"https://api.gamebanana.com/Core/Item/Data?itemtype=Tool&itemid=12625&fields=Updates().bSubmissionHasUpdates()," +
+                var requestUrl = $"https://api.gamebanana.com/Core/Item/Data?itemtype=Tool&itemid=21866&fields=Updates().bSubmissionHasUpdates()," +
                     $"Updates().aGetLatestUpdates(),Files().aFiles()&return_keys=1";
                 GameBananaItem response = JsonSerializer.Deserialize<GameBananaItem>(await client.GetStringAsync(requestUrl));
                 if (response == null)

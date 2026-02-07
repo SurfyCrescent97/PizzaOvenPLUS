@@ -138,7 +138,7 @@ namespace PizzaOven
         {
             try
             {
-                line = line.Replace("pizzaoven:", "");
+                line = line.Replace("pizzaovenplus:", "");
                 string[] data = line.Split(',');
                 URL_TO_ARCHIVE = data[0];
                 // Used to grab file info from dictionary

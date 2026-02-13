@@ -1,5 +1,5 @@
 <center>
-<img src="https://files.catbox.moe/e2gzhl.png" width="500">
+<img src="https://files.catbox.moe/ygh8ji.png" width="500">
 
 [Pizza Oven+](https://gamebanana.com/tools/21866) is an extenstion of [Pizza Oven by Tekka](https://gamebanana.com/tools/12625) that adds more to Pizza Oven
 </center>

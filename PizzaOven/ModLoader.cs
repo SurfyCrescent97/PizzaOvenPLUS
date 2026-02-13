@@ -286,7 +286,7 @@ namespace PizzaOven
                             else
                             {
                                 Global.logger.WriteLine($"{Path.GetFileName(modFile)} wasn't able to patch any file. Ensure that either the mod or your game version is up to date. {Path.GetFileName(modFile)} is intended for {version}. " +
-                                    $"If this version number matches with your current game version go to {Global.config.ModsFolder} and delete data.win.po and anything else with a .po extension then verify integrity of game files and try again.", LoggerType.Error);
+                                    $"If this version number matches with your current game version go to {Global.config.ModsFolder} and delete data.win.po and anything else with a .po extension(or use the provided clean PO. files button) then verify integrity of game files and try again.", LoggerType.Error);
                             }
                             errors++;
                         }
@@ -295,17 +295,49 @@ namespace PizzaOven
                     else if (extension.Equals(".txt", StringComparison.InvariantCultureIgnoreCase))
                     {
                         // Verify .txt file is for language
+                        var basename = Path.GetFileNameWithoutExtension(modFile);
                         if (File.ReadAllText(modFile).Contains("lang = ", StringComparison.InvariantCultureIgnoreCase))
                         {
                             // Copy over file to lang folder
+
+                            var file = $"{Global.config.ModsFolder}{Global.s}lang{Global.s}{Path.GetFileName(modFile)}";
+
+                            if (File.Exists(file))
+                            {
+                                File.Copy(file, $"{file}.po", true);
+                            }
+                            else
+                            {
+                                File.WriteAllText($"{file}.custompo", string.Empty);
+                            }
+
                             File.Copy(modFile, $"{Global.config.ModsFolder}{Global.s}lang{Global.s}{Path.GetFileName(modFile)}", true);
                             Global.logger.WriteLine($"Copied over {Path.GetFileName(modFile)} to language folder", LoggerType.Info);
                             successes++;
                         }
+                        //checks if contains the words credits 
+                        else if (basename.Contains("credits", StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            // Copy over file to game folder
+                            var file = $"{Global.config.ModsFolder}{Global.s}{Path.GetFileName(modFile)}";
+
+                            if (File.Exists(file))
+                            {
+                                File.Copy(file, $"{file}.po", true);
+                            }
+                            else
+                            {
+                                File.WriteAllText($"{file}.custompo", string.Empty);
+                            }
+
+                            File.Copy(modFile, $"{Global.config.ModsFolder}{Global.s}{Path.GetFileName(modFile)}", true);
+                            Global.logger.WriteLine($"Copied over {Path.GetFileName(modFile)} to game folder since it seems to be a credits file", LoggerType.Info);
+                            successes++;
+                        }
                     }
-					
+
                     // Font .png files [PIZZA OVEN ORIGINAL CODE]
-					/*
+                    /*
                     else if (extension.Equals(".png", StringComparison.InvariantCultureIgnoreCase))
                     {
                         // Check if png is in fonts folder
@@ -320,7 +352,7 @@ namespace PizzaOven
                         }
                     }
 					*/
-					
+
                     // Copy over .win file in case modder provides entire file instead of .xdelta patch
                     else if (extension.Equals(".win", StringComparison.InvariantCultureIgnoreCase))
                     {
@@ -419,6 +451,17 @@ namespace PizzaOven
                     if (extension.Equals(".ttf", StringComparison.InvariantCultureIgnoreCase) || extension.Equals(".otf", StringComparison.InvariantCultureIgnoreCase))
                     {
                         // Copy over file to fonts folder
+                        var file = $"{Global.config.ModsFolder}{Global.s}lang{Global.s}fonts{Global.s}{Path.GetFileName(modFile)}";
+
+                        if (File.Exists(file))
+                        {
+                            File.Copy(file, $"{file}.po", true);
+                        }
+                        else
+                        {
+                            File.WriteAllText($"{file}.custompo", string.Empty);
+                        }
+
                         File.Copy(modFile, $"{Global.config.ModsFolder}{Global.s}lang{Global.s}fonts{Global.s}{Path.GetFileName(modFile)}", true);
                         Global.logger.WriteLine($"Copied over {Path.GetFileName(modFile)} to fonts folder", LoggerType.Info);
                         successes++;
@@ -426,6 +469,17 @@ namespace PizzaOven
                     else if (extension.Equals(".def", StringComparison.InvariantCultureIgnoreCase))
                     {
                         // Copy over file to lang folder
+                        var file = $"{Global.config.ModsFolder}{Global.s}lang{Global.s}{Path.GetFileName(modFile)}";
+
+                        if (File.Exists(file))
+                        {
+                            File.Copy(file, $"{file}.po", true);
+                        }
+                        else
+                        {
+                            File.WriteAllText($"{file}.custompo", string.Empty);
+                        }
+
                         File.Copy(modFile, $"{Global.config.ModsFolder}{Global.s}lang{Global.s}{Path.GetFileName(modFile)}", true);
                         Global.logger.WriteLine($"Copied over {Path.GetFileName(modFile)} to language folder", LoggerType.Info);
                         successes++;
@@ -433,12 +487,48 @@ namespace PizzaOven
                     // wow updated png code!!
                     else if (extension.Equals(".png", StringComparison.InvariantCultureIgnoreCase))
                     {
-                        // Removes numbers at the end
-                        basename = Regex.Replace(basename, @"\d+$", "");
+                        basename = Regex.Replace(basename, @"^\d+", "");
+
+                        string match = langlist
+                            .FirstOrDefault(x => basename.StartsWith(x, StringComparison.OrdinalIgnoreCase));
+
+                        if (match == null)
+                        {
+                            match = langlistfile
+                                .FirstOrDefault(x => basename.StartsWith(x, StringComparison.OrdinalIgnoreCase));
+                        }
+
+                        if (match != null)
+                        {
+                            basename = match;
+                        }
+                        else
+                        {
+                            basename = Regex.Replace(basename, @"\d+$", "");
+                        }
+
                         bool pngcopied = false;
-                        if (langlist.Contains(basename))
+                        List<string> fontList = new List<string>
+                        {
+                            "bigfont",
+                            "captionfont",
+                            "credits",
+                            "tutorial"
+                        };
+                        if ((langlist.Contains(basename) || langlistfile.Contains(basename) || langlist.Any(x => x.StartsWith(basename, StringComparison.OrdinalIgnoreCase))) && !fontList.Any(x => x.StartsWith(basename, StringComparison.OrdinalIgnoreCase)))
                         {
                             // Copy over file to graphics folder
+                            var file = $"{Global.config.ModsFolder}{Global.s}lang{Global.s}graphics{Global.s}{Path.GetFileName(modFile)}";
+
+                            if (File.Exists(file))
+                            {
+                                File.Copy(file, $"{file}.po", true);
+                            }
+                            else
+                            {
+                                File.WriteAllText($"{file}.custompo", string.Empty);
+                            }
+
                             File.Copy(modFile, $"{Global.config.ModsFolder}{Global.s}lang{Global.s}graphics{Global.s}{Path.GetFileName(modFile)}", true);
                             Global.logger.WriteLine($"Copied over {Path.GetFileName(modFile)} to graphics folder", LoggerType.Info);
                             pngcopied = true;
@@ -448,9 +538,16 @@ namespace PizzaOven
                         {
                             for (int i = 0; i < langlist.Count; i++)
                             {
-                                if (!pngcopied && (basename.EndsWith($"_{langlist[i]}") || basename.EndsWith($"_{langlistfile[i]}")))
+                                if (!pngcopied && (fontList.Contains(basename) || basename.EndsWith($"_{langlist[i]}") || basename.EndsWith($"_{langlistfile[i]}")))
                                 {
                                     // Copy over file to fonts folder
+                                    var file = $"{Global.config.ModsFolder}{Global.s}lang{Global.s}fonts{Global.s}{Path.GetFileName(modFile)}";
+
+                                    if (File.Exists(file))
+                                    {
+                                        File.Copy(file, $"{file}.po", true);
+                                    }
+
                                     File.Copy(modFile,$"{Global.config.ModsFolder}{Global.s}lang{Global.s}fonts{Global.s}{Path.GetFileName(modFile)}",true);
                                     Global.logger.WriteLine( $"Copied over {Path.GetFileName(modFile)} to fonts folder",LoggerType.Info);
                                     successes++;
@@ -470,6 +567,17 @@ namespace PizzaOven
                         if (langlist.Contains(basename) || langlistfile.Contains(basename))
                         {
                             // Copy over file to graphics folder
+                            var file = $"{Global.config.ModsFolder}{Global.s}lang{Global.s}graphics{Global.s}{Path.GetFileName(modFile)}";
+
+                            if (File.Exists(file))
+                            {
+                                File.Copy(file, $"{file}.po", true);
+                            }
+                            else
+                            {
+                                File.WriteAllText($"{file}.custompo", string.Empty);
+                            }
+
                             File.Copy(modFile, $"{Global.config.ModsFolder}{Global.s}lang{Global.s}graphics{Global.s}{Path.GetFileName(modFile)}", true);
                             Global.logger.WriteLine($"Copied over {Path.GetFileName(modFile)} to graphics folder", LoggerType.Info);
                             successes++;
@@ -519,7 +627,7 @@ namespace PizzaOven
                 process.WaitForExit();
             }
         }
-        private static void RestoreDirectory(string path)
+        public static void RestoreDirectory(string path)
         {
             if (Directory.Exists(path))
             {
@@ -527,6 +635,36 @@ namespace PizzaOven
                     try
                     {
                         File.Move(file, Path.ChangeExtension(file, String.Empty), true);
+                    }
+                    catch (Exception e)
+                    {
+                        if (e is System.UnauthorizedAccessException)
+                            Global.logger.WriteLine($"Access denied when trying to restore {Path.GetFileName(file)}. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven in administrator mode", LoggerType.Error);
+                        else
+                            throw;
+                    }
+                }
+                foreach (var file in Directory.GetFiles(path, "*.downgradepo", SearchOption.AllDirectories))
+                {
+                    try
+                    {
+                        File.Delete(file);
+                    }
+                    catch (Exception e)
+                    {
+                        if (e is System.UnauthorizedAccessException)
+                            Global.logger.WriteLine($"Access denied when trying to restore {Path.GetFileName(file)}. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven in administrator mode", LoggerType.Error);
+                        else
+                            throw;
+                    }
+                }
+                foreach (var file in Directory.GetFiles(path, "*.custompo", SearchOption.AllDirectories))
+                {
+                    try
+                    {
+                        var newPath = Path.ChangeExtension(file, null);
+                        File.Move(file, newPath, true);
+                        File.Delete(newPath);
                     }
                     catch (Exception e)
                     {

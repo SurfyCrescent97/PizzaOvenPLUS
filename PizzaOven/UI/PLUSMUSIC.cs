@@ -80,6 +80,7 @@ namespace PizzaOven
         {
             bool appIsActive = true;
             foregroundVolume = MuteEnabled ? 0 : 1;
+            foregroundVolume *= float.Parse(PLUSSavesystem.read_ini("Audio", "SoundVolume", "100")) / 100f;
 
             try
             {
@@ -104,6 +105,7 @@ namespace PizzaOven
             if (outputDevice != null)
             {
                 outputDevice.Volume = foregroundVolume;
+                outputDevice.Volume *= float.Parse(PLUSSavesystem.read_ini("Audio", "SoundVolume", "100")) / 100f;
             }
         }
 

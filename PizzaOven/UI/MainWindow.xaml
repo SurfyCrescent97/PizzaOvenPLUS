@@ -524,14 +524,14 @@
                                     <RowDefinition Height="1.5*"/>
                                     <RowDefinition/>
                                 </Grid.RowDefinitions>
-                                <Image Margin="3,3,10,5" Name="Preview" Grid.Row="0" Panel.ZIndex="2"/>
+                                <Image Margin="3,3,10,5" Name="Preview" Grid.Row="0" Panel.ZIndex="2" RenderTransformOrigin="1,1"/>
                                 <Image Margin="3,3,10,5" Name="PreviewBG" Grid.Row="0" Stretch="UniformToFill" Panel.ZIndex="1">
                                     <Image.BitmapEffect>
                                         <BlurBitmapEffect Radius="40"/>
                                     </Image.BitmapEffect>
                                 </Image>
 
-                                <fa5:ImageAwesome Foreground="#ffee5f" Grid.Row="0" Icon="Solid_Spinner" Height="50" VerticalAlignment="Center" HorizontalAlignment="Center" Spin="True" SpinDuration="2"/>
+                                <fa5:ImageAwesome Height="50" VerticalAlignment="Center" HorizontalAlignment="Center" Spin="True" SpinDuration="2"/>
                                 <RichTextBox FontSize="12" Padding="10" Grid.Row="1" Margin="3,5,10,3" Name="DescriptionWindow" Foreground="#F2F2F2" Background="#202020" BorderBrush="#424242" ClipToBounds="False"
                      VerticalContentAlignment="Center" VerticalAlignment="Stretch" VerticalScrollBarVisibility="Auto" IsReadOnly="True" Grid.ColumnSpan="5" IsDocumentEnabled="True"
                              FontWeight="Medium"/>
@@ -837,9 +837,7 @@
 						</StackPanel>
 
 						<StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="Mod Folder">
-							<TextBlock Text="Mod Folder (You can set folders by selecting the mod, right clicking and adding a folder name):"
-									   Margin="0,5,0,2" Foreground="#f2f2f2"/>
-
+							<TextBlock Text="Mod Folder (You can set folders by selecting the mod, right clicking and adding a folder name):" Margin="0,5,0,2" Foreground="#f2f2f2"/>
 							<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
 								<ComboBox x:Name="ModFolderCombo" Width="200" Height="30" HorizontalAlignment="Left">
 
@@ -857,19 +855,28 @@
 						</StackPanel>
                         
                         <StackPanel Orientation="Vertical" Margin="0,0,0,20" Tag="Custom Assets">
-                            <TextBlock Text="Custom Assets:"
-									   Margin="0,5,0,2" Foreground="#f2f2f2"/>
-                        <Button x:Name="AssetsFolder" Foreground="#f2f2f2" Content="Open Assets Folder" Width="300" Height="35" HorizontalAlignment="Left" Click="AssetsFolder_Click"/>
+                            <TextBlock Text="Custom Assets:" Margin="0,5,0,2" Foreground="#f2f2f2"/>
+                            <Button x:Name="AssetsFolder" Foreground="#f2f2f2" Content="Open Assets Folder" Width="300" Height="35" HorizontalAlignment="Left" Click="AssetsFolder_Click"/>
                             <Button x:Name="RestoreMissingAssets" Foreground="#f2f2f2" Content="Restore Missing Assets" Width="300" Height="35" HorizontalAlignment="Left" Click="RestoreMissingAssets_Click"/>
                             <Button x:Name="RestoreALLAssets" Foreground="#f2f2f2" Content="Restore All Assets" Width="300" Height="35" HorizontalAlignment="Left" Click="RestoreALLAssets_Click"/>
-                        <Button x:Name="MuteButton" Foreground="#f2f2f2" Content="Enable Mute?" Width="300" Height="35" HorizontalAlignment="Left" Click="Mute_Click"/>
-						<Button x:Name="UnfocusedMuteButton" Foreground="#f2f2f2" Content="Enable Unfocused Mute?" Width="300" Height="35" HorizontalAlignment="Left" Click="UnfocusedMute_Click"/>
-
-
+                            <Button x:Name="MuteButton" Foreground="#f2f2f2" Content="Enable Mute?" Width="300" Height="35" HorizontalAlignment="Left" Click="Mute_Click"/>
+                            <Button x:Name="UnfocusedMuteButton" Foreground="#f2f2f2" Content="Enable Unfocused Mute?" Width="300" Height="35" HorizontalAlignment="Left" Click="UnfocusedMute_Click"/>
+                            <TextBlock Text="Volume:" Margin="0,0,0,5" Foreground="#f2f2f2"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Slider x:Name="SoundVolume" Minimum="0" Maximum="100" Width="120" ValueChanged="SoundVolume_ValueChanged"/>
+                                <TextBlock Text="{Binding ElementName=SoundVolume, Path=Value, StringFormat={}{0:0}}" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="#f2f2f2"/>
+                            </StackPanel>
                         </StackPanel>
- 
-
-
+						
+					    <StackPanel Orientation="Vertical" Margin="0,0,0,20" Tag="Discord RPC">
+						    <TextBlock Text="Discord RPC (Displays on Discord):" Margin="0,5,0,2" Foreground="#f2f2f2"/>
+                            <Button x:Name="RPCtoggle" Foreground="#f2f2f2" Content="Disable RPC?" Width="300" Height="35" HorizontalAlignment="Left" Click="RPCtoggle_Click"/>
+                        </StackPanel>
+					
+						<StackPanel Orientation="Vertical" Margin="0,0,0,20" Tag="Low-End Settings">
+						    <TextBlock Text="Low-End Settings(Disables Features to allow a smoother experience for low-end devices):" Margin="0,5,0,2" Foreground="#f2f2f2"/>
+                            <Button x:Name="MODUPDATERtoggle" Foreground="#f2f2f2" Content="Disable Check for Mod Updates?" Width="300" Height="35" HorizontalAlignment="Left" Click="MODUPDATERtoggle_Click"/>
+				        </StackPanel>
                     </StackPanel>
 				</ScrollViewer>
 			</TabItem>

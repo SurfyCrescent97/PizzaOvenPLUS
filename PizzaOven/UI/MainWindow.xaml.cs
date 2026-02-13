@@ -56,7 +56,8 @@ namespace PizzaOven
 
             try
             {
-                if (PLUSSavesystem.read_ini("Init","AssetsVer","-1") != PizzaOvenVersion)
+
+                if (PLUSSavesystem.read_ini("Init", "AssetsVer", "-1") != PizzaOvenVersion)
                 {
                     string appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaOvenPLUS", "CustomAssets");
 
@@ -101,7 +102,17 @@ namespace PizzaOven
                     }
                     PLUSSavesystem.write_ini("Init", "AssetsVer", PizzaOvenVersion);
                 }
-                PLUSRPC.DiscordPresenceService.Initialize();
+
+                if (PLUSSavesystem.read_ini("Discord", "RPC", "true") == "true")
+                {
+                    RPCtoggle.Content = "Disable RPC?";
+                    PLUSRPC.DiscordPresenceService.Initialize();
+                }
+                else
+                {
+                    RPCtoggle.Content = "Enable RPC?";
+                }
+
                 PLUSMUSIC.InitializeAsync();
                 if (PLUSSavesystem.read_ini("Audio", "UnfocusedMute", "true") == "true")
                 {
@@ -119,6 +130,19 @@ namespace PizzaOven
                 {
                     MuteButton.Content = "Enable Mute?";
                 }
+
+                SoundVolume.Value = double.TryParse(PLUSSavesystem.read_ini("Audio", "SoundVolume", "100"), out double value) ? value : 100;
+                PLUSMUSIC.ApplyCurrentVolume();
+
+                if (PLUSSavesystem.read_ini("LowEnd","ModUpdate","true") == "true")
+                {
+                    MODUPDATERtoggle.Content = "Disable Check for Mod Updates?";
+                }
+                else
+                {
+                    MODUPDATERtoggle.Content = "Enable Check for Mod Updates?";
+                }
+               
             }
             catch
             {
@@ -186,17 +210,21 @@ namespace PizzaOven
             Preview.Source = bitmap;
             PreviewBG.Source = null;
 
-            Global.logger.WriteLine("Checking for updates...", LoggerType.Info);
-            ModGrid.IsEnabled = false;
-            ConfigButton.IsEnabled = false;
-            LaunchButton.IsEnabled = false;
-            ClearButton.IsEnabled = false;
-            UpdateButton.IsEnabled = false;
-            ModGridSearchButton.IsEnabled = false;
-            App.Current.Dispatcher.Invoke(() =>
+            if (PLUSSavesystem.read_ini("LowEnd", "ModUpdate", "true") == "true")
             {
-                ModUpdater.CheckForUpdates($"{Global.assemblyLocation}{Global.s}Mods", this);
-            });
+                Global.logger.WriteLine("Checking for updates...", LoggerType.Info);
+                ModGrid.IsEnabled = false;
+                ConfigButton.IsEnabled = false;
+                LaunchButton.IsEnabled = false;
+                ClearButton.IsEnabled = false;
+                UpdateButton.IsEnabled = false;
+                ModGridSearchButton.IsEnabled = false;
+                App.Current.Dispatcher.Invoke(() =>
+                {
+                    ModUpdater.CheckForUpdates($"{Global.assemblyLocation}{Global.s}Mods", this);
+                });
+            }
+
             if (Global.config.ModsFolder == null)
             {
                 // Setup on launch if not setup yet
@@ -1870,37 +1898,7 @@ namespace PizzaOven
         private void CleanPO_click(object sender, RoutedEventArgs e)
         {
             var path = Global.config.ModsFolder;
-            if (Directory.Exists(path))
-            {
-                foreach (var file in Directory.GetFiles(path, "*.po", SearchOption.AllDirectories))
-                {
-                    try
-                    {
-                        File.Move(file, Path.ChangeExtension(file, String.Empty), true);
-                    }
-                    catch (Exception ex)
-                    {
-                        if (ex is System.UnauthorizedAccessException)
-                            Global.logger.WriteLine($"Access denied when trying to restore {Path.GetFileName(file)}. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven in administrator mode", LoggerType.Error);
-                        else
-                            throw;
-                    }
-                }
-                foreach (var file in Directory.GetFiles(path, "*.downgradepo", SearchOption.AllDirectories))
-                {
-                    try
-                    {
-                        File.Delete(file);
-                    }
-                    catch (Exception ex)
-                    {
-                        if (ex is System.UnauthorizedAccessException)
-                            Global.logger.WriteLine($"Access denied when trying to restore {Path.GetFileName(file)}. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven in administrator mode", LoggerType.Error);
-                        else
-                            throw;
-                    }
-                }
-            }
+            ModLoader.RestoreDirectory(Global.config.ModsFolder);
         }
 
         private void DeleteModFolder_Click(object sender, RoutedEventArgs e)
@@ -1975,7 +1973,7 @@ namespace PizzaOven
 
         private void RestoreMissingAssets_Click(object sender, RoutedEventArgs e)
         {
-            string appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),"PizzaOvenPLUS","CustomAssets");
+            string appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaOvenPLUS", "CustomAssets");
 
             Directory.CreateDirectory(appDataPath);
 
@@ -2020,7 +2018,7 @@ namespace PizzaOven
 
         private void RestoreALLAssets_Click(object sender, RoutedEventArgs e)
         {
-            string folderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaOvenPLUS","CustomAssets");
+            string folderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaOvenPLUS", "CustomAssets");
             if (Directory.Exists(folderPath))
             {
                 foreach (string file in Directory.GetFiles(folderPath, "*", SearchOption.AllDirectories))
@@ -2030,7 +2028,7 @@ namespace PizzaOven
                         File.Delete(file);
                     }
                     catch
-                    { 
+                    {
                     }
                 }
                 foreach (string dir in Directory.GetDirectories(folderPath, "*", SearchOption.AllDirectories))
@@ -2051,6 +2049,43 @@ namespace PizzaOven
             PLUSMUSIC.InitializeAsync();
         }
 
+        private void RPCtoggle_Click(object sender, RoutedEventArgs e)
+        {
+            bool enabled = PLUSSavesystem.read_ini("Discord", "RPC", "true") != "true";
+            PLUSSavesystem.write_ini("Discord", "RPC", enabled.ToString().ToLowerInvariant());
+            if (enabled)
+            {
+                RPCtoggle.Content = "Disable RPC?";
+                PLUSRPC.DiscordPresenceService.Initialize();
+            }
+            else
+            {
+                RPCtoggle.Content = "Enable RPC?";
+                PLUSRPC.DiscordPresenceService.Shutdown();
+            }
+        }
+
+        private void MODUPDATERtoggle_Click(object sender, RoutedEventArgs e)
+        {
+            bool enabled = PLUSSavesystem.read_ini("LowEnd", "ModUpdate", "true") != "true";
+            PLUSSavesystem.write_ini("Lowend", "ModUpdate", enabled.ToString().ToLowerInvariant());
+            if (enabled)
+            {
+                MODUPDATERtoggle.Content = "Disable Check for Mod Updates?";
+            }
+            else
+            {
+                MODUPDATERtoggle.Content = "Enable Check for Mod Updates?";
+            }
+        }
+
+
+        private void SoundVolume_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            int volume = (int)SoundVolume.Value;
+            PLUSSavesystem.write_ini("Audio", "SoundVolume", volume.ToString());
+            PLUSMUSIC.ApplyCurrentVolume();
+        }
 
     }
 }

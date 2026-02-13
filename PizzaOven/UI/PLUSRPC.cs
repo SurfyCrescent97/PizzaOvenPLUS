@@ -50,8 +50,14 @@ namespace PizzaOven
 
             public static void Shutdown()
             {
-                client?.Dispose();
-                client = null;
+				try
+				{
+					client.ClearPresence();
+					client.Deinitialize();
+					client?.Dispose();
+					client = null;
+				}
+				catch { }
             }
         }
     }

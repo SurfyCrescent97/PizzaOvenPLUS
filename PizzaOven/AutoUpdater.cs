@@ -34,7 +34,7 @@ namespace PizzaOven
                 GameBananaItem response = JsonSerializer.Deserialize<GameBananaItem>(await client.GetStringAsync(requestUrl));
                 if (response == null)
                 {
-                   MessageBox.Show("Error whilst checking for PizzaOven update: No response from GameBanana API");
+                   MessageBox.Show("Error whilst checking for PizzaOven+ update: No response from GameBanana API");
                     return false;
                 }
                 if (response.HasUpdates != null && (bool)response.HasUpdates)

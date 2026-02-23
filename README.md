@@ -10,3 +10,8 @@
 > Downgrade Patches<br>
 > Lang Update Support Files<br>
 > Cutomisable Music<br>
+
+AND MUCH MORE.... 
+
+
+CHECK OUT ALL CHANGES IN THE [SPREADSHEET](https://docs.google.com/spreadsheets/d/18wtB3v6ihJ4SIu9AluGEOyKWtD1_1vk0-Go_yhftH2Q/edit?gid=0#gid=0)

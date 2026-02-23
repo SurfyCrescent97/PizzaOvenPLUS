@@ -1,4 +1,5 @@
 ﻿using Microsoft.Win32;
+using Microsoft.WindowsAPICodePack.Dialogs;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,8 +8,8 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.WindowsAPICodePack.Dialogs;
 using System.Windows;
+using static PizzaOven.MainWindow;
 
 namespace PizzaOven
 {
@@ -47,6 +48,7 @@ namespace PizzaOven
                 dialog.Title = $"Select PizzaTower.exe from your Steam Install folder";
                 dialog.Multiselect = false;
                 dialog.InitialDirectory = Global.assemblyLocation;
+				RonnieVariables.SetupSucessful = 0;
                 dialog.ShowDialog();
                 if (!String.IsNullOrEmpty(dialog.FileName)
                     && Path.GetFileName(dialog.FileName).Equals("PizzaTower.exe", StringComparison.InvariantCultureIgnoreCase))
@@ -62,6 +64,7 @@ namespace PizzaOven
             Global.config.ModsFolder = Path.GetDirectoryName(defaultPath);
             Global.config.Launcher = defaultPath;
             Global.UpdateConfig();
+            RonnieVariables.SetupSucessful = 1;
             Global.logger.WriteLine($"Setup completed for Pizza Tower!", LoggerType.Info);
             return true;
         }

@@ -14,7 +14,8 @@ namespace PizzaOven
     {
         Info,
         Warning,
-        Error
+        Error,
+		Tutorial
     }
     public class Logger
     {
@@ -42,6 +43,10 @@ namespace PizzaOven
                     color = "#FFB0B0";
                     header = "ERROR";
                     break;
+				case LoggerType.Tutorial:
+					color = "#FFFFFF";
+					header = "TUTORIAL";
+					break;
             }
             // Call on UI thread
             Application.Current.Dispatcher.Invoke(() =>

@@ -1,3 +1,4 @@
+using DiscordRPC;
 using SharpCompress.Compressors.Xz;
 using System;
 using System.Collections.Generic;
@@ -9,11 +10,16 @@ using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
-using DiscordRPC;
+using System.Windows.Automation;
+using System.Windows.Markup;
+
 
 namespace PizzaOven
 {
+    // Copy over mod files in order of ModList
     public static class ModLoader
     {
         private static string version = null;
@@ -109,6 +115,8 @@ namespace PizzaOven
 			return failed;
 		}
 
+      
+
         private static string AFOMfilepath()
         {
             var modsfolder = $@"{Global.assemblyLocation}{Global.s}Mods";
@@ -146,12 +154,12 @@ namespace PizzaOven
 
 
         public static bool BuildAFOM(string mod)
-		{
-			if (AFOMfilepath() == "")
-			{
-				Global.logger.WriteLine($"You must have AFOM installed to access this", LoggerType.Error);
-				return false;
-			} 
+        {
+            if (AFOMfilepath() == "")
+            {
+                Global.logger.WriteLine($"You must have AFOM installed to access this", LoggerType.Error);
+                return false;
+            }
             else
             {
                 string sourceDir = "";
@@ -167,7 +175,7 @@ namespace PizzaOven
                 if (sourceDir == "")
                     return false;
                 string towersPath = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),"PizzaTower_GM2","towers");
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaTower_GM2", "towers");
 
                 if (!Directory.Exists(towersPath))
                     return false;
@@ -176,12 +184,11 @@ namespace PizzaOven
                 string baseName = $"{modName}";
                 string destDir = Path.Combine(towersPath, baseName);
 
-                var result = MessageBox.Show(
-                    $"The folder \"{Path.GetFileName(destDir)}\" already exists.\n\nReplace it?","AFOM Tower already exists in your folder",MessageBoxButton.YesNo,MessageBoxImage.Question);
+                var result = MessageBox.Show($"The folder \"{Path.GetFileName(destDir)}\" already exists.\n\nReplace it?", "AFOM Tower already exists in your folder", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
                 if (result == MessageBoxResult.Yes)
                 {
-                    Directory.Delete(destDir, true); 
+                    Directory.Delete(destDir, true);
                 }
                 else
                 {
@@ -202,7 +209,7 @@ namespace PizzaOven
 
                 foreach (var file in Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories))
                 {
-                    File.Copy(file,file.Replace(sourceDir, destDir),true);
+                    File.Copy(file, file.Replace(sourceDir, destDir), true);
                 }
                 Global.logger.WriteLine($"Moved AFOM files successfully", LoggerType.Info);
                 if (!Build(AFOMfilepath()))
@@ -214,9 +221,214 @@ namespace PizzaOven
             return true;
         }
 
-        // Copy over mod files in order of ModList
+        public static void RevertGMLoader(List<string> copiedFiles, Dictionary<string, string> movedFiles, string tempRoot)
+        {
+            foreach (var file in copiedFiles)
+            {
+                try
+                {
+                    if (File.Exists(file))
+                        File.Delete(file);
+                    else if (Directory.Exists(file))
+                        Directory.Delete(file, true);
+                }
+                catch { }
+            }
+
+            foreach (var pair in movedFiles)
+            {
+                try
+                {
+                    string originalPath = pair.Key;
+                    string backupPath = pair.Value;
+                    if (File.Exists(backupPath))
+                    {
+                        Directory.CreateDirectory(Path.GetDirectoryName(originalPath)!);
+                        File.Move(backupPath, originalPath, true);
+                    }
+                    else if (Directory.Exists(backupPath))
+                    {
+                        Directory.CreateDirectory(Path.GetDirectoryName(originalPath)!);
+                        Directory.Move(backupPath, originalPath);
+                    }
+                }
+                catch { }
+            }
+
+            try { if (Directory.Exists(tempRoot)) Directory.Delete(tempRoot, true); } catch { }
+        }
+
+        public static void CloneDirectory(string sourceDir, string targetDir)
+        {
+            Directory.CreateDirectory(targetDir);
+
+            foreach (string file in Directory.GetFiles(sourceDir))
+            {
+                string fileName = Path.GetFileName(file);
+                string destFile = Path.Combine(targetDir, fileName);
+                File.Copy(file, destFile, true); 
+            }
+
+            foreach (string dir in Directory.GetDirectories(sourceDir))
+            {
+                string dirName = Path.GetFileName(dir);
+                string destDir = Path.Combine(targetDir, dirName);
+                CloneDirectory(dir, destDir);
+            }
+        }
+        public static bool BuildGMLoader(string mod)
+        {
+            string sourceFolder = $"{Global.assemblyLocation}{Global.s}GMLoader";
+            string destinationFolder = $"{Global.config.ModsFolder}{Global.s}";
+
+            List<string> copiedFiles = new List<string>();
+            Dictionary<string, string> movedFiles = new Dictionary<string, string>();
+            string tempRoot = Path.Combine(destinationFolder, "__gmloader_backup__");
+
+            try
+            {
+                var folders = Directory.GetDirectories(sourceFolder, "*", SearchOption.AllDirectories);
+                var files = Directory.GetFiles(sourceFolder, "*", SearchOption.AllDirectories);
+
+                Directory.CreateDirectory(tempRoot);
+
+                foreach (var folder in folders)
+                {
+                    string relativeFolder = Path.GetRelativePath(sourceFolder, folder);
+                    string destinationFolderPath = Path.Combine(destinationFolder, relativeFolder);
+
+                    if (!Directory.Exists(destinationFolderPath))
+                    {
+                        Directory.CreateDirectory(destinationFolderPath);
+                        copiedFiles.Add(destinationFolderPath);
+                    }
+                }
+
+                foreach (var file in files)
+                {
+                    try
+                    {
+                        string relativePath = Path.GetRelativePath(sourceFolder, file);
+                        string destinationPath = Path.Combine(destinationFolder, relativePath);
+                        Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
+
+                        if (File.Exists(destinationPath))
+                        {
+                            string backupPath = Path.Combine(tempRoot, relativePath);
+                            Directory.CreateDirectory(Path.GetDirectoryName(backupPath)!);
+                            File.Move(destinationPath, backupPath, true);
+                            movedFiles[destinationPath] = backupPath;
+                        }
+                        else
+                        {
+                            copiedFiles.Add(destinationPath);
+                        }
+
+                        File.Copy(file, destinationPath, true);
+                        Global.logger.WriteLine($"[GMLoader] Copied: {relativePath}", LoggerType.Info);
+                    }
+                    catch (Exception exFile)
+                    {
+                        Global.logger.WriteLine($"[GMLoader] Error copying {file}: {exFile.Message}, reverting...", LoggerType.Warning);
+                        RevertGMLoader(copiedFiles, movedFiles, tempRoot);
+                        return false;
+                    }
+                }
+                string modsReadPath = Path.Combine(mod);
+                Global.logger.WriteLine($"[GMLoader] Searching for mod files in: {modsReadPath}", LoggerType.Info);     
+                string[] foldersToCopy = new[] { "audio", "code", "config", "csx", "lib", "room", "shader", "textures", "xdelta" };
+
+                string currentPath = modsReadPath;
+
+                bool found = false;
+
+                while (true)
+                {
+                    if (foldersToCopy.Any(f => Directory.Exists(Path.Combine(currentPath, f))))
+                    {
+                        found = true;
+                        break; 
+                    }
+
+                    var subdirs = Directory.GetDirectories(currentPath);
+                    if (subdirs.Length == 0)
+                    {
+                        break;
+                    }
+
+                    currentPath = subdirs[0];
+                }
+
+                string modsDestination = Path.Combine(destinationFolder, "mods");
+
+                Directory.CreateDirectory(modsDestination);
+                CloneDirectory(modsReadPath, modsDestination);
+
+                if (!found)
+                {
+                    Global.logger.WriteLine($"No folders to copy were found in {modsReadPath}", LoggerType.Error);
+                    return false;
+                }
+
+                Global.logger.WriteLine($"Found folders to copy in: {currentPath}", LoggerType.Info);
+                
+
+                string gmLoaderExe = Path.Combine(destinationFolder, "GMLoader.exe");
+
+                if (!File.Exists(gmLoaderExe))
+                {
+                    Global.logger.WriteLine($"GMLoader.exe not found at {gmLoaderExe}", LoggerType.Error);
+                    return false;
+                }
+
+                ProcessStartInfo startInfo = new ProcessStartInfo
+                {
+                    FileName = gmLoaderExe,
+                    WorkingDirectory = Path.GetDirectoryName(gmLoaderExe)!,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
+
+                using (Process process = new Process())
+                {
+                    process.StartInfo = startInfo;
+
+                    process.OutputDataReceived += (sender, args) =>
+                    {
+                        if (!string.IsNullOrEmpty(args.Data))
+                            Global.logger.WriteLine($"[GMLoader] {args.Data}", LoggerType.Info);
+                    };
+
+                    process.ErrorDataReceived += (sender, args) =>
+                    {
+                        if (!string.IsNullOrEmpty(args.Data))
+                            Global.logger.WriteLine($"[GMLoader ERROR] {args.Data}", LoggerType.Error);
+                    };
+
+                    process.Start();
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+                    process.WaitForExit();
+                }
+
+
+                RevertGMLoader(copiedFiles, movedFiles, tempRoot);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Global.logger.WriteLine($"[GMLoader] Fatal error: {ex.Message}, reverting changes...", LoggerType.Error);
+                RevertGMLoader(copiedFiles, movedFiles, tempRoot);
+                return false;
+            }
+        }
+
+
         public static bool Build(string mod)
         {
+            var langapply = PLUSSavesystem.read_ini("Files", "POLanguage", "true") == "true";
             var errors = 0;
             var successes = 0;
             var FilesToPatch = Directory.GetFiles($"{Global.config.ModsFolder}{Global.s}sound{Global.s}Desktop").ToList();
@@ -263,15 +475,28 @@ namespace PizzaOven
                                 if (Path.GetFileName(modFile).ToLowerInvariant().Contains("yyc") && File.Exists($"{Global.config.ModsFolder}{Global.s}Steamworks_x64.dll"))
                                     File.Move($"{Global.config.ModsFolder}{Global.s}Steamworks_x64.dll", $"{Global.config.ModsFolder}{Global.s}Steamworks_x64.dll.po", true);
                             }
-                            catch (Exception e)
+                            catch 
                             {
-                                if (e is System.UnauthorizedAccessException) {
-                                    Global.logger.WriteLine($"Access denied when trying to patch {Path.GetFileName(file)} with {Path.GetFileName(modFile)}", LoggerType.Warning);
-                                    gotAccessDeniedError = true;
-                                    break;
+                                try
+                                {
+                                    // Attempt to patch file with temp
+                                    PathFixPatch(file, modFile, $"{Path.GetDirectoryName(file)}{Global.s}temp", xdelta);
+                                    File.Move($"{Path.GetDirectoryName(file)}{Global.s}temp", file, true);
+                                    Global.logger.WriteLine($"Applied {Path.GetFileName(modFile)} to {Path.GetFileName(file)}.", LoggerType.Info);
+                                    successes++;
+                                    if (Path.GetFileName(modFile).ToLowerInvariant().Contains("yyc") && File.Exists($"{Global.config.ModsFolder}{Global.s}Steamworks_x64.dll"))
+                                        File.Move($"{Global.config.ModsFolder}{Global.s}Steamworks_x64.dll", $"{Global.config.ModsFolder}{Global.s}Steamworks_x64.dll.po", true);
                                 }
-                                Global.logger.WriteLine($"Unable to patch {Path.GetFileName(file)} with {Path.GetFileName(modFile)}", LoggerType.Warning);
-                                continue;
+                                catch (Exception e)
+                                {
+                                    if (e is System.UnauthorizedAccessException) {
+                                        Global.logger.WriteLine($"Access denied when trying to patch {Path.GetFileName(file)} with {Path.GetFileName(modFile)}", LoggerType.Warning);
+                                        gotAccessDeniedError = true;
+                                        break;
+                                    }
+                                    Global.logger.WriteLine($"Unable to patch {Path.GetFileName(file)} with {Path.GetFileName(modFile)}", LoggerType.Warning);
+                                    continue;
+                                }
                             }
                             // Stop trying to patch if it was successful
                             success = true;
@@ -301,14 +526,16 @@ namespace PizzaOven
                             // Copy over file to lang folder
 
                             var file = $"{Global.config.ModsFolder}{Global.s}lang{Global.s}{Path.GetFileName(modFile)}";
-
-                            if (File.Exists(file))
+                            if (langapply)
                             {
-                                File.Copy(file, $"{file}.po", true);
-                            }
-                            else
-                            {
-                                File.WriteAllText($"{file}.custompo", string.Empty);
+                                if (File.Exists(file))
+                                {
+                                    File.Copy(file, $"{file}.po", true);
+                                }
+                                else
+                                {
+                                    File.WriteAllText($"{file}.custompo", string.Empty);
+                                }
                             }
 
                             File.Copy(modFile, $"{Global.config.ModsFolder}{Global.s}lang{Global.s}{Path.GetFileName(modFile)}", true);
@@ -381,8 +608,12 @@ namespace PizzaOven
                         {
                             var FileToAdd = $"{Global.config.ModsFolder}{Global.s}sound{Global.s}Desktop{Global.s}{Path.GetFileName(modFile)}";
                             // Add subdirectory name if it's not the same name as the mod folder
-                            if (!Path.GetFileName(Path.GetDirectoryName(modFile)).Equals(Path.GetFileName(mod), StringComparison.InvariantCultureIgnoreCase))
-                                FileToAdd = $"{Global.config.ModsFolder}{Global.s}sound{Global.s}Desktop{Global.s}{Path.GetFileName(Path.GetDirectoryName(modFile))}{Global.s}{Path.GetFileName(modFile)}";
+
+                            if (!string.Equals(Path.GetFileName(Path.GetDirectoryName(modFile)),"Desktop",StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                if (!Path.GetFileName(Path.GetDirectoryName(modFile)).Equals(Path.GetFileName(mod), StringComparison.InvariantCultureIgnoreCase))
+                                    FileToAdd = $"{Global.config.ModsFolder}{Global.s}sound{Global.s}Desktop{Global.s}{Path.GetFileName(Path.GetDirectoryName(modFile))}{Global.s}{Path.GetFileName(modFile)}"; 
+                            }
                             Directory.CreateDirectory(Path.GetDirectoryName(FileToAdd));
                             File.Copy(modFile, FileToAdd, true);
 
@@ -452,14 +683,16 @@ namespace PizzaOven
                     {
                         // Copy over file to fonts folder
                         var file = $"{Global.config.ModsFolder}{Global.s}lang{Global.s}fonts{Global.s}{Path.GetFileName(modFile)}";
-
-                        if (File.Exists(file))
+                        if (langapply)
                         {
-                            File.Copy(file, $"{file}.po", true);
-                        }
-                        else
-                        {
-                            File.WriteAllText($"{file}.custompo", string.Empty);
+                            if (File.Exists(file))
+                            {
+                                File.Copy(file, $"{file}.po", true);
+                            }
+                            else
+                            {
+                                File.WriteAllText($"{file}.custompo", string.Empty);
+                            }
                         }
 
                         File.Copy(modFile, $"{Global.config.ModsFolder}{Global.s}lang{Global.s}fonts{Global.s}{Path.GetFileName(modFile)}", true);
@@ -470,14 +703,16 @@ namespace PizzaOven
                     {
                         // Copy over file to lang folder
                         var file = $"{Global.config.ModsFolder}{Global.s}lang{Global.s}{Path.GetFileName(modFile)}";
-
-                        if (File.Exists(file))
+                        if (langapply)
                         {
-                            File.Copy(file, $"{file}.po", true);
-                        }
-                        else
-                        {
-                            File.WriteAllText($"{file}.custompo", string.Empty);
+                            if (File.Exists(file))
+                            {
+                                File.Copy(file, $"{file}.po", true);
+                            }
+                            else
+                            {
+                                File.WriteAllText($"{file}.custompo", string.Empty);
+                            }
                         }
 
                         File.Copy(modFile, $"{Global.config.ModsFolder}{Global.s}lang{Global.s}{Path.GetFileName(modFile)}", true);
@@ -519,14 +754,16 @@ namespace PizzaOven
                         {
                             // Copy over file to graphics folder
                             var file = $"{Global.config.ModsFolder}{Global.s}lang{Global.s}graphics{Global.s}{Path.GetFileName(modFile)}";
-
-                            if (File.Exists(file))
+                            if (langapply)
                             {
-                                File.Copy(file, $"{file}.po", true);
-                            }
-                            else
-                            {
-                                File.WriteAllText($"{file}.custompo", string.Empty);
+                                if (File.Exists(file))
+                                {
+                                    File.Copy(file, $"{file}.po", true);
+                                }
+                                else
+                                {
+                                    File.WriteAllText($"{file}.custompo", string.Empty);
+                                }
                             }
 
                             File.Copy(modFile, $"{Global.config.ModsFolder}{Global.s}lang{Global.s}graphics{Global.s}{Path.GetFileName(modFile)}", true);
@@ -542,10 +779,16 @@ namespace PizzaOven
                                 {
                                     // Copy over file to fonts folder
                                     var file = $"{Global.config.ModsFolder}{Global.s}lang{Global.s}fonts{Global.s}{Path.GetFileName(modFile)}";
-
-                                    if (File.Exists(file))
+                                    if (langapply)
                                     {
-                                        File.Copy(file, $"{file}.po", true);
+                                        if (File.Exists(file))
+                                        {
+                                            File.Copy(file, $"{file}.po", true);
+                                        }
+                                        else
+                                        {
+                                            File.WriteAllText($"{file}.custompo", string.Empty);
+                                        }
                                     }
 
                                     File.Copy(modFile,$"{Global.config.ModsFolder}{Global.s}lang{Global.s}fonts{Global.s}{Path.GetFileName(modFile)}",true);
@@ -568,16 +811,17 @@ namespace PizzaOven
                         {
                             // Copy over file to graphics folder
                             var file = $"{Global.config.ModsFolder}{Global.s}lang{Global.s}graphics{Global.s}{Path.GetFileName(modFile)}";
-
-                            if (File.Exists(file))
+                            if (langapply)
                             {
-                                File.Copy(file, $"{file}.po", true);
+                                if (File.Exists(file))
+                                {
+                                    File.Copy(file, $"{file}.po", true);
+                                }
+                                else
+                                {
+                                    File.WriteAllText($"{file}.custompo", string.Empty);
+                                }
                             }
-                            else
-                            {
-                                File.WriteAllText($"{file}.custompo", string.Empty);
-                            }
-
                             File.Copy(modFile, $"{Global.config.ModsFolder}{Global.s}lang{Global.s}graphics{Global.s}{Path.GetFileName(modFile)}", true);
                             Global.logger.WriteLine($"Copied over {Path.GetFileName(modFile)} to graphics folder", LoggerType.Info);
                             successes++;
@@ -611,7 +855,7 @@ namespace PizzaOven
             return errors == 0 && successes > 0;
         }
 
-        private static void Patch(string file, string patch, string output, string xdelta)
+        public static void Patch(string file, string patch, string output, string xdelta)
         {
             ProcessStartInfo startInfo = new ProcessStartInfo();
             startInfo.CreateNoWindow = true;
@@ -627,6 +871,61 @@ namespace PizzaOven
                 process.WaitForExit();
             }
         }
+        public static void PathFixPatch(string file, string patch, string outputFileName, string xdelta)
+        {
+            string baseDir = Path.Combine(Path.GetDirectoryName(outputFileName)!, "PizzaOvenPlusPatching");
+            string workingDir = baseDir;
+            int count = 1;
+
+            while (Directory.Exists(workingDir))
+            {
+                workingDir = baseDir + count;
+                count++;
+            }
+
+            Directory.CreateDirectory(workingDir);
+
+            try
+            {
+                string xdeltaName = Path.GetFileName(xdelta);
+                string tempXdeltaPath = Path.Combine(workingDir, xdeltaName);
+                File.Copy(xdelta, tempXdeltaPath, true);
+
+                string tempFile = Path.Combine(workingDir, Path.GetFileName(file));
+                string tempPatch = Path.Combine(workingDir, Path.GetFileName(patch));
+
+                File.Copy(file, tempFile, true);
+                File.Copy(patch, tempPatch, true);
+
+                string tempOutput = Path.Combine(workingDir, Path.GetFileName(outputFileName));
+
+                ProcessStartInfo startInfo = new ProcessStartInfo
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                    FileName = tempXdeltaPath,
+                    WorkingDirectory = workingDir,
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    Arguments = $@"-d -s ""{tempFile}"" ""{tempPatch}"" ""{tempOutput}"""
+                };
+
+                using (Process process = new Process())
+                {
+                    process.StartInfo = startInfo;
+                    process.Start();
+                    process.WaitForExit();
+                }
+
+                string finalPath = Path.Combine(Path.GetDirectoryName(outputFileName)!, Path.GetFileName(outputFileName));
+                File.Copy(tempOutput, finalPath, true);
+            }
+            finally
+            {
+                if (Directory.Exists(workingDir))
+                    Directory.Delete(workingDir, true);
+            }
+        }
+
         public static void RestoreDirectory(string path)
         {
             if (Directory.Exists(path))
@@ -758,6 +1057,8 @@ namespace PizzaOven
             }
             version = null;
         }
+
+       
 
         private static IEnumerable<string> EnumerateLines(TextReader reader)
         {

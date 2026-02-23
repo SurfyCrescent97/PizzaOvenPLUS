@@ -383,10 +383,14 @@
         </DataTemplate>
     </Window.Resources>
     <Grid>
-        <StackPanel Panel.ZIndex="3" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Right" Grid.ColumnSpan="5">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1177*"/>
+            <ColumnDefinition Width="103*"/>
+        </Grid.ColumnDefinitions>
+        <StackPanel Panel.ZIndex="3" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Right" Grid.Column="1">
             <TextBox BorderThickness="0" FontSize="18" Margin="5" Background="Transparent" BorderBrush="Transparent" IsReadOnly="True" Foreground="#f2f2f2" FontWeight="Medium" Name="Stats" />
         </StackPanel>
-		<TabControl Grid.ColumnSpan="5" Background="#202020" BorderBrush="#353535">
+        <TabControl Grid.ColumnSpan="2" Background="#202020" BorderBrush="#353535">
             <TabControl.Resources>
                 <Style TargetType="{x:Type TabItem}">
                     <Setter Property="Template">
@@ -512,12 +516,12 @@
                                             <MenuItem Header="Rename Mod" IsCheckable="False" Click="EditItem_Click"/>
                                             <MenuItem Header="Open Mod Folder" IsCheckable="False" Click="OpenItem_Click"/>
                                             <MenuItem Header="Delete Mod" IsCheckable="False" Click="DeleteItem_Click"/>
-											<MenuItem Header="Add Folder Name" IsCheckable="False" Click="FolderName_Click"/>
+                                            <MenuItem Header="Add Folder Name" IsCheckable="False" Click="FolderName_Click"/>
                                         </ContextMenu>
                                     </ListView.ContextMenu>
                                 </ListView>
                             </Border>
-                            
+
                             <GridSplitter Grid.Column="1" Grid.RowSpan="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Width="10" Background="Transparent"/>
                             <Grid Grid.Column="2" Grid.RowSpan="2">
                                 <Grid.RowDefinitions>
@@ -594,7 +598,7 @@
                                 <TextBlock Name="BigCaptionText" VerticalAlignment="Center" HorizontalAlignment="Center" Grid.Row="2" FontSize="18" Foreground="#f2f2f2" Padding="5"/>
                             </StackPanel>
                         </Border>
-                            <StackPanel Grid.ColumnSpan="2" Margin="20" Orientation="Horizontal" Grid.Row="3" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <StackPanel Grid.ColumnSpan="2" Margin="20" Orientation="Horizontal" Grid.Row="3" HorizontalAlignment="Right" VerticalAlignment="Center">
                             <Button Click="CloseMedia_Click" Content="Close" Height="50" Width="200" FontSize="20" FontWeight="SemiBold" Foreground="#f2f2f2">
                                 <Button.Resources>
                                     <Style TargetType="{x:Type Border}">
@@ -680,27 +684,27 @@
                         <ComboBoxItem xml:space="preserve" IsSelected="True">Mods</ComboBoxItem>
                         <ComboBoxItem xml:space="preserve">WiPs</ComboBoxItem>
                         <ComboBoxItem xml:space="preserve">Sounds</ComboBoxItem>
-                        </ComboBox>
+                    </ComboBox>
                     <ComboBox Margin="5,0,0,0" Grid.Column="2" IsEnabled="False" Name="CatBox" Height="35" HorizontalAlignment="Stretch" MinWidth="150" SelectionChanged="MainFilterSelectionChanged">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate >
-                                    <StackPanel Orientation="Horizontal">
-                                        <Image Margin="0,0,5,0" VerticalAlignment="Center" Height="25" Source="{Binding Path=Icon}"/>
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate >
+                                <StackPanel Orientation="Horizontal">
+                                    <Image Margin="0,0,5,0" VerticalAlignment="Center" Height="25" Source="{Binding Path=Icon}"/>
                                     <TextBlock VerticalAlignment="Center" FontSize="15" FontWeight="Medium" Text="{Binding Path=Name}"/>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
                     <ComboBox Margin="5,0,0,0" Grid.Column="3" IsEnabled="False" Name="SubCatBox" Height="35" HorizontalAlignment="Stretch" MinWidth="200" SelectionChanged="SubFilterSelectionChanged">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate >
-                                    <StackPanel Orientation="Horizontal">
-                                        <Image Margin="0,0,5,0" VerticalAlignment="Center" Height="25" Source="{Binding Path=Icon}"/>
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate >
+                                <StackPanel Orientation="Horizontal">
+                                    <Image Margin="0,0,5,0" VerticalAlignment="Center" Height="25" Source="{Binding Path=Icon}"/>
                                     <TextBlock VerticalAlignment="Center" FontSize="15" FontWeight="Medium" Text="{Binding Path=Name}"/>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
                     <TextBox Margin="5,0,35,0" Background="#353535" Foreground="#f2f2f2" BorderBrush="#353535" Padding="4,0,0,0" Grid.Column="4" IsEnabled="False" KeyDown="SearchBar_KeyDown" Name="SearchBar" Height="35" MinWidth="200" HorizontalAlignment="Stretch" VerticalContentAlignment="Center"/>
                     <TextBlock Margin="5,0,35,0" Padding="7,5.5,3,3" Grid.Column="4" IsHitTestVisible="False" Height="35" MinWidth="200" HorizontalAlignment="Left" Text="Search..." VerticalAlignment="Center" Foreground="#f2f2f2">
                         <TextBlock.Style>
@@ -714,8 +718,8 @@
                         </TextBlock.Style>
                     </TextBlock>
                     <Button Grid.Column="4" IsEnabled="False" HorizontalAlignment="Right" Click="SearchButton_Click" Name="SearchButton" Height="35" Width="35">
-                            <fa5:ImageAwesome Icon="Solid_Search" Foreground="#f2f2f2" Margin="3"/>
-                        </Button>
+                        <fa5:ImageAwesome Icon="Solid_Search" Foreground="#f2f2f2" Margin="3"/>
+                    </Button>
                     <StackPanel Grid.Column="5" Orientation="Horizontal" HorizontalAlignment="Center" Margin="5,0,0,0" >
                         <CheckBox Name="NSFWCheckbox" IsEnabled="False" Unchecked="NSFWCheckbox_Checked" Checked="NSFWCheckbox_Checked"  Margin="0,0,5,0" VerticalAlignment="Center" />
                         <TextBlock Foreground="#f2f2f2" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="14" FontWeight="Medium">
@@ -802,87 +806,105 @@
                     </Border>
                 </Grid>
             </TabItem>
-			<TabItem Name="Settings" Header="PLUS' Settings" FontSize="18">
-				<ScrollViewer VerticalScrollBarVisibility="Auto">
+            <TabItem Name="Settings" Header="PLUS' Settings" FontSize="18">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
 
-					<StackPanel Margin="10" Orientation="Vertical" VerticalAlignment="Top" >
-						<Grid Name="PLUSSearchBar" Panel.ZIndex="2" Margin="10,5,3,5" Height="35" VerticalAlignment="Center">
-							<TextBox x:Name="PLUS_SearchBar" Background="#353535" Foreground="#f2f2f2" BorderBrush="#353535" Padding="5" TextWrapping="NoWrap" TextChanged="UpdatePLUSfilter"/>
-							<TextBlock Padding="8,5,5,5" Foreground="#f2f2f2" Panel.ZIndex="3" IsHitTestVisible="False" Height="35" HorizontalAlignment="Left" VerticalAlignment="Center" Text="Search for Filter...">
-								<TextBlock.Style>
-									<Style TargetType="TextBlock">
-										<Style.Triggers>
-											<DataTrigger Binding="{Binding ElementName=PLUS_SearchBar, Path=Text.IsEmpty}" Value="False">
-												<Setter Property="Visibility" Value="Collapsed"/>
-											</DataTrigger>
-										</Style.Triggers>
-									</Style>
-								</TextBlock.Style>
-							</TextBlock>
-						</Grid>
+                    <StackPanel Margin="10" Orientation="Vertical" VerticalAlignment="Top" >
+                        <Grid Name="PLUSSearchBar" Panel.ZIndex="2" Margin="10,5,3,5" Height="35" VerticalAlignment="Center">
+                            <TextBox x:Name="PLUS_SearchBar" Background="#353535" Foreground="#f2f2f2" BorderBrush="#353535" Padding="5" TextWrapping="NoWrap" TextChanged="UpdatePLUSfilter"/>
+                            <TextBlock Padding="8,5,5,5" Foreground="#f2f2f2" Panel.ZIndex="3" IsHitTestVisible="False" Height="35" HorizontalAlignment="Left" VerticalAlignment="Center" Text="Search for Filter...">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ElementName=PLUS_SearchBar, Path=Text.IsEmpty}" Value="False">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+                        <StackPanel x:Name="TutorialPanel" Orientation="Vertical" Margin="0,0,0,30" Tag="Tutorial" HorizontalAlignment="Left">
+                            <Button x:Name="ReplayTutorial"  Content="Replay Tutorial" Height="30" HorizontalAlignment="Left" Click="ReplayTutorial_Click"></Button>
+                        </StackPanel>
                         <StackPanel Orientation="Vertical" Margin="0,0,0,30" Tag="Hey wanna suggest something!" HorizontalAlignment="Left">
                             <TextBlock Text="Hey wanna suggest something!" Margin="0,5,0,10" Foreground="#f2f2f2"/>
-                            <Button x:Name="OpenSuggestForm"  Content="Open Suggestion Form" Width="300" Height="35" HorizontalAlignment="Left" Click="OpenSuggestForm_Click">
-                            </Button>
+                            <Button x:Name="OpenSuggestForm"  Content="Open Suggestion Form" Height="30" HorizontalAlignment="Left" Click="OpenSuggestForm_Click"></Button>
                         </StackPanel>
 
-                        <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="Clean PO. Files">
-							<TextBlock Text="Clean PO. Files:" Margin="0,5,0,2" Foreground="#f2f2f2"/>
-							<Button Content="Clean" Width="200" Height="30" HorizontalAlignment="Left" Click="CleanPO_click"/>
-						</StackPanel>
-                        
-						<StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="Patch Version">
-							<TextBlock Text="Patch Version:" Margin="0,5,0,2" Foreground="#f2f2f2"/>
-							<ComboBox Name="DowngradeCombo" Width="200" Height="30" HorizontalAlignment="Left" />
-						</StackPanel>
+                        <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="PO. Files">
+                            <TextBlock Text="PO. Files:" Margin="0,5,0,2" Foreground="#f2f2f2"/>
+                            <Button Content="Clean PO. Files" Height="30" HorizontalAlignment="Left" Click="CleanPO_click"/>
+                            <Button x:Name="POLanguage" Content="Do not Apply to Language Files" Height="30" HorizontalAlignment="Left" Click="POLanguage_Click"/>
+                            <Button x:Name="POOverwriteBackup" Content="Make/Overwrite new data.win.po" Height="30" HorizontalAlignment="Left" Click="POOverwriteBackup_Click"/>
+                        </StackPanel>
 
-						<StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="Mod Folder">
-							<TextBlock Text="Mod Folder (You can set folders by selecting the mod, right clicking and adding a folder name):" Margin="0,5,0,2" Foreground="#f2f2f2"/>
-							<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-								<ComboBox x:Name="ModFolderCombo" Width="200" Height="30" HorizontalAlignment="Left">
+                        <StackPanel Orientation="Vertical" Margin="0,0,0,20" Tag="Launch Settings">
+                            <TextBlock Text="Launch Settings:" Margin="0,5,0,2" Foreground="#f2f2f2"/>
+                            <Button x:Name="OpenPTFolder" Foreground="#f2f2f2" Content="Open Pizza Tower Folder" Height="35" HorizontalAlignment="Left" Click="OpenPTFolder_Click"/>
+                            <Button x:Name="ChooseNewPTFolder" Foreground="#f2f2f2" Content="Choose Temporary New Pizza Tower Folder" Height="35" HorizontalAlignment="Left" Click="ChooseNewPTFolder_Click"/>
+                            <Button x:Name="DebugToggle" Foreground="#f2f2f2" Content="Disable Debug?" Height="35" HorizontalAlignment="Left" Click="DebugToggle_Click"/>
+                        </StackPanel>
 
-								</ComboBox>
 
-								<Button x:Name="DeleteModFolderButton" Content="X" Width="25" Height="25" Margin="5,0,0,0" Click="DeleteModFolder_Click">
-									<Button.Style>
-										<Style TargetType="Button">
-											<Setter Property="Foreground" Value="Black"/>
-											<Setter Property="IsEnabled" Value="True"/>
-										</Style>
-									</Button.Style>
-								</Button>
-							</StackPanel>
-						</StackPanel>
-                        
+                        <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="GMLoader">
+                            <TextBlock Text="GMLoader by Senjay (allows you to stack mods):" Margin="0,5,0,2" Foreground="#f2f2f2"/>
+                            <Button x:Name="GMLoaderConvert" Foreground="#f2f2f2" Content="Convert XDELTA/WIN to GMLoader" Height="35" HorizontalAlignment="Left" Click="GMLoaderConvert_Click"/>
+                            <Button x:Name="KillGMLoader" Foreground="#f2f2f2" Content="Kill GMLoader (sometimes background gmloader processes mess up PO+)" Height="35" HorizontalAlignment="Left" Click="KillGMLoader_Click"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="Patch Version">
+                            <TextBlock Text="Patch Version:" Margin="0,5,0,2" Foreground="#f2f2f2"/>
+                            <ComboBox Name="DowngradeCombo" Width="200" Height="30" HorizontalAlignment="Left" />
+                        </StackPanel>
+
+                        <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="Mod Folder">
+                            <TextBlock Text="Mod Folder (You can set folders by selecting the mod, right clicking and adding a folder name):" Margin="0,5,0,2" Foreground="#f2f2f2"/>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <ComboBox x:Name="ModFolderCombo" Width="200" Height="30" HorizontalAlignment="Left">
+
+                                </ComboBox>
+
+                                <Button x:Name="DeleteModFolderButton" Content="X" Width="25" Height="25" Margin="5,0,0,0" Click="DeleteModFolder_Click">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Foreground" Value="Black"/>
+                                            <Setter Property="IsEnabled" Value="True"/>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
+
                         <StackPanel Orientation="Vertical" Margin="0,0,0,20" Tag="Custom Assets">
                             <TextBlock Text="Custom Assets:" Margin="0,5,0,2" Foreground="#f2f2f2"/>
-                            <Button x:Name="AssetsFolder" Foreground="#f2f2f2" Content="Open Assets Folder" Width="300" Height="35" HorizontalAlignment="Left" Click="AssetsFolder_Click"/>
-                            <Button x:Name="RestoreMissingAssets" Foreground="#f2f2f2" Content="Restore Missing Assets" Width="300" Height="35" HorizontalAlignment="Left" Click="RestoreMissingAssets_Click"/>
-                            <Button x:Name="RestoreALLAssets" Foreground="#f2f2f2" Content="Restore All Assets" Width="300" Height="35" HorizontalAlignment="Left" Click="RestoreALLAssets_Click"/>
-                            <Button x:Name="MuteButton" Foreground="#f2f2f2" Content="Enable Mute?" Width="300" Height="35" HorizontalAlignment="Left" Click="Mute_Click"/>
-                            <Button x:Name="UnfocusedMuteButton" Foreground="#f2f2f2" Content="Enable Unfocused Mute?" Width="300" Height="35" HorizontalAlignment="Left" Click="UnfocusedMute_Click"/>
+                            <Button x:Name="AssetsFolder" Foreground="#f2f2f2" Content="Open Assets Folder" Height="35" HorizontalAlignment="Left" Click="AssetsFolder_Click"/>
+                            <Button x:Name="RestoreMissingAssets" Foreground="#f2f2f2" Content="Restore Missing Assets" Height="35" HorizontalAlignment="Left" Click="RestoreMissingAssets_Click"/>
+                            <Button x:Name="RestoreALLAssets" Foreground="#f2f2f2" Content="Restore All Assets" Height="35" HorizontalAlignment="Left" Click="RestoreALLAssets_Click"/>
+                            <Button x:Name="MuteButton" Foreground="#f2f2f2" Content="Enable Mute?" Height="35" HorizontalAlignment="Left" Click="Mute_Click"/>
+                            <Button x:Name="UnfocusedMuteButton" Foreground="#f2f2f2" Content="Enable Unfocused Mute?" Height="35" HorizontalAlignment="Left" Click="UnfocusedMute_Click"/>
                             <TextBlock Text="Volume:" Margin="0,0,0,5" Foreground="#f2f2f2"/>
-                            <StackPanel Orientation="Horizontal">
+                            <StackPanel Orientation="Horizontal" Tag="Custom Assets">
                                 <Slider x:Name="SoundVolume" Minimum="0" Maximum="100" Width="120" ValueChanged="SoundVolume_ValueChanged"/>
                                 <TextBlock Text="{Binding ElementName=SoundVolume, Path=Value, StringFormat={}{0:0}}" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="#f2f2f2"/>
                             </StackPanel>
                         </StackPanel>
-						
-					    <StackPanel Orientation="Vertical" Margin="0,0,0,20" Tag="Discord RPC">
-						    <TextBlock Text="Discord RPC (Displays on Discord):" Margin="0,5,0,2" Foreground="#f2f2f2"/>
-                            <Button x:Name="RPCtoggle" Foreground="#f2f2f2" Content="Disable RPC?" Width="300" Height="35" HorizontalAlignment="Left" Click="RPCtoggle_Click"/>
+
+                        <StackPanel Orientation="Vertical" Margin="0,0,0,20" Tag="Discord RPC">
+                            <TextBlock Text="Discord RPC (Displays on Discord):" Margin="0,5,0,2" Foreground="#f2f2f2"/>
+                            <Button x:Name="RPCtoggle" Foreground="#f2f2f2" Content="Disable RPC?" Height="35" HorizontalAlignment="Left" Click="RPCtoggle_Click"/>
                         </StackPanel>
-					
-						<StackPanel Orientation="Vertical" Margin="0,0,0,20" Tag="Low-End Settings">
-						    <TextBlock Text="Low-End Settings(Disables Features to allow a smoother experience for low-end devices):" Margin="0,5,0,2" Foreground="#f2f2f2"/>
+
+                        <StackPanel Orientation="Vertical" Margin="0,0,0,20" Tag="Low-End Settings">
+                            <TextBlock Text="Low-End Settings(Disables Features to allow a smoother experience for low-end devices):" Margin="0,5,0,2" Foreground="#f2f2f2"/>
                             <Button x:Name="MODUPDATERtoggle" Foreground="#f2f2f2" Content="Disable Check for Mod Updates?" Width="300" Height="35" HorizontalAlignment="Left" Click="MODUPDATERtoggle_Click"/>
-				        </StackPanel>
+                        </StackPanel>
                     </StackPanel>
-				</ScrollViewer>
-			</TabItem>
+                </ScrollViewer>
+            </TabItem>
 
 
-		</TabControl>
+        </TabControl>
     </Grid>
 
 </Window>

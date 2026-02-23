@@ -12,6 +12,7 @@ namespace PizzaOven
 {
     public static class Global
     {
+		public static bool ronnietutorial = true;
 		public static string focused;
         public static Config config;
         public static Logger logger;

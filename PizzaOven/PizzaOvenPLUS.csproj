@@ -4,25 +4,52 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net7.0-windows</TargetFramework>
     <RootNamespace>PizzaOven</RootNamespace>
+    <AssemblyName>PizzaOven</AssemblyName>
+    <AssemblyVersion>1.0.2.0</AssemblyVersion>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>Assets\PizzaOvenPLUSIcon.ico</ApplicationIcon>
-    <AssemblyName>PizzaOven</AssemblyName>
-    <AssemblyVersion>1.0.1.0</AssemblyVersion>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <None Remove="Assets\PizzaOvenLogo.png" />
     <None Remove="Assets\PizzaOvenPreview.png" />
     <None Remove="Assets\RobotoMono-Regular.ttf" />
     <None Remove="Dependencies\XDelta_Common_Checksum.txt" />
     <None Remove="GameBanana.png" />
+    <None Remove="OvenRonnie\**\*" />
+    <None Remove="CustomAssets\**\*" />
+	<None Remove="TutorialMod\**\*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\GameBanana.png" />
+    <Resource Include="Assets\PizzaOvenLogo.png" />
+    <Resource Include="Assets\PizzaOvenPreview.png" />
+    <Resource Include="Assets\RobotoMono-Regular.ttf" />
+    <Resource Include="PLUSSECRETS.json" Condition="Exists('PLUSSECRETS.json')" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Dependencies\XDelta_Common_Checksum.txt" />
+    <EmbeddedResource Include="CustomAssets\**\*" />
+    <Resource Include="OvenRonnie\**\*" />
+	<Resource Include="TutorialMod\**\*" />
+	
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="Assets\PizzaOvenPLUSIcon.ico" />
+    <Content Include="GMLoader\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <None Update="Dependencies\xdelta.exe" CopyToOutputDirectory="PreserveNewest" />
+	<None Update="Dependencies\xdeltaUI.exe" CopyToOutputDirectory="PreserveNewest" />
+    <None Update=".disable_gb1click" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Downgrades\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="DiscordRichPresence" Version="1.6.1.70" />
     <PackageReference Include="FontAwesome5" Version="2.1.0" />
     <PackageReference Include="gong-wpf-dragdrop" Version="2.3.2" />
     <PackageReference Include="NAudio" Version="2.2.1" />
@@ -34,73 +61,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Assets\GameBanana.png" />
-    <Resource Include="Assets\PizzaOvenLogo.png" />
-    <Resource Include="Assets\PizzaOvenPreview.png" />
-    <Resource Include="Assets\RobotoMono-Regular.ttf" />
-    <EmbeddedResource Include="Dependencies\XDelta_Common_Checksum.txt">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </EmbeddedResource>
+    <Compile Update="UI\FetchWindow.xaml.cs" SubType="Code" />
+    <Page Update="UI\ChoiceWindow.xaml" SubType="Designer" />
+    <Page Update="UI\FetchWindow.xaml" SubType="Designer" />
   </ItemGroup>
-
-  <ItemGroup>
-    <Compile Update="UI\FetchWindow.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="Dependencies\xdelta.exe">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-  
-  <ItemGroup>
-    <None Update=".disable_gb1click">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-  
-  <ItemGroup>
-    <None Include="Downgrades\**\*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="Downgrades">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-	<EmbeddedResource Include="CustomAssets\**\*">
-		<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-	</EmbeddedResource>  
-  </ItemGroup>
-	
-
-
-
-  
-  <ItemGroup>
-    <Page Update="UI\ChoiceWindow.xaml">
-      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Update="UI\FetchWindow.xaml">
-      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Update="UI\AltLinkWindow.xaml">
-      <XamlRuntime>$(DefaultXamlRuntime)</XamlRuntime>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
-	<PackageReference Include="DiscordRichPresence" Version="1.6.1.70" />
-  </ItemGroup>
-  
-  <ItemGroup>
-    <Resource Include="PLUSSECRETS.json" Condition="Exists('PLUSSECRETS.json')" />  
-  </ItemGroup>
-
-
 
 </Project>

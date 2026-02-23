@@ -1,9 +1,10 @@
+using NAudio.Wave;
 using System;
 using System.IO;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using NAudio.Wave;
 
 namespace PizzaOven
 {
@@ -20,8 +21,108 @@ namespace PizzaOven
         public static bool MuteEnabled = true;
         private static float foregroundVolume = 1.0f;
 
+        private static WaveOutEvent tutorialOutput;
+        private static AudioFileReader tutorialReader;
+        private static LoopStream tutorialLoop;
+
+
+        public static async Task Play_TutorialMusic()
+        {
+            try
+            {
+
+                string resourceUri = "PizzaOven;component/OvenRonnie/TutorialMusic.mp3";
+                var streamResourceInfo = Application.GetResourceStream(new Uri($"pack://application:,,,/{resourceUri}"));
+                string tempFile = Path.Combine(Path.GetTempPath(), "TutorialMusic.mp3");
+                using (var fs = new FileStream(tempFile, FileMode.Create, FileAccess.Write))
+                {
+                    streamResourceInfo.Stream.CopyTo(fs);
+                }
+
+                tutorialReader = new AudioFileReader(tempFile);
+                tutorialLoop = new LoopStream(tutorialReader);
+
+                tutorialOutput = new WaveOutEvent();
+                tutorialOutput.Init(tutorialLoop);             
+                tutorialOutput.Play();
+                tutorialOutput.Volume = 1.0f;
+            }
+            catch 
+            {
+               
+            }
+        }
+
+        public static void Stop_TutorialMusic()
+        {
+            tutorialOutput?.Stop();
+            tutorialReader?.Dispose();
+            tutorialLoop?.Dispose();
+            tutorialOutput?.Dispose();
+
+            tutorialOutput = null;
+            tutorialReader = null;
+            tutorialLoop = null;
+        }
+        public static async Task FadeOutTutorialMusic(float durationSeconds = 2.0f)
+        {
+            if (tutorialOutput == null || tutorialReader == null)
+                return;
+
+            float startVolume = tutorialOutput.Volume;
+            float fadeTime = durationSeconds;
+            int steps = 20;
+            float stepTime = fadeTime / steps;
+
+            for (int i = 0; i < steps; i++)
+            {
+                tutorialOutput.Volume = startVolume * (1.0f - ((float)i / steps));
+                await Task.Delay((int)(stepTime * 1000));
+            }
+
+            tutorialOutput.Volume = 0.0f;
+            tutorialOutput.Stop();
+
+            tutorialOutput.Dispose();
+            tutorialLoop.Dispose();
+            tutorialReader.Dispose();
+
+            tutorialOutput = null;
+            tutorialLoop = null;
+            tutorialReader = null;
+        }
+        public static void Pause_TutorialMusic()
+        {
+            if (tutorialOutput == null) return;
+
+            if (tutorialOutput.PlaybackState == PlaybackState.Playing)
+            {
+                tutorialOutput.Pause();
+            }
+            else if (tutorialOutput.PlaybackState == PlaybackState.Paused)
+            {
+                tutorialOutput.Play();
+            }
+        }
+        public static void SetTutorialMusicPaused(bool paused)
+        {
+            if (tutorialOutput == null) return;
+
+            if (paused)
+            {
+                if (tutorialOutput.PlaybackState == PlaybackState.Playing)
+                    tutorialOutput.Pause();
+            }
+            else
+            {
+                if (tutorialOutput.PlaybackState == PlaybackState.Paused)
+                    tutorialOutput.Play();
+            }
+        }
         public static async Task InitializeAsync()
         {
+            if (Global.ronnietutorial)
+                return;
             if (outputDevice != null)
             {
                 outputDevice.Stop();
@@ -224,5 +325,8 @@ namespace PizzaOven
 
             return totalBytesRead;
         }
+
+
+
     }
 }

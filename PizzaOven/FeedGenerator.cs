@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
-using System.Text.Json;
+using System.Net;
 using System.Net.Http;
-using System.Xml.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Imaging;
+using System.Xml.Linq;
 
 namespace PizzaOven
 {
@@ -42,7 +44,75 @@ namespace PizzaOven
     }
     public static class FeedGenerator
     {
-        private static Dictionary<string, GameBananaModList> feed;
+
+        private static HttpListener? _listener;
+        private static string? _currentTempPath;
+
+        private static async Task<string> MakeRonnieMod()
+        {
+            if (_listener?.IsListening == true)
+            {
+                try
+                {
+                    _listener.Stop();
+                    _listener.Close();
+                }
+                catch { }
+            }
+
+            if (_currentTempPath != null && File.Exists(_currentTempPath))
+            {
+                try { File.Delete(_currentTempPath); }
+                catch { }
+            }
+
+            string packUri = "pack://application:,,,/PizzaOven;component/TutorialMod/RonnieMod.zip";
+
+            var resource = Application.GetResourceStream(new Uri(packUri));
+            if (resource == null)
+                return null;
+
+            _currentTempPath = Path.Combine(Path.GetTempPath(), "RonnieMod.zip");
+
+            using (var fileStream = new FileStream(_currentTempPath, FileMode.Create, FileAccess.Write))
+            {
+                resource.Stream.CopyTo(fileStream);
+            }
+
+            resource.Stream.Close();
+
+            string url = "http://localhost:5000/RonnieMod.zip";
+
+            _listener = new HttpListener();
+            _listener.Prefixes.Add("http://localhost:5000/");
+            _listener.Start();
+
+            _ = Task.Run(async () =>
+            {
+                while (_listener.IsListening)
+                {
+                    try
+                    {
+                        var context = await _listener.GetContextAsync();
+
+                        byte[] fileBytes = File.ReadAllBytes(_currentTempPath);
+
+                        context.Response.ContentType = "application/zip";
+                        context.Response.ContentLength64 = fileBytes.Length;
+                        await context.Response.OutputStream.WriteAsync(fileBytes);
+                        context.Response.Close();
+                    }
+                    catch
+                    {
+                        break;
+                    }
+                }
+            });
+
+            return url;
+        }
+
+        public static Dictionary<string, GameBananaModList> feed;
         public static bool error;
         public static Exception exception;
         public static GameBananaModList CurrentFeed;
@@ -58,6 +128,110 @@ namespace PizzaOven
             if (feed != null)
                 feed.Clear();
         }
+
+        public static async Task GetFakeFeed(int page, TypeFilter type, FeedFilter filter, GameBananaCategory category, GameBananaCategory subcategory, int perPage, bool nsfw, string search)
+        {
+            error = false;
+
+            if (feed == null)
+                feed = new Dictionary<string, GameBananaModList>();
+
+            if (feed.Count > 15)
+                feed.Remove(feed.Aggregate((l, r) => DateTime.Compare(l.Value.TimeFetched, r.Value.TimeFetched) < 0 ? l : r).Key);
+
+
+
+            var fakeRecord = new GameBananaRecord
+            {
+                Title = "Ronnie Oven Mod",
+                Description = "Our Favorite Oven",
+                Text = "<h1>Ronnie Mod</h1>This never before seen mod is made for my favorite superhero Ronnie the Oven!<br><br>if you don't know who Ronnie is, what the hell man, he's talking to you RIGHT NOW!<br><br>oh yeah! you Get to play as Ronnie the Oven!! wow!! Moveset: you can double jump, you break if you run into a wall and your groundpound initiates a nuke!!<br><br>Man I sure hope this mod works very well I put a lot of effort into it I also hope Ronnie sees this he's my superstar",
+                Views = 0,
+                Likes = -5,
+                Downloads = 1,
+                DateAddedLong = DateTimeOffset.UtcNow.AddDays(-5).ToUnixTimeSeconds(),
+                DateUpdatedLong = DateTimeOffset.UtcNow.AddDays(-1).ToUnixTimeSeconds(),
+                IsNsfw = false,
+
+                Owner = new GameBananaMember
+                {
+                    Name = "SurfyCrescent97",
+                    Avatar = new Uri("pack://application:,,,/PizzaOven;component/TutorialMod/profile.png", UriKind.Absolute),
+                    Upic = new Uri("pack://application:,,,/PizzaOven;component/TutorialMod/upic.gif", UriKind.Absolute)
+                },
+
+                Category = new GameBananaCategory
+                {
+                    Name = "",
+                    Icon = new Uri("pack://application:,,,/PizzaOven;component/TutorialMod/category.jpg", UriKind.Absolute)
+                },
+
+                RootCategory = new GameBananaCategory
+                {
+                    Name = "Full Game Edit",
+                    Icon = new Uri("pack://application:,,,/PizzaOven;component/TutorialMod/category.jpg", UriKind.Absolute)
+                },
+
+                AllFiles = new List<GameBananaItemFile>
+                {
+                    new GameBananaItemFile
+                    {
+                        Id = "file1",
+                        FileName = "ronnie_mod_v1.zip",
+                        Filesize = 1024 * 932,
+                        DownloadUrl = await MakeRonnieMod(),
+                        Description = "Main mod file",
+                        ContainsExe = false,
+                        Downloads = 500,
+                        DateAddedLong = DateTimeOffset.UtcNow.AddDays(-5).ToUnixTimeSeconds()
+                    }
+                },
+
+                Media = new List<GameBananaImage>
+                {
+                    new GameBananaImage
+                    {
+                        Type = "image",
+                        Base = new Uri("pack://application:,,,/PizzaOven;component/TutorialMod", UriKind.Absolute),
+                        File = new Uri("mod.png", UriKind.Relative), 
+                        Caption = "Our Oven Ronnie!"
+                    }
+                },
+
+                AlternateFileSources = new List<GameBananaAlternateFileSource>
+                {
+ 
+                }
+            };
+            CurrentFeed = new GameBananaModList
+            {
+                Records = new ObservableCollection<GameBananaRecord> { fakeRecord },
+                TotalPages = 1,
+                TimeFetched = DateTime.UtcNow
+            };
+
+            var fakeKey = $"fake_{page}_{category?.Name}_{subcategory?.Name}";
+            if (!feed.ContainsKey(fakeKey))
+                feed.Add(fakeKey, CurrentFeed);
+            else
+                feed[fakeKey] = CurrentFeed;
+
+            await Task.CompletedTask; 
+        }
+
+        public static async Task GetCollection(string gameID)
+        {
+            //code yet to be done
+        }
+        private static string FixString(string input = "")
+        {
+            if (input == null)
+               return "";
+            return input
+                .Replace("\\", "\\\\") 
+                .Replace("\"", "\\\"")  
+                .Replace("'", "\\'");   
+        }
         public static async Task GetFeed(int page, TypeFilter type, FeedFilter filter, GameBananaCategory category, GameBananaCategory subcategory, int perPage, bool nsfw, string search)
         {
             error = false;
@@ -68,6 +242,8 @@ namespace PizzaOven
                 feed.Remove(feed.Aggregate((l, r) => DateTime.Compare(l.Value.TimeFetched, r.Value.TimeFetched) < 0 ? l : r).Key);
             using (var httpClient = new HttpClient())
             {
+                if (!string.IsNullOrEmpty(search))
+                    search = FixString(search);
                 var requestUrl = GenerateUrl(page, type, filter, category, subcategory, perPage, nsfw, search);
                 if (feed.ContainsKey(requestUrl) && feed[requestUrl].IsValid)
                 {

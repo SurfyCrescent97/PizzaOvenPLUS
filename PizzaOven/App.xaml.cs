@@ -63,7 +63,7 @@ namespace PizzaOven
             }
             else if (running)
             {
-                MessageBox.Show("Pizza Oven is already running", "Warning", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                MessageBox.Show("Pizza Oven+ is already running", "Warning", MessageBoxButton.OK, MessageBoxImage.Exclamation);
                 Application.Current.Shutdown();
             }
         }

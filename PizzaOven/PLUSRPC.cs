@@ -8,7 +8,7 @@ using System.Windows;
 
 namespace PizzaOven
 {
-    internal class PLUSRPC
+    public class PLUSRPC
     {
         public static class DiscordPresenceService
         {

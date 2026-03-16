@@ -384,7 +384,7 @@
     </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="1177*"/>
+            <ColumnDefinition Width="117*"/>
             <ColumnDefinition Width="103*"/>
         </Grid.ColumnDefinitions>
         <StackPanel Panel.ZIndex="3" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Right" Grid.Column="1">
@@ -825,11 +825,37 @@
                             </TextBlock>
                         </Grid>
                         <StackPanel x:Name="TutorialPanel" Orientation="Vertical" Margin="0,0,0,30" Tag="Tutorial" HorizontalAlignment="Left">
-                            <Button x:Name="ReplayTutorial"  Content="Replay Tutorial" Height="30" HorizontalAlignment="Left" Click="ReplayTutorial_Click"></Button>
+                            <Button x:Name="ReplayTutorial" Click="ReplayTutorial_Click" Height="30" HorizontalAlignment="Left" Background="#3b82f6" Foreground="White" BorderThickness="0" Cursor="Hand">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <Image Source="pack://application:,,,/PizzaOven;component/Icons/Ronnie.png" Height="30" Width="30" Margin="0,0,5,0"/>
+                                    <TextBlock Text="Replay Tutorial" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
-                        <StackPanel Orientation="Vertical" Margin="0,0,0,30" Tag="Hey wanna suggest something!" HorizontalAlignment="Left">
-                            <TextBlock Text="Hey wanna suggest something!" Margin="0,5,0,10" Foreground="#f2f2f2"/>
-                            <Button x:Name="OpenSuggestForm"  Content="Open Suggestion Form" Height="30" HorizontalAlignment="Left" Click="OpenSuggestForm_Click"></Button>
+                        <StackPanel Orientation="Vertical" Margin="0,0,0,30" Tag="Links:" HorizontalAlignment="Left">
+                            <StackPanel Orientation="Vertical" Margin="0,0,0,30" HorizontalAlignment="Left">
+                                <TextBlock Text="Links:" Margin="0,5,0,2" Foreground="#f2f2f2"/>
+                                <Button x:Name="OpenSuggestForm" Click="OpenSuggestForm_Click" Height="30" HorizontalAlignment="Left" Background="#3b82f6" Foreground="White" BorderThickness="0" Cursor="Hand">
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <Image Source="pack://application:,,,/PizzaOven;component/Icons/GoogleForm.png" Height="30" Width="30" Margin="0,0,5,0"/>
+                                        <TextBlock Text="Open Suggestion Form" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+
+                                <Button x:Name="OpenEmail" Click="OpenEmail_Click" Height="30" HorizontalAlignment="Left" Background="#3b82f6" Foreground="White" BorderThickness="0" Cursor="Hand">
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <Image Source="pack://application:,,,/PizzaOven;component/Icons/Email.png" Height="30" Width="30" Margin="0,0,5,0"/>
+                                        <TextBlock Text="Open PO+ Email" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+
+                                <Button x:Name="OpenTwitterX" Click="OpenTwitterX_Click" Height="30" HorizontalAlignment="Left" Background="#3b82f6" Foreground="White" BorderThickness="0" Cursor="Hand">
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <Image Source="pack://application:,,,/PizzaOven;component/Icons/TwitterX.png" Height="30" Width="30" Margin="0,0,5,0"/>
+                                        <TextBlock Text="Open My Personal Twitter/X (may have updates on PO+)" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
                         </StackPanel>
 
                         <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="PO. Files">
@@ -844,18 +870,39 @@
                             <Button x:Name="OpenPTFolder" Foreground="#f2f2f2" Content="Open Pizza Tower Folder" Height="35" HorizontalAlignment="Left" Click="OpenPTFolder_Click"/>
                             <Button x:Name="ChooseNewPTFolder" Foreground="#f2f2f2" Content="Choose Temporary New Pizza Tower Folder" Height="35" HorizontalAlignment="Left" Click="ChooseNewPTFolder_Click"/>
                             <Button x:Name="DebugToggle" Foreground="#f2f2f2" Content="Disable Debug?" Height="35" HorizontalAlignment="Left" Click="DebugToggle_Click"/>
-                        </StackPanel>
 
-
-                        <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="GMLoader">
-                            <TextBlock Text="GMLoader by Senjay (allows you to stack mods):" Margin="0,5,0,2" Foreground="#f2f2f2"/>
-                            <Button x:Name="GMLoaderConvert" Foreground="#f2f2f2" Content="Convert XDELTA/WIN to GMLoader" Height="35" HorizontalAlignment="Left" Click="GMLoaderConvert_Click"/>
-                            <Button x:Name="KillGMLoader" Foreground="#f2f2f2" Content="Kill GMLoader (sometimes background gmloader processes mess up PO+)" Height="35" HorizontalAlignment="Left" Click="KillGMLoader_Click"/>
+                            <Button x:Name="SteamLaunchToggle" Height="35" HorizontalAlignment="Left" Click="SteamLaunch_Click" Foreground="#f2f2f2" Background="#3b82f6" BorderThickness="0" Cursor="Hand" Content="Use Steam?">
+                                <Button.ContentTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" Tag="Launch Settings">
+                                            <Image Source="pack://application:,,,/PizzaOven;component/Icons/Steam.png" Height="30" Width="30" Margin="0,0,5,0"/>
+                                            <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </Button.ContentTemplate>
+                            </Button>
                         </StackPanel>
 
                         <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="Patch Version">
                             <TextBlock Text="Patch Version:" Margin="0,5,0,2" Foreground="#f2f2f2"/>
-                            <ComboBox Name="DowngradeCombo" Width="200" Height="30" HorizontalAlignment="Left" />
+                            <ComboBox Name="DowngradeCombo" Width="200" Height="30" HorizontalAlignment="Left"/>
+
+                            <TextBlock Text="Downgrade Download:" Margin="0,8,0,2" Foreground="#f2f2f2"/>
+                            <StackPanel Orientation="Horizontal"  Tag="Patch Version">
+                                <ComboBox Name="DowngradeDownloadCombo" Width="200" Height="30"/>
+                                <Button Name="DowngradeDownloadButton" Content="Download" Width="90" Height="30" Margin="8,0,0,0" Click="DowngradeDownload_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                        
+                        <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="GMLoader">
+                            <TextBlock Text="GMLoader by Senjay (allows you to stack mods):" Margin="0,5,0,2" Foreground="#f2f2f2"/>
+                            <Button x:Name="GMLoaderConvert" Click="GMLoaderConvert_Click" Height="30" HorizontalAlignment="Left" Background="#3b82f6" Foreground="White" BorderThickness="0" Cursor="Hand">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <Image Source="pack://application:,,,/PizzaOven;component/Icons/GMLoader.png" Height="30" Width="30" Margin="0,0,5,0"/>
+                                    <TextBlock Text="Convert XDelta/Win to GMLoader" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="KillGMLoader" Foreground="#f2f2f2" Content="Kill GMLoader (sometimes background gmloader processes mess up PO+)" Height="35" HorizontalAlignment="Left" Click="KillGMLoader_Click"/>
                         </StackPanel>
 
                         <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="Mod Folder">
@@ -892,12 +939,21 @@
 
                         <StackPanel Orientation="Vertical" Margin="0,0,0,20" Tag="Discord RPC">
                             <TextBlock Text="Discord RPC (Displays on Discord):" Margin="0,5,0,2" Foreground="#f2f2f2"/>
-                            <Button x:Name="RPCtoggle" Foreground="#f2f2f2" Content="Disable RPC?" Height="35" HorizontalAlignment="Left" Click="RPCtoggle_Click"/>
+                            <Button x:Name="RPCtoggle" Height="35" HorizontalAlignment="Left" Click="RPCtoggle_Click" Foreground="#f2f2f2" Background="#3b82f6" BorderThickness="0" Cursor="Hand" Content="Disable RPC?">
+                                <Button.ContentTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal" Tag="Discord RPC">
+                                            <Image Source="pack://application:,,,/PizzaOven;component/Icons/Discord.png" Height="30" Width="30" Margin="0,0,5,0"/>
+                                            <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </Button.ContentTemplate>
+                            </Button>
                         </StackPanel>
 
                         <StackPanel Orientation="Vertical" Margin="0,0,0,20" Tag="Low-End Settings">
                             <TextBlock Text="Low-End Settings(Disables Features to allow a smoother experience for low-end devices):" Margin="0,5,0,2" Foreground="#f2f2f2"/>
-                            <Button x:Name="MODUPDATERtoggle" Foreground="#f2f2f2" Content="Disable Check for Mod Updates?" Width="300" Height="35" HorizontalAlignment="Left" Click="MODUPDATERtoggle_Click"/>
+                            <Button x:Name="MODUPDATERtoggle" Foreground="#f2f2f2" Content="Disable Check for Mod Updates?" HorizontalAlignment="Left" Click="MODUPDATERtoggle_Click"/>
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>

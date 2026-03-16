@@ -62,16 +62,58 @@ namespace PizzaOven
                             // Notify that the update is about to happen
                             MessageBox.Show($"Finished downloading {fileName}!\nPizza Oven+ will now restart.", "Notification", MessageBoxButton.OK);
                             // Update PizzaOven
-                            UpdateManager updateManager = new UpdateManager(AssemblyMetadata.FromAssembly(Assembly.GetEntryAssembly(), Process.GetCurrentProcess().MainModule.FileName),
-                                new LocalPackageResolver($"{Global.assemblyLocation}{Global.s}Downloads{Global.s}PizzaOvenPLUSUpdate"), new ZipExtractor());
-                            if (!Version.TryParse(onlineVersion, out Version version))
+                            string onovapath = Path.Combine(
+                                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                                "Onova",
+                                "PizzaOven"
+                            );
+
+                            if (Directory.Exists(onovapath))
                             {
-                                MessageBox.Show($"Error parsing {onlineVersion}!\nCancelling update.", "Notification", MessageBoxButton.OK);
-                                return false;
+                                Directory.Delete(onovapath, true);
                             }
-                            // Updates and restarts PizzaOven
-                            await updateManager.PrepareUpdateAsync(version);
-                            updateManager.LaunchUpdater(version);
+                            try
+                            {
+                                UpdateManager updateManager = new UpdateManager(AssemblyMetadata.FromAssembly(Assembly.GetEntryAssembly(), Process.GetCurrentProcess().MainModule.FileName),
+                                    new LocalPackageResolver($"{Global.assemblyLocation}{Global.s}Downloads{Global.s}PizzaOvenUpdatePLUS"), new ZipExtractor());
+                                // Updates and restarts PizzaOven
+                                if (!Version.TryParse(onlineVersion, out Version version))
+                                {
+                                    MessageBox.Show($"Error parsing {onlineVersion}!\nCancelling update.", "Notification", MessageBoxButton.OK);
+                                    return false;
+                                }
+                                await updateManager.PrepareUpdateAsync(version);
+                                updateManager.LaunchUpdater(version);
+                            }
+                            catch
+                            {
+                                // PizzaOven+ Update Logic because Onova stinks!!!
+                                string verPath = $"{onovapath}{Global.s}{onlineVersion}";
+                                string targetFolder = AppDomain.CurrentDomain.BaseDirectory;
+                                string exeName = Path.GetFileName(Process.GetCurrentProcess().MainModule.FileName);
+                                string cmdText = $@"
+                                @echo off
+                                timeout /t 2 /nobreak
+                                xcopy ""{verPath}\*"" ""{targetFolder}"" /s /y /q
+                                rmdir /s /q ""{verPath}""
+                                start """" ""{Path.Combine(targetFolder, exeName)}""
+                                del ""%~f0""
+                                ";
+                                string tempBatch = Path.Combine(Path.GetTempPath(), "selfupdate.bat");
+                                File.WriteAllText(tempBatch, cmdText);
+                                ProcessStartInfo psi = new ProcessStartInfo("cmd.exe")
+                                {
+                                    Arguments = $"/c \"{tempBatch}\"",
+                                    CreateNoWindow = true,
+                                    UseShellExecute = false,
+                                    WindowStyle = ProcessWindowStyle.Hidden
+                                };
+                                Process.Start(psi);
+                                Environment.Exit(0);
+                            }
+
+                            
+
                             return true;
                         }
                     }
@@ -106,18 +148,18 @@ namespace PizzaOven
                 progressBox.Activate();
                 // Write and download the file
                 using (var fs = new FileStream(
-                    $@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}PizzaOvenPLUSUpdate/{fileName}", FileMode.Create, FileAccess.Write, FileShare.None))
+                    $@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}PizzaOvenUpdatePLUS/{fileName}", FileMode.Create, FileAccess.Write, FileShare.None))
                 {
                     await client.DownloadAsync(uri, fs, fileName, progress, cancellationToken.Token);
                 }
                 // Rename the file
-                File.Move($@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}PizzaOvenPLUSUpdate{Global.s}{fileName}", $@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}PizzaOvenPLUSUpdate{Global.s}{version}.zip", true);
+                File.Move($@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}PizzaOvenUpdatePLUS{Global.s}{fileName}", $@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}PizzaOvenUpdatePLUS{Global.s}{version}.zip", true);
                 progressBox.Close();
             }
             catch (OperationCanceledException)
             {
                 // Remove the file is it will be a partially downloaded one and close up
-                File.Delete(@$"{Global.assemblyLocation}{Global.s}Downloads{Global.s}PizzaOvenPLUSUpdate{Global.s}{fileName}");
+                File.Delete(@$"{Global.assemblyLocation}{Global.s}Downloads{Global.s}PizzaOvenUpdatePLUS{Global.s}{fileName}");
                 if (progressBox != null)
                 {
                     progressBox.finished = true;

@@ -182,7 +182,7 @@ namespace PizzaOven
                         DownloadUrl = await MakeRonnieMod(),
                         Description = "Main mod file",
                         ContainsExe = false,
-                        Downloads = 500,
+                        Downloads = 0,
                         DateAddedLong = DateTimeOffset.UtcNow.AddDays(-5).ToUnixTimeSeconds()
                     }
                 },
@@ -193,14 +193,14 @@ namespace PizzaOven
                     {
                         Type = "image",
                         Base = new Uri("pack://application:,,,/PizzaOven;component/TutorialMod", UriKind.Absolute),
-                        File = new Uri("mod.png", UriKind.Relative), 
+                        File = new Uri("mod.png", UriKind.Relative),
                         Caption = "Our Oven Ronnie!"
                     }
                 },
 
                 AlternateFileSources = new List<GameBananaAlternateFileSource>
                 {
- 
+
                 }
             };
             CurrentFeed = new GameBananaModList
@@ -216,12 +216,18 @@ namespace PizzaOven
             else
                 feed[fakeKey] = CurrentFeed;
 
-            await Task.CompletedTask; 
+            await Task.CompletedTask;
         }
 
-        public static async Task GetCollection(string gameID)
+        //UNUSED FOR NOW
+        public static async Task GetCollection(string gameID, int perPage)
         {
-            //code yet to be done
+            using (var httpClient = new HttpClient())
+            {
+                var requestUrl = $"https://gamebanana.com/apiv11/Collection/Index?_aFilters[Generic_Game]={gameID}&_sOrder=updated&_nPage=1&_nPerpage={perPage}";
+                var response = await httpClient.GetAsync(requestUrl);
+                var numRecords = response.GetHeader("X-GbApi-Metadata_nRecordCount");
+            }
         }
         private static string FixString(string input = "")
         {

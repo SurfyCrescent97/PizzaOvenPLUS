@@ -5,7 +5,7 @@
     <TargetFramework>net7.0-windows</TargetFramework>
     <RootNamespace>PizzaOven</RootNamespace>
     <AssemblyName>PizzaOven</AssemblyName>
-    <AssemblyVersion>1.0.2.0</AssemblyVersion>
+    <AssemblyVersion>1.0.3.0</AssemblyVersion>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>Assets\PizzaOvenPLUSIcon.ico</ApplicationIcon>
   </PropertyGroup>
@@ -18,7 +18,9 @@
     <None Remove="GameBanana.png" />
     <None Remove="OvenRonnie\**\*" />
     <None Remove="CustomAssets\**\*" />
+	<None Remove="Language\**\*" />
 	<None Remove="TutorialMod\**\*" />
+	<None Remove="Icons\**\*" />
   </ItemGroup>
 
   <ItemGroup>
@@ -32,9 +34,10 @@
   <ItemGroup>
     <EmbeddedResource Include="Dependencies\XDelta_Common_Checksum.txt" />
     <EmbeddedResource Include="CustomAssets\**\*" />
+    <EmbeddedResource Include="Language\**\*" />
+	<Resource Include="Icons\**\*" />
     <Resource Include="OvenRonnie\**\*" />
 	<Resource Include="TutorialMod\**\*" />
-	
   </ItemGroup>
 
   <ItemGroup>
@@ -44,12 +47,22 @@
     </Content>
     <None Update="Dependencies\xdelta.exe" CopyToOutputDirectory="PreserveNewest" />
 	<None Update="Dependencies\xdeltaUI.exe" CopyToOutputDirectory="PreserveNewest" />
+	<None Update="Dependencies\ptversions.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update=".disable_gb1click" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Downgrades\**\*" CopyToOutputDirectory="PreserveNewest" />
+	<None Update="Dependencies\DepotDownloader\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Costura.Fody" Version="6.0.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="DiscordRichPresence" Version="1.6.1.70" />
+    <PackageReference Include="Fody" Version="6.9.3">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="FontAwesome5" Version="2.1.0" />
     <PackageReference Include="gong-wpf-dragdrop" Version="2.3.2" />
     <PackageReference Include="NAudio" Version="2.2.1" />

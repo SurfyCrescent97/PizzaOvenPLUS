@@ -55,7 +55,8 @@ namespace PizzaOven
             if (e.Args.Length > 1 && e.Args[0] == "-download") {
                 // For some reason the downloader doesn't work if we don't create a main window...
                 // (the code above already creates one when no instance is running)
-                if (running) {
+                if (running)
+                {
                     MainWindow mw = new MainWindow();
                     ShutdownMode = ShutdownMode.OnMainWindowClose;
                 }

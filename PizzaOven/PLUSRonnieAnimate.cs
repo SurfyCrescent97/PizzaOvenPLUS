@@ -273,7 +273,8 @@ namespace PizzaOven
             {
                 tcs.TrySetResult(true);
             };
-
+            
+            await MainWindow.WaitSeconds(1);
             var finishedTask = await Task.WhenAny(tcs.Task, this.WaitForClickOnImageAsync());
 
             if (parent.Children.Contains(skipButton))

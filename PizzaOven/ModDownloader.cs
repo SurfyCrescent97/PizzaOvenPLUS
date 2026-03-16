@@ -1,24 +1,37 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using PizzaOven.UI;
+using SevenZipExtractor;
+using SharpCompress.Archives;
+using SharpCompress.Archives.SevenZip;
+using SharpCompress.Common;
+using SharpCompress.Readers;
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Reflection;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Reflection;
-using System.Net.Http;
-using System.Threading;
-using System.Text.Json;
-using SharpCompress.Common;
-using System.Text.RegularExpressions;
-using SharpCompress.Readers;
-using PizzaOven.UI;
-using SharpCompress.Archives.SevenZip;
-using System.Linq;
-using SharpCompress.Archives;
-using SevenZipExtractor;
+using System.Windows.Data;
 
 namespace PizzaOven
 {
+    enum PROTOCOLTYPE
+    {
+        OneClick,
+        Pair
+    }
+
     public class ModDownloader
     {
+        //PAIR
+        private string MEMBERID;
+        private string SECRETKEY;
+        //
         private string URL_TO_ARCHIVE;
         private string URL;
         private string DL_ID;
@@ -84,23 +97,41 @@ namespace PizzaOven
                 }
             }
         }
-        public async void Download(string line, bool running)
+        public async Task Download(string line, bool running, bool skipdownloadwindow = false)
         {
-            if (ParseProtocol(line))
+            var protocoltype = GetProtocolType(line);
+            var shoulddownload = true;
+
+            if (ParseProtocol(line, protocoltype))
             {
+                if (protocoltype == PROTOCOLTYPE.Pair)
+                {
+                    RegistryConfig.InstallPairHandler(SECRETKEY,MEMBERID);
+                    return;
+                }
                 if (await GetData())
                 {
-                    DownloadWindow downloadWindow = new DownloadWindow(response);
-                    downloadWindow.ShowDialog();
-                    if (downloadWindow.YesNo)
+                    if (skipdownloadwindow)
                     {
+                        shoulddownload = true;
+                    } else { 
+                        DownloadWindow downloadWindow = new DownloadWindow(response);
+                        downloadWindow.ShowDialog();
+                        if (downloadWindow.YesNo)
+                        {
+                            shoulddownload = true;
+                        }
+                    }
+                    if (shoulddownload)
+                    { 
                         await DownloadFile(URL_TO_ARCHIVE, fileName, new Progress<DownloadProgress>(ReportUpdateProgress),
                             CancellationTokenSource.CreateLinkedTokenSource(cancellationToken.Token));
                         if (!cancelled)
                             await ExtractFile(fileName, response);
                     }
+                    
                 }
-            }
+            } 
             if (running)
                 Environment.Exit(0);
         }
@@ -133,13 +164,26 @@ namespace PizzaOven
             progressBox.progressText.Text = $"{Math.Round(progress.Percentage * 100, 2)}% " +
                 $"({StringConverters.FormatSize(progress.DownloadedBytes)} of {StringConverters.FormatSize(progress.TotalBytes)})";
         }
-
-        private bool ParseProtocol(string line)
+        private PROTOCOLTYPE GetProtocolType(string protocollink)
+        {
+            if (protocollink.Contains("pair"))
+            {
+                return PROTOCOLTYPE.Pair;
+            }
+            return PROTOCOLTYPE.OneClick;
+        }
+        private bool ParseProtocol(string line, PROTOCOLTYPE protocoltype)
         {
             try
             {
                 line = line.Replace("pizzaovenplus:", "");
                 string[] data = line.Split(',');
+                if (protocoltype == PROTOCOLTYPE.Pair)
+                {
+                    MEMBERID = data[1].Replace("/", "");
+                    SECRETKEY = data[2].Replace("/", "");
+                    return true;
+                }
                 URL_TO_ARCHIVE = data[0];
                 // Used to grab file info from dictionary
                 var match = Regex.Match(URL_TO_ARCHIVE, @"\d*$");
@@ -371,5 +415,60 @@ namespace PizzaOven
             }
         }
 
+        private async Task FetchPairInfo(string secretKey, string memberID)
+        {
+            using (var httpClient = new HttpClient())
+            {
+                var requestUrl = $"https://gamebanana.com/apiv11/RemoteInstall/{memberID}/{secretKey}/PizzaOvenPlus";
+                var response = await httpClient.GetAsync(requestUrl);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Global.logger.WriteLine($"Error fetching data: {response.StatusCode}", LoggerType.Error);
+                    return;
+                }
+
+                var jsonString = await response.Content.ReadAsStringAsync();
+                var responses = JsonSerializer.Deserialize<List<string>>(jsonString);
+
+                foreach (var entry in responses)
+                {
+                    var parts = entry.Split(',');
+                    var downloadUrl = parts[0];
+                    var modType = parts[1];
+                    var modID = parts[2];
+                    response = await httpClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead);
+
+                    await new ModDownloader().Download($"pizzaovenplus:{downloadUrl},{modType},{modID}", false, true);
+                }
+            }
+        }
+        public static async Task RemoteInstallPairPolling()
+        {
+            var reg = Registry.CurrentUser.OpenSubKey(@"Software\Classes\PizzaOvenPLUS", true);
+            if (reg == null)
+                return;
+
+            while (Global.ronnietutorial)
+            {
+                await Task.Delay(100);
+            }
+
+            while (reg.GetValue("secretkey") != null && reg.GetValue("memberid") != null)
+            {
+                string secretKey = reg.GetValue("secretkey").ToString();
+                string memberID = reg.GetValue("memberid").ToString();
+
+                if (!string.IsNullOrEmpty(secretKey) && !string.IsNullOrEmpty(memberID))
+                {
+                    var downloader = new ModDownloader();
+                    await downloader.FetchPairInfo(secretKey, memberID);
+                   downloader = null; 
+                }
+
+                await Task.Delay(2000);
+              
+            }
+        }
     }
 }

@@ -1,7 +1,7 @@
 {
-  "date": "2026-03-16T21:18:40.531942Z",
-  "message": "USE AUTOUPDATER NEXT UPDATE(1.0.3) IT WORKS NOW WITH MY OWN LOGIC FOR IT; Make sure when you download 1.0.3 drag your mod, downgrade folder into the new one",
+  "date": "2026-03-19T22:18:54.529842Z",
+  "message": "IF YOU HAVE 1.0.2 YOU CAN'T AUTOUPDATE UNTIL YOU HAVE 1.0.3, for now download newest and drag downloads and downgrade folder into it to upgrade",
   "enabled": true,
-  "expression": "happy2",
+  "expression": "sad",
   "shake": false
 }

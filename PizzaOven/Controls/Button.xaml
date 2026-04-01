@@ -6,14 +6,14 @@
                 <ControlTemplate TargetType="{x:Type ButtonBase}">
                     <Border x:Name="border" BorderBrush="#353535" 
                             BorderThickness="{TemplateBinding BorderThickness}" 
-                            Background="#303030"
+                            Background="{DynamicResource SecondaryBrush}"
                             SnapsToDevicePixels="True">
                         <ContentPresenter x:Name="contentPresenter" 
                                           ContentTemplate="{TemplateBinding ContentTemplate}"
                                           Content="{TemplateBinding Content}"
                                           ContentStringFormat="{TemplateBinding ContentStringFormat}"
                                           Focusable="False"
-                                          TextElement.Foreground="#f2f2f2"
+                                          TextElement.Foreground="{DynamicResource TextBrush}"
                                           HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                           Margin="{TemplateBinding Padding}"
                                           RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>

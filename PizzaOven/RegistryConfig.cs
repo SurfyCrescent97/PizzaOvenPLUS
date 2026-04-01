@@ -9,14 +9,23 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System;
 
 namespace PizzaOven
 {
     public static class RegistryConfig
     {
+        public static void RegisterStartup()
+        {
+            var AppPath = $"{Global.assemblyLocation}{Global.s}{AppDomain.CurrentDomain.FriendlyName}.exe";
+            var reg = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
+
+            reg.SetValue("PizzaOven+", $"\"{AppPath}\"", RegistryValueKind.String);
+            reg.Close();
+        }
         public static bool InstallGBHandler()
         {
-            string AppPath = $"{Global.assemblyLocation}{Global.s}PizzaOven.exe";
+            string AppPath = $"{Global.assemblyLocation}{Global.s}{AppDomain.CurrentDomain.FriendlyName}.exe";
             string protocolName = $"pizzaovenplus";
             try
             {

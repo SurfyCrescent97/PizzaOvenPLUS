@@ -7,6 +7,7 @@ using SharpCompress.Common;
 using SharpCompress.Readers;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -431,15 +432,66 @@ namespace PizzaOven
                 var jsonString = await response.Content.ReadAsStringAsync();
                 var responses = JsonSerializer.Deserialize<List<string>>(jsonString);
 
-                foreach (var entry in responses)
+                bool running = false;
+                try
                 {
+                    Process currentProcess = Process.GetCurrentProcess();
+
+                    foreach (var p in Process.GetProcesses())
+                    {
+                        if (p.Id != currentProcess.Id)
+                        {
+                            if (p.ProcessName.Equals(currentProcess.ProcessName) &&
+                                p.MainModule.FileName.Equals(currentProcess.MainModule.FileName))
+                            {
+                                running = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                catch { }
+
+                string filePath = $"{Global.assemblyLocation}{Global.s}Downloads{Global.s}PairList.txt";
+
+                Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+
+                await File.WriteAllLinesAsync(filePath, responses);
+
+                while (File.Exists(filePath))
+                {
+                    var lines = await File.ReadAllLinesAsync(filePath);
+
+                    if (lines.Length == 0)
+                    {
+                        File.Delete(filePath);
+                        break;
+                    }
+
+                    string entry = lines[0];
+
                     var parts = entry.Split(',');
+                    if (parts.Length < 3)
+                    {
+                        var skipLines = lines.Skip(1).ToArray();
+                        await File.WriteAllLinesAsync(filePath, skipLines);
+                        continue;
+                    }
+
                     var downloadUrl = parts[0];
                     var modType = parts[1];
                     var modID = parts[2];
-                    response = await httpClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead);
 
-                    await new ModDownloader().Download($"pizzaovenplus:{downloadUrl},{modType},{modID}", false, true);
+                    await new ModDownloader().Download($"pizzaovenplus:{downloadUrl},{modType},{modID}", running, true);
+
+                    var remainingLines = lines.Skip(1).ToArray();
+                    await File.WriteAllLinesAsync(filePath, remainingLines);
+
+                    if (remainingLines.Length == 0)
+                    {
+                        File.Delete(filePath);
+                        break;
+                    }
                 }
             }
         }

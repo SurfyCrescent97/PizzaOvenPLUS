@@ -38,6 +38,7 @@ namespace PizzaOven
         protected async override void OnStartup(StartupEventArgs e)
         {
             DispatcherUnhandledException += App_DispatcherUnhandledException;
+            RegistryConfig.RegisterStartup();
             RegistryConfig.InstallGBHandler();
             bool running = AlreadyRunning();
             if (!running)

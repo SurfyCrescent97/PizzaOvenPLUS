@@ -1,11 +1,12 @@
 ﻿<Window x:Class="PizzaOven.MainWindow"
+        xmlns:colorpicker="clr-namespace:ColorPicker;assembly=ColorPicker"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:dd="urn:gong-wpf-dragdrop"
         xmlns:fa5="http://schemas.fontawesome.com/icons/"
-        Background="#131313"
+        Background="{DynamicResource PrimaryBrush}"
         Title="Pizza Oven+ | An Extenstion by SurfyCrescent97" SizeChanged="OnResize"
         mc:Ignorable="d" Closing="Window_Closing" WindowStartupLocation="CenterScreen"
         Height="750" Width="1280" MinHeight="750" MinWidth="1280" Loaded="WindowLoaded" KeyDown="Window_KeyDown">
@@ -31,7 +32,7 @@
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <TextBlock VerticalAlignment="Center" Panel.ZIndex="4" FontSize="40" FontWeight="Medium" HorizontalAlignment="Center" Foreground="#f2f2f2">
+                    <TextBlock VerticalAlignment="Center" Panel.ZIndex="4" FontSize="40" FontWeight="Medium" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}">
                         <TextBlock.Style>
                             <Style TargetType="{x:Type TextBlock}">
                                 <Setter Property="Visibility" Value="Collapsed" />
@@ -87,7 +88,7 @@
                             <ImageBrush ImageSource="{Binding Path=Image,Mode=OneWay,IsAsync=True}"/>
                         </Rectangle.OpacityMask>
                     </Rectangle>
-                    <TextBlock x:Name="Title" Margin="5" Grid.Row="1" FontWeight="Medium" TextTrimming="WordEllipsis" Background="Transparent" VerticalAlignment="Center"  Foreground="#f2f2f2" Text="{Binding Path=Title}"/>
+                    <TextBlock x:Name="Title" Margin="5" Grid.Row="1" FontWeight="Medium" TextTrimming="WordEllipsis" Background="Transparent" VerticalAlignment="Center"  Foreground="{DynamicResource TextBrush}" Text="{Binding Path=Title}"/>
                     <Popup PlacementTarget="{Binding ElementName=Title}" IsOpen="{Binding IsMouseDirectlyOver, ElementName=Title, Mode=OneWay}" AllowsTransparency="True">
                         <Border CornerRadius="5" Panel.ZIndex="0" Margin="10">
                             <Border.BorderBrush>
@@ -96,10 +97,10 @@
                             <Border.Background>
                                 <SolidColorBrush Color="#101010" Opacity="0.9"/>
                             </Border.Background>
-                            <TextBlock Margin="10" Text="{Binding Path=Title}" Foreground="#f2f2f2" FontWeight="Medium" FontSize="18" VerticalAlignment="Center" />
+                            <TextBlock Margin="10" Text="{Binding Path=Title}" Foreground="{DynamicResource TextBrush}" FontWeight="Medium" FontSize="18" VerticalAlignment="Center" />
                         </Border>
                     </Popup>
-                    <fa5:ImageAwesome Name="LoadingBar" Foreground="#ffee5f" Grid.Row="0" Icon="Solid_Spinner" Height="50" VerticalAlignment="Center" HorizontalAlignment="Center" Spin="True" SpinDuration="2"/>
+                    <fa5:ImageAwesome Name="LoadingBar" Foreground="{DynamicResource LoadingBrush}" Grid.Row="0" Icon="Solid_Spinner" Height="50" VerticalAlignment="Center" HorizontalAlignment="Center" Spin="True" SpinDuration="2"/>
                     <StackPanel Grid.Row="2" Margin="10,-5,10,5" Orientation="Horizontal">
                         <Image VerticalAlignment="Center" Source="{Binding Path=Owner.Avatar}" Margin="0,0,10,0" Height="35"/>
                         <TextBlock VerticalAlignment="Center" Foreground="#909090" Text="{Binding Path=Owner.Name}">
@@ -122,7 +123,7 @@
                             <ColumnDefinition/>
                         </Grid.ColumnDefinitions>
                         <Image Name="CatIcon" Grid.Column="0" VerticalAlignment="Center" Source="{Binding Path=Category.Icon}" Margin="0,0,10,0" Stretch="Uniform" Height="35" Width="35"/>
-                        <TextBlock Name="CatText" Grid.ColumnSpan="2" VerticalAlignment="Center" Foreground="#f2f2f2" Text="{Binding Path=CategoryName}" TextTrimming="WordEllipsis">
+                        <TextBlock Name="CatText" Grid.ColumnSpan="2" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}" Text="{Binding Path=CategoryName}" TextTrimming="WordEllipsis">
                             <TextBlock.Style>
                                 <Style TargetType="{x:Type TextBlock}">
                                     <Setter Property="Grid.Column" Value="1"/>
@@ -163,7 +164,7 @@
                                         <ColumnDefinition/>
                                     </Grid.ColumnDefinitions>
                                     <Image Grid.Column="0" VerticalAlignment="Center" Source="{Binding Path=Category.Icon}" Margin="0,0,10,0" Stretch="Uniform" Height="35" />
-                                    <TextBlock Grid.ColumnSpan="2" VerticalAlignment="Center" FontSize="18" FontWeight="SemiBold" Foreground="#f2f2f2" Text="{Binding Path=CategoryName}" >
+                                    <TextBlock Grid.ColumnSpan="2" VerticalAlignment="Center" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" Text="{Binding Path=CategoryName}" >
                                         <TextBlock.Style>
                                             <Style TargetType="{x:Type TextBlock}">
                                                 <Setter Property="Grid.Column" Value="0"/>
@@ -201,10 +202,10 @@
                             <Border.Background>
                                 <SolidColorBrush Color="#101010" Opacity="0.9"/>
                             </Border.Background>
-                            <TextBlock Margin="10" Text="{Binding Path=Description}" Foreground="#f2f2f2" TextWrapping="Wrap" FontSize="18" VerticalAlignment="Center" />
+                            <TextBlock Margin="10" Text="{Binding Path=Description}" Foreground="{DynamicResource TextBrush}" TextWrapping="Wrap" FontSize="18" VerticalAlignment="Center" />
                         </Border>
                     </Popup>
-                    <TextBlock Name="Desc" Margin="5,0,5,2" TextWrapping="Wrap" Grid.Row="3" Height="50" TextTrimming="WordEllipsis" Background="Transparent" VerticalAlignment="Center" Foreground="#f2f2f2" Text="{Binding Path=Description}"/>
+                    <TextBlock Name="Desc" Margin="5,0,5,2" TextWrapping="Wrap" Grid.Row="3" Height="50" TextTrimming="WordEllipsis" Background="Transparent" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}" Text="{Binding Path=Description}"/>
                     <StackPanel Grid.Row="6" Margin="0,0,0,5"  HorizontalAlignment="Center" VerticalAlignment="Center">
                         <StackPanel Background="Transparent" Name="DateAddedPanel" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" >
                             <StackPanel.Style>
@@ -217,8 +218,8 @@
                                     </Style.Triggers>
                                 </Style>
                             </StackPanel.Style>
-                            <fa5:ImageAwesome Name="DateAddedIcon" Margin="0,0,5,0" Height="15" Icon="Solid_Plus" Foreground="#f2f2f2"/>
-                            <TextBlock Name="DateAddedText" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="#f2f2f2" Text="{Binding Path=DateAddedFormatted}" />
+                            <fa5:ImageAwesome Name="DateAddedIcon" Margin="0,0,5,0" Height="15" Icon="Solid_Plus" Foreground="{DynamicResource TextBrush}"/>
+                            <TextBlock Name="DateAddedText" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}" Text="{Binding Path=DateAddedFormatted}" />
                         </StackPanel>
                         <StackPanel Background="Transparent" Name="DateUpdatedPanel" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center"  >
                             <StackPanel.Style>
@@ -231,8 +232,8 @@
                                     </Style.Triggers>
                                 </Style>
                             </StackPanel.Style>
-                            <fa5:ImageAwesome Name="DateUpdatedIcon" Margin="0,0,5,0" Height="15" Icon="Solid_Sync" Foreground="#f2f2f2"/>
-                            <TextBlock Name="DateUpdatedText" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="#f2f2f2" Text="{Binding Path=DateUpdatedAgo}"/>
+                            <fa5:ImageAwesome Name="DateUpdatedIcon" Margin="0,0,5,0" Height="15" Icon="Solid_Sync" Foreground="{DynamicResource TextBrush}"/>
+                            <TextBlock Name="DateUpdatedText" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}" Text="{Binding Path=DateUpdatedAgo}"/>
                         </StackPanel>
                     </StackPanel>
                     <Popup PlacementTarget="{Binding ElementName=DateAddedPanel}" HorizontalAlignment="Center" AllowsTransparency="True">
@@ -258,7 +259,7 @@
                             <Border.Background>
                                 <SolidColorBrush Color="#101010" Opacity="0.9"/>
                             </Border.Background>
-                            <TextBlock Margin="10" Foreground="#f2f2f2" FontWeight="Medium" FontSize="18" VerticalAlignment="Center" Text="{Binding Path=DateAdded,StringFormat={}Added {0}}"/>
+                            <TextBlock Margin="10" Foreground="{DynamicResource TextBrush}" FontWeight="Medium" FontSize="18" VerticalAlignment="Center" Text="{Binding Path=DateAdded,StringFormat={}Added {0}}"/>
                         </Border>
                     </Popup>
                     <Popup PlacementTarget="{Binding ElementName=DateUpdatedPanel}" HorizontalAlignment="Center" AllowsTransparency="True">
@@ -284,16 +285,16 @@
                             <Border.Background>
                                 <SolidColorBrush Color="#101010" Opacity="0.9"/>
                             </Border.Background>
-                            <TextBlock Margin="10" Foreground="#f2f2f2" FontWeight="Medium" FontSize="18" VerticalAlignment="Center" Text="{Binding Path=DateUpdated,StringFormat={}Updated {0}}"/>
+                            <TextBlock Margin="10" Foreground="{DynamicResource TextBrush}" FontWeight="Medium" FontSize="18" VerticalAlignment="Center" Text="{Binding Path=DateUpdated,StringFormat={}Updated {0}}"/>
                         </Border>
                     </Popup>
                     <StackPanel Name="StatPanel" Background="Transparent" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="4">
-                        <fa5:ImageAwesome Name="DownloadIcon" Margin="0,0,5,0" Height="15" Icon="Solid_Download" Foreground="#f2f2f2"/>
-                        <TextBlock Name="DownloadText" Margin="5,0,10,0" VerticalAlignment="Center" Foreground="#f2f2f2" Text="{Binding Path=DownloadString}" />
-                        <fa5:ImageAwesome Name="LikeIcon" Margin="5,0,5,0" Height="15" Icon="Solid_Heart" Foreground="#f2f2f2"/>
-                        <TextBlock Name="LikeText" Margin="5,0,10,0" VerticalAlignment="Center" Foreground="#f2f2f2" Text="{Binding Path=LikeString}" />
-                        <fa5:ImageAwesome Name="ViewIcon" Margin="5,0,5,0" Height="15" Icon="Solid_Eye" Foreground="#f2f2f2"/>
-                        <TextBlock Name="ViewText" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="#f2f2f2" Text="{Binding Path=ViewString}" />
+                        <fa5:ImageAwesome Name="DownloadIcon" Margin="0,0,5,0" Height="15" Icon="Solid_Download" Foreground="{DynamicResource TextBrush}"/>
+                        <TextBlock Name="DownloadText" Margin="5,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}" Text="{Binding Path=DownloadString}" />
+                        <fa5:ImageAwesome Name="LikeIcon" Margin="5,0,5,0" Height="15" Icon="Solid_Heart" Foreground="{DynamicResource TextBrush}"/>
+                        <TextBlock Name="LikeText" Margin="5,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}" Text="{Binding Path=LikeString}" />
+                        <fa5:ImageAwesome Name="ViewIcon" Margin="5,0,5,0" Height="15" Icon="Solid_Eye" Foreground="{DynamicResource TextBrush}"/>
+                        <TextBlock Name="ViewText" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}" Text="{Binding Path=ViewString}" />
                     </StackPanel>
                     <Popup PlacementTarget="{Binding ElementName=StatPanel}" HorizontalAlignment="Center" AllowsTransparency="True">
                         <Popup.Style>
@@ -322,7 +323,7 @@
                             <Border.Background>
                                 <SolidColorBrush Color="#101010" Opacity="0.9"/>
                             </Border.Background>
-                            <TextBlock Margin="10" Foreground="#f2f2f2" FontWeight="Medium" FontSize="18" VerticalAlignment="Center" >
+                            <TextBlock Margin="10" Foreground="{DynamicResource TextBrush}" FontWeight="Medium" FontSize="18" VerticalAlignment="Center" >
                                 <TextBlock.Text>
                                     <MultiBinding StringFormat="{}{0:N0} Downloads • {1:N0} Likes • {2:N0} Views">
                                         <Binding Path="Downloads"/>
@@ -338,8 +339,8 @@
                             <ColumnDefinition/>
                             <ColumnDefinition/>
                         </Grid.ColumnDefinitions>
-                        <Button Grid.Column="0" Foreground="#f2f2f2" FontWeight="Medium" Height="30" Width="95" Background="#303030" BorderBrush="#353535" VerticalAlignment="Bottom" Content="More Info" Click="MoreInfo_Click"/>
-                        <Button Grid.Column="1" Foreground="#f2f2f2" FontWeight="Medium" Height="30" Width="95" Background="#303030" BorderBrush="#353535" VerticalAlignment="Top" Content="Download" IsEnabled="{Binding Path=Compatible}" Click="Download_Click"/>
+                        <Button Grid.Column="0" Foreground="{DynamicResource TextBrush}" FontWeight="Medium" Height="30" Width="95" Background="{DynamicResource SecondaryBrush}" BorderBrush="#353535" VerticalAlignment="Bottom" Content="More Info" Click="MoreInfo_Click"/>
+                        <Button Grid.Column="1" Foreground="{DynamicResource TextBrush}" FontWeight="Medium" Height="30" Width="95" Background="{DynamicResource SecondaryBrush}" BorderBrush="#353535" VerticalAlignment="Top" Content="Download" IsEnabled="{Binding Path=Compatible}" Click="Download_Click"/>
                     </Grid>
                 </Grid>
             </Border>
@@ -358,14 +359,14 @@
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <TextBlock VerticalAlignment="Center" Panel.ZIndex="4" FontSize="40" FontWeight="Medium" HorizontalAlignment="Center" Foreground="#f2f2f2"/>
+                    <TextBlock VerticalAlignment="Center" Panel.ZIndex="4" FontSize="40" FontWeight="Medium" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}"/>
                     <Image Margin="5,10,5,5" Source="{Binding Path=preview,Mode=OneWay,IsAsync=True}" Height="168" Panel.ZIndex="3"  VerticalAlignment="Center" Stretch="Uniform"/>
                     <Rectangle Height="168" Panel.ZIndex="1" Fill="Black" Stretch="UniformToFill" Margin="5,10,5,5" VerticalAlignment="Center">
                         <Rectangle.OpacityMask>
                             <ImageBrush ImageSource="{Binding Path=preview,Mode=OneWay,IsAsync=True}"/>
                         </Rectangle.OpacityMask>
                     </Rectangle>
-                    <TextBlock x:Name="Title" Margin="5" Grid.Row="1" FontWeight="Medium" TextTrimming="WordEllipsis" Background="Transparent" VerticalAlignment="Center"  Foreground="#f2f2f2" Text="{Binding Path=name}"/>
+                    <TextBlock x:Name="Title" Margin="5" Grid.Row="1" FontWeight="Medium" TextTrimming="WordEllipsis" Background="Transparent" VerticalAlignment="Center"  Foreground="{DynamicResource TextBrush}" Text="{Binding Path=name}"/>
                     <Popup PlacementTarget="{Binding ElementName=Title}" IsOpen="{Binding IsMouseDirectlyOver, ElementName=Title, Mode=OneWay}" AllowsTransparency="True">
                         <Border CornerRadius="5" Panel.ZIndex="0" Margin="10">
                             <Border.BorderBrush>
@@ -374,10 +375,10 @@
                             <Border.Background>
                                 <SolidColorBrush Color="#101010" Opacity="0.9"/>
                             </Border.Background>
-                            <TextBlock Margin="10" Text="{Binding Path=name}" Foreground="#f2f2f2" FontWeight="Medium" FontSize="18" VerticalAlignment="Center" />
+                            <TextBlock Margin="10" Text="{Binding Path=name}" Foreground="{DynamicResource TextBrush}" FontWeight="Medium" FontSize="18" VerticalAlignment="Center" />
                         </Border>
                     </Popup>
-                    <fa5:ImageAwesome Name="LoadingBar" Foreground="#ffee5f" Grid.Row="0" Icon="Solid_Spinner" Height="50" VerticalAlignment="Center" HorizontalAlignment="Center" Spin="True" SpinDuration="2"/>
+                    <fa5:ImageAwesome Name="LoadingBar" Foreground="{DynamicResource LoadingBrush}" Grid.Row="0" Icon="Solid_Spinner" Height="50" VerticalAlignment="Center" HorizontalAlignment="Center" Spin="True" SpinDuration="2"/>
                 </Grid>
             </Border>
         </DataTemplate>
@@ -388,9 +389,9 @@
             <ColumnDefinition Width="103*"/>
         </Grid.ColumnDefinitions>
         <StackPanel Panel.ZIndex="3" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Right" Grid.Column="1">
-            <TextBox BorderThickness="0" FontSize="18" Margin="5" Background="Transparent" BorderBrush="Transparent" IsReadOnly="True" Foreground="#f2f2f2" FontWeight="Medium" Name="Stats" />
+            <TextBox BorderThickness="0" FontSize="18" Margin="5" Background="Transparent" BorderBrush="Transparent" IsReadOnly="True" Foreground="{DynamicResource TextBrush}" FontWeight="Medium" Name="Stats" />
         </StackPanel>
-        <TabControl Grid.ColumnSpan="2" Background="#202020" BorderBrush="#353535">
+        <TabControl Grid.ColumnSpan="2" Background="{DynamicResource PrimaryBrush}" BorderBrush="#353535">
             <TabControl.Resources>
                 <Style TargetType="{x:Type TabItem}">
                     <Setter Property="Template">
@@ -403,12 +404,12 @@
                                     <Border x:Name="Border"
                                             Width="Auto" MinWidth="100" MinHeight="30"
                                             VerticalAlignment="Bottom"
-                                            Background="#1d1d1d" BorderBrush="#353535" BorderThickness="0,0,0,0" CornerRadius="6,6,0,0"
+                                            Background="{DynamicResource PrimaryBrush}" BorderBrush="#353535" BorderThickness="0,0,0,0" CornerRadius="6,6,0,0"
                                             Cursor="Hand">
                                         <ContentPresenter x:Name="ContentSite"
                                                           Width="Auto" Height="Auto"
                                                           Margin="8,3,8,3" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                          ContentSource="Header" TextElement.FontFamily="Arial" TextElement.FontWeight="Medium" TextElement.FontSize="15pt" TextElement.Foreground="#f2f2f2"/>
+                                                          ContentSource="Header" TextElement.FontFamily="Arial" TextElement.FontWeight="Medium" TextElement.FontSize="15pt" TextElement.Foreground="{DynamicResource TextBrush}"/>
                                     </Border>
                                 </Border>
                                 <ControlTemplate.Triggers>
@@ -445,10 +446,10 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <Button FontSize="18" FontWeight="Medium" Name="LaunchButton" Margin="10,0,10,0" Height="35" VerticalAlignment="Center" HorizontalAlignment="Stretch" Grid.Column="0" Content="Launch" Background="#181818" BorderBrush="#252525" Foreground="#f2f2f2" Click="Launch_Click"/>
-                        <Button FontSize="18" FontWeight="Medium" Name="ConfigButton" Margin="10,0,10,0" Height="35" HorizontalAlignment="Stretch" VerticalAlignment="Center" Grid.Column="1" Content="Setup" Background="#181818" BorderBrush="#252525" Foreground="#f2f2f2" Click="Setup_Click" />
-                        <Button FontSize="18" FontWeight="Medium" Name="ClearButton" Margin="10,0,10,0" Height="35" HorizontalAlignment="Stretch" VerticalAlignment="Center" Grid.Column="2" Content="Clear Selection" Background="#181818" BorderBrush="#252525" Foreground="#f2f2f2" Click="Clear_Click" />
-                        <Button FontSize="18" FontWeight="Medium" Name="UpdateButton" Margin="0,0,10,0"  Height="35" VerticalAlignment="Center" HorizontalAlignment="Stretch" Grid.Column="3" Content="Check for Updates" Background="#181818" BorderBrush="#252525" Foreground="#f2f2f2" Click="Update_Click"/>
+                        <Button FontSize="18" FontWeight="Medium" Name="LaunchButton" Margin="10,0,10,0" Height="35" VerticalAlignment="Center" HorizontalAlignment="Stretch" Grid.Column="0" Content="Launch" Background="#181818" BorderBrush="#252525" Foreground="{DynamicResource TextBrush}" Click="Launch_Click"/>
+                        <Button FontSize="18" FontWeight="Medium" Name="ConfigButton" Margin="10,0,10,0" Height="35" HorizontalAlignment="Stretch" VerticalAlignment="Center" Grid.Column="1" Content="Setup" Background="#181818" BorderBrush="#252525" Foreground="{DynamicResource TextBrush}" Click="Setup_Click" />
+                        <Button FontSize="18" FontWeight="Medium" Name="ClearButton" Margin="10,0,10,0" Height="35" HorizontalAlignment="Stretch" VerticalAlignment="Center" Grid.Column="2" Content="Clear Selection" Background="#181818" BorderBrush="#252525" Foreground="{DynamicResource TextBrush}" Click="Clear_Click" />
+                        <Button FontSize="18" FontWeight="Medium" Name="UpdateButton" Margin="0,0,10,0"  Height="35" VerticalAlignment="Center" HorizontalAlignment="Stretch" Grid.Column="3" Content="Check for Updates" Background="#181818" BorderBrush="#252525" Foreground="{DynamicResource TextBrush}" Click="Update_Click"/>
 
                         <Grid Name="MiddleGrid" Grid.Row="1" Grid.ColumnSpan="8">
                             <Grid.ColumnDefinitions>
@@ -461,12 +462,12 @@
                                 <RowDefinition />
                             </Grid.RowDefinitions>
                             <Grid Visibility="Visible" Grid.Row="1" Name="DropBox" Margin="10,5,3,3" Panel.ZIndex="2" DragLeave="Add_Leave" DragEnter="Add_Enter" Drop="Add_Drop" AllowDrop="True" Background="Transparent">
-                                <Border Opacity="0.7" Background="Black"/>
-                                <TextBlock Foreground="#f2f2f2" FontSize="40" Panel.ZIndex="3" VerticalAlignment="Center" HorizontalAlignment="Center">Drop files here to install mod<LineBreak/>or use Browse Mods tab on top</TextBlock>
+                                <Border Opacity="0.7" Background="{DynamicResource InnerBrush}"/>
+                                <TextBlock Foreground="{DynamicResource TextBrush}" FontSize="40" Panel.ZIndex="3" VerticalAlignment="Center" HorizontalAlignment="Center">Drop files here to install mod<LineBreak/>or use Browse Mods tab on top</TextBlock>
                             </Grid>
                             <Grid Name="ModGridSearchBarGrid" Panel.ZIndex="2" Margin="10,5,3,5" Height="35" VerticalAlignment="Center">
-                                <TextBox Margin="0,0,35,0" Background="#353535" Foreground="#f2f2f2" BorderBrush="#353535" x:Name="ModGrid_SearchBar" KeyDown="ModGrid_SearchBar_KeyDown" Padding="5" TextWrapping="NoWrap"/>
-                                <TextBlock Padding="8,5,5,5" Foreground="#f2f2f2" Panel.ZIndex="3" IsHitTestVisible="False" Height="35"  HorizontalAlignment="Left" Text="Search..." VerticalAlignment="Center">
+                                <TextBox Margin="0,0,35,0" Background="{DynamicResource PrimaryBrush}" Foreground="{DynamicResource TextBrush}" BorderBrush="#353535" x:Name="ModGrid_SearchBar" KeyDown="ModGrid_SearchBar_KeyDown" Padding="5" TextWrapping="NoWrap"/>
+                                <TextBlock Padding="8,5,5,5" Foreground="{DynamicResource TextBrush}" Panel.ZIndex="3" IsHitTestVisible="False" Height="35"  HorizontalAlignment="Left" Text="Search..." VerticalAlignment="Center">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
                                             <Style.Triggers>
@@ -477,7 +478,7 @@
                                         </Style>
                                     </TextBlock.Style>
                                 </TextBlock>
-                                <fa5:ImageAwesome Icon="Solid_Times" Foreground="#f2f2f2" HorizontalAlignment="Right" Margin="6,6,40,6" Height="15" PreviewMouseLeftButtonDown="Clear_PreviewMouseLeftButtonDown">
+                                <fa5:ImageAwesome Icon="Solid_Times" Foreground="{DynamicResource TextBrush}" HorizontalAlignment="Right" Margin="6,6,40,6" Height="15" PreviewMouseLeftButtonDown="Clear_PreviewMouseLeftButtonDown">
                                     <fa5:ImageAwesome.Style>
                                         <Style TargetType="fa5:ImageAwesome">
                                             <Style.Triggers>
@@ -492,7 +493,7 @@
                                     </fa5:ImageAwesome.Style>
                                 </fa5:ImageAwesome>
                                 <Button HorizontalAlignment="Right" Panel.ZIndex="3" Focusable="False" Click="ModGridSearchButton_Click" Name="ModGridSearchButton" Height="35" Width="35">
-                                    <fa5:ImageAwesome Icon="Solid_Search" Foreground="#f2f2f2" Margin="3"/>
+                                    <fa5:ImageAwesome Icon="Solid_Search" Foreground="{DynamicResource TextBrush}" Margin="3"/>
                                 </Button>
                             </Grid>
                             <Border CornerRadius="5" Grid.Row="1" Margin="10,5,3,3" DragEnter="Add_Enter">
@@ -536,7 +537,7 @@
                                 </Image>
 
                                 <fa5:ImageAwesome Height="50" VerticalAlignment="Center" HorizontalAlignment="Center" Spin="True" SpinDuration="2"/>
-                                <RichTextBox FontSize="12" Padding="10" Grid.Row="1" Margin="3,5,10,3" Name="DescriptionWindow" Foreground="#F2F2F2" Background="#202020" BorderBrush="#424242" ClipToBounds="False"
+                                <RichTextBox FontSize="12" Padding="10" Grid.Row="1" Margin="3,5,10,3" Name="DescriptionWindow" Foreground="{DynamicResource TextBrush}" Background="#202020" BorderBrush="#424242" ClipToBounds="False"
                      VerticalContentAlignment="Center" VerticalAlignment="Stretch" VerticalScrollBarVisibility="Auto" IsReadOnly="True" Grid.ColumnSpan="5" IsDocumentEnabled="True"
                              FontWeight="Medium"/>
                             </Grid>
@@ -592,14 +593,14 @@
                                     </Grid.ColumnDefinitions>
                                     <Button HorizontalAlignment="Right" VerticalAlignment="Center" Click="ImageLeft_Click" Name="BigImageLeft" Content="&lt;" Height="50" Width="50" FontWeight="SemiBold" FontSize="20"/>
                                     <Image Grid.Column="1" Name="BigScreenshot" Stretch="Uniform" Margin="20,0,20,0" VerticalAlignment="Center"/>
-                                    <fa5:ImageAwesome Panel.ZIndex="-1" Grid.Column="1" Foreground="#ffee5f" Icon="Solid_Spinner" Height="40" VerticalAlignment="Center" HorizontalAlignment="Center" Spin="True" SpinDuration="2"/>
+                                    <fa5:ImageAwesome Panel.ZIndex="-1" Grid.Column="1" Foreground="{DynamicResource LoadingBrush}" Icon="Solid_Spinner" Height="40" VerticalAlignment="Center" HorizontalAlignment="Center" Spin="True" SpinDuration="2"/>
                                     <Button Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" Click="ImageRight_Click" Name="BigImageRight" Content=">" Height="50" Width="50" FontWeight="SemiBold" FontSize="20"/>
                                 </Grid>
-                                <TextBlock Name="BigCaptionText" VerticalAlignment="Center" HorizontalAlignment="Center" Grid.Row="2" FontSize="18" Foreground="#f2f2f2" Padding="5"/>
+                                <TextBlock Name="BigCaptionText" VerticalAlignment="Center" HorizontalAlignment="Center" Grid.Row="2" FontSize="18" Foreground="{DynamicResource TextBrush}" Padding="5"/>
                             </StackPanel>
                         </Border>
                         <StackPanel Grid.ColumnSpan="2" Margin="20" Orientation="Horizontal" Grid.Row="3" HorizontalAlignment="Right" VerticalAlignment="Center">
-                            <Button Click="CloseMedia_Click" Content="Close" Height="50" Width="200" FontSize="20" FontWeight="SemiBold" Foreground="#f2f2f2">
+                            <Button Click="CloseMedia_Click" Content="Close" Height="50" Width="200" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}">
                                 <Button.Resources>
                                     <Style TargetType="{x:Type Border}">
                                         <Setter Property="CornerRadius" Value="2"/>
@@ -628,7 +629,7 @@
                             </Border.Background>
                         </Border>
                         <Border Grid.ColumnSpan="2" BorderThickness="0">
-                            <TextBlock Grid.ColumnSpan="2" VerticalAlignment="Center" Text="{Binding Path=Title}" TextTrimming="WordEllipsis" Foreground="#f2f2f2" FontWeight="SemiBold" FontSize="40" Padding="6,3,3,3"/>
+                            <TextBlock Grid.ColumnSpan="2" VerticalAlignment="Center" Text="{Binding Path=Title}" TextTrimming="WordEllipsis" Foreground="{DynamicResource TextBrush}" FontWeight="SemiBold" FontSize="40" Padding="6,3,3,3"/>
                         </Border>
                         <StackPanel Name="ImagePanel" Visibility="Collapsed" VerticalAlignment="Center" Grid.Column="1" Grid.Row="2">
                             <Grid HorizontalAlignment="Center" >
@@ -639,23 +640,23 @@
                                 </Grid.ColumnDefinitions>
                                 <Button HorizontalAlignment="Right" VerticalAlignment="Center" Click="ImageLeft_Click" Name="ImageLeft" Content="&lt;" Height="50" Width="50" FontWeight="SemiBold" FontSize="20"/>
                                 <Image Grid.Column="1" Cursor="Hand" PreviewMouseLeftButtonDown="Image_Click" Name="Screenshot" Stretch="Uniform" MaxHeight="400" Margin="20,0,20,0" VerticalAlignment="Center"/>
-                                <fa5:ImageAwesome Panel.ZIndex="-1" Grid.Column="1" Foreground="#ffee5f" Icon="Solid_Spinner" Height="40" VerticalAlignment="Center" HorizontalAlignment="Center" Spin="True" SpinDuration="2"/>
+                                <fa5:ImageAwesome Panel.ZIndex="-1" Grid.Column="1" Foreground="{DynamicResource LoadingBrush}" Icon="Solid_Spinner" Height="40" VerticalAlignment="Center" HorizontalAlignment="Center" Spin="True" SpinDuration="2"/>
                                 <Button Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" Click="ImageRight_Click" Name="ImageRight" Content=">" Height="50" Width="50" FontWeight="SemiBold" FontSize="20"/>
                             </Grid>
-                            <TextBlock Name="CaptionText" VerticalAlignment="Center" HorizontalAlignment="Center" Grid.Row="2" FontSize="18" Foreground="#f2f2f2" Padding="5"/>
+                            <TextBlock Name="CaptionText" VerticalAlignment="Center" HorizontalAlignment="Center" Grid.Row="2" FontSize="18" Foreground="{DynamicResource TextBrush}" Padding="5"/>
                         </StackPanel>
                         <Border Grid.Row="1" Grid.ColumnSpan="2" Background="#404040"/>
-                        <RichTextBox Margin="5" Name="DescText" Grid.Row="2" Background="Transparent" BorderThickness="0" IsDocumentEnabled="True" VerticalScrollBarVisibility="Auto" IsReadOnly="True" Foreground="#f2f2f2" Padding="10,0,10,10" FontSize="18"/>
+                        <RichTextBox Margin="5" Name="DescText" Grid.Row="2" Background="Transparent" BorderThickness="0" IsDocumentEnabled="True" VerticalScrollBarVisibility="Auto" IsReadOnly="True" Foreground="{DynamicResource TextBrush}" Padding="10,0,10,10" FontSize="18"/>
                         <StackPanel Grid.ColumnSpan="2" Margin="20" Orientation="Horizontal" Grid.Row="3" HorizontalAlignment="Right" VerticalAlignment="Center">
-                            <Button Name="AltButton" Click="AltDownload_Click" Content="Alt. Downloads" IsEnabled="{Binding Path=Compatible}" Margin="0,0,20,0" Height="50" Width="200" FontSize="20" FontWeight="SemiBold" Foreground="#f2f2f2">
+                            <Button Name="AltButton" Click="AltDownload_Click" Content="Alt. Downloads" IsEnabled="{Binding Path=Compatible}" Margin="0,0,20,0" Height="50" Width="200" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}">
                                 <Button.Resources>
                                     <Style TargetType="{x:Type Border}">
                                         <Setter Property="CornerRadius" Value="2"/>
                                     </Style>
                                 </Button.Resources>
                             </Button>
-                            <Border Name="DownloadButton" Margin="0,0,20,0" Height="50" Width="200" CornerRadius="2" Background="#ffee5f">
-                                <Button Margin="3" Click="Download_Click" Content="Download" IsEnabled="{Binding Path=Compatible}" FontSize="20" FontWeight="SemiBold" Foreground="#f2f2f2">
+                            <Border Name="DownloadButton" Margin="0,0,20,0" Height="50" Width="200" CornerRadius="2" Background="{DynamicResource LoadingBrush}">
+                                <Button Margin="3" Click="Download_Click" Content="Download" IsEnabled="{Binding Path=Compatible}" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}">
                                     <Button.Resources>
                                         <Style TargetType="{x:Type Border}">
                                             <Setter Property="CornerRadius" Value="2"/>
@@ -663,14 +664,14 @@
                                     </Button.Resources>
                                 </Button>
                             </Border>
-                            <Button Name="HomepageButton" Click="Homepage_Click" Margin="0,0,20,0" Height="50" Width="200" FontSize="20" FontWeight="SemiBold" Foreground="#f2f2f2">
+                            <Button Name="HomepageButton" Click="Homepage_Click" Margin="0,0,20,0" Height="50" Width="200" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}">
                                 <Button.Resources>
                                     <Style TargetType="{x:Type Border}">
                                         <Setter Property="CornerRadius" Value="2"/>
                                     </Style>
                                 </Button.Resources>
                             </Button>
-                            <Button Click="CloseDesc_Click" Content="Close" Height="50" Width="200" FontSize="20" FontWeight="SemiBold" Foreground="#f2f2f2">
+                            <Button Click="CloseDesc_Click" Content="Close" Height="50" Width="200" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}">
                                 <Button.Resources>
                                     <Style TargetType="{x:Type Border}">
                                         <Setter Property="CornerRadius" Value="2"/>
@@ -705,8 +706,8 @@
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>
-                    <TextBox Margin="5,0,35,0" Background="#353535" Foreground="#f2f2f2" BorderBrush="#353535" Padding="4,0,0,0" Grid.Column="4" IsEnabled="False" KeyDown="SearchBar_KeyDown" Name="SearchBar" Height="35" MinWidth="200" HorizontalAlignment="Stretch" VerticalContentAlignment="Center"/>
-                    <TextBlock Margin="5,0,35,0" Padding="7,5.5,3,3" Grid.Column="4" IsHitTestVisible="False" Height="35" MinWidth="200" HorizontalAlignment="Left" Text="Search..." VerticalAlignment="Center" Foreground="#f2f2f2">
+                    <TextBox Margin="5,0,35,0" Background="#353535" Foreground="{DynamicResource TextBrush}" BorderBrush="#353535" Padding="4,0,0,0" Grid.Column="4" IsEnabled="False" KeyDown="SearchBar_KeyDown" Name="SearchBar" Height="35" MinWidth="200" HorizontalAlignment="Stretch" VerticalContentAlignment="Center"/>
+                    <TextBlock Margin="5,0,35,0" Padding="7,5.5,3,3" Grid.Column="4" IsHitTestVisible="False" Height="35" MinWidth="200" HorizontalAlignment="Left" Text="Search..." VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
                                 <Style.Triggers>
@@ -718,11 +719,11 @@
                         </TextBlock.Style>
                     </TextBlock>
                     <Button Grid.Column="4" IsEnabled="False" HorizontalAlignment="Right" Click="SearchButton_Click" Name="SearchButton" Height="35" Width="35">
-                        <fa5:ImageAwesome Icon="Solid_Search" Foreground="#f2f2f2" Margin="3"/>
+                        <fa5:ImageAwesome Icon="Solid_Search" Foreground="{DynamicResource TextBrush}" Margin="3"/>
                     </Button>
                     <StackPanel Grid.Column="5" Orientation="Horizontal" HorizontalAlignment="Center" Margin="5,0,0,0" >
                         <CheckBox Name="NSFWCheckbox" IsEnabled="False" Unchecked="NSFWCheckbox_Checked" Checked="NSFWCheckbox_Checked"  Margin="0,0,5,0" VerticalAlignment="Center" />
-                        <TextBlock Foreground="#f2f2f2" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="14" FontWeight="Medium">
+                        <TextBlock Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="14" FontWeight="Medium">
                             Include<LineBreak/>
                             NSFW
                         </TextBlock>
@@ -736,24 +737,24 @@
                             <Border.Background>
                                 <SolidColorBrush Color="#101010" Opacity="0.9"/>
                             </Border.Background>
-                            <TextBlock Margin="10" Text="Go to gamebanana.com" Foreground="#f2f2f2" FontWeight="Medium" FontSize="18" VerticalAlignment="Center" />
+                            <TextBlock Margin="10" Text="Go to gamebanana.com" Foreground="{DynamicResource TextBrush}" FontWeight="Medium" FontSize="18" VerticalAlignment="Center" />
                         </Border>
                     </Popup>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Grid.ColumnSpan="8" Grid.Row="2">
-                        <Button IsEnabled="False" Name="PageLeft" Click="DecrementPage" Content="&lt;" HorizontalAlignment="Right" Margin="0,0,15,0" FontSize="18" FontWeight="Medium"  Height="35" Width="35" Background="#181818" BorderBrush="#252525" Foreground="#f2f2f2"/>
-                        <TextBlock Name="Page" Text="Page 1" Foreground="#f2f2f2" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="18" FontWeight="Medium" />
-                        <Button IsEnabled="False" Name="PageRight" Click="IncrementPage" Content=">" HorizontalAlignment="Left" Margin="15,0,0,0" FontSize="18" FontWeight="Medium" Height="35" Width="35" Background="#181818" BorderBrush="#252525" Foreground="#f2f2f2"/>
+                        <Button IsEnabled="False" Name="PageLeft" Click="DecrementPage" Content="&lt;" HorizontalAlignment="Right" Margin="0,0,15,0" FontSize="18" FontWeight="Medium"  Height="35" Width="35" Background="#181818" BorderBrush="#252525" Foreground="{DynamicResource TextBrush}"/>
+                        <TextBlock Name="Page" Text="Page 1" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="18" FontWeight="Medium" />
+                        <Button IsEnabled="False" Name="PageRight" Click="IncrementPage" Content=">" HorizontalAlignment="Left" Margin="15,0,0,0" FontSize="18" FontWeight="Medium" Height="35" Width="35" Background="#181818" BorderBrush="#252525" Foreground="{DynamicResource TextBrush}"/>
                         <ComboBox IsEnabled="False" Margin="15,0,15,0" Name="PageBox" SelectionChanged="PageBox_SelectionChanged" Height="35" VerticalAlignment="Center"/>
                     </StackPanel>
                     <StackPanel Margin="5,5,10,5" Grid.ColumnSpan="8" Orientation="Horizontal" HorizontalAlignment="Right" Grid.Row="2">
-                        <Button Margin="0,0,15,0" Click="ClearCache" Name="ClearCacheButton" Content="Refresh" HorizontalAlignment="center" FontSize="18" FontWeight="Medium"  Height="35" Width="80" Background="#181818" BorderBrush="#252525" IsEnabled="False" Foreground="#f2f2f2">
+                        <Button Margin="0,0,15,0" Click="ClearCache" Name="ClearCacheButton" Content="Refresh" HorizontalAlignment="center" FontSize="18" FontWeight="Medium"  Height="35" Width="80" Background="#181818" BorderBrush="#252525" IsEnabled="False" Foreground="{DynamicResource TextBrush}">
                             <Button.Resources>
                                 <Style TargetType="{x:Type Border}">
                                     <Setter Property="CornerRadius" Value="5"/>
                                 </Style>
                             </Button.Resources>
                         </Button>
-                        <TextBlock Margin="0,0,15,0" Foreground="#f2f2f2" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="18" FontWeight="Medium">
+                        <TextBlock Margin="0,0,15,0" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="18" FontWeight="Medium">
                             Per Page:
                         </TextBlock>
                         <ComboBox IsEnabled="False" Name="PerPageBox" SelectionChanged="PerPageSelectionChanged" Height="35" VerticalAlignment="Center">
@@ -764,10 +765,10 @@
                             <ComboBoxItem>50</ComboBoxItem>
                         </ComboBox>
                     </StackPanel>
-                    <fa5:ImageAwesome Name="LoadingBar" Grid.ColumnSpan="8" Foreground="#ffee5f" Panel.ZIndex="1" Grid.Row="1" Icon="Solid_Spinner" Height="110" VerticalAlignment="Center" HorizontalAlignment="Center" Spin="True" SpinDuration="2"/>
+                    <fa5:ImageAwesome Name="LoadingBar" Grid.ColumnSpan="8" Foreground="{DynamicResource LoadingBrush}" Panel.ZIndex="1" Grid.Row="1" Icon="Solid_Spinner" Height="110" VerticalAlignment="Center" HorizontalAlignment="Center" Spin="True" SpinDuration="2"/>
                     <StackPanel Name="ErrorPanel" Grid.ColumnSpan="8" Grid.Row="1" Panel.ZIndex="1" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <TextBlock Name="BrowserMessage" HorizontalAlignment="Center"  Opacity="1" Background="Transparent" Foreground="#f2f2f2" FontWeight="Medium" TextWrapping="Wrap" Width="800" TextAlignment="Center" FontSize="25"/>
-                        <Button Margin="10" Click="BrowserRefresh" Name="BrowserRefreshButton" Content="Retry" HorizontalAlignment="center" FontSize="18" FontWeight="Medium"  Height="40" Width="140" Background="#181818" BorderBrush="#252525" Foreground="#f2f2f2">
+                        <TextBlock Name="BrowserMessage" HorizontalAlignment="Center"  Opacity="1" Background="Transparent" Foreground="{DynamicResource TextBrush}" FontWeight="Medium" TextWrapping="Wrap" Width="800" TextAlignment="Center" FontSize="25"/>
+                        <Button Margin="10" Click="BrowserRefresh" Name="BrowserRefreshButton" Content="Retry" HorizontalAlignment="center" FontSize="18" FontWeight="Medium"  Height="40" Width="140" Background="#181818" BorderBrush="#252525" Foreground="{DynamicResource TextBrush}">
                             <Button.Resources>
                                 <Style TargetType="{x:Type Border}">
                                     <Setter Property="CornerRadius" Value="5"/>
@@ -810,9 +811,9 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
 
                     <StackPanel Margin="10" Orientation="Vertical" VerticalAlignment="Top" >
-                        <Grid Name="PLUSSearchBar" Panel.ZIndex="2" Margin="10,5,3,5" Height="35" VerticalAlignment="Center">
-                            <TextBox x:Name="PLUS_SearchBar" Background="#353535" Foreground="#f2f2f2" BorderBrush="#353535" Padding="5" TextWrapping="NoWrap" TextChanged="UpdatePLUSfilter"/>
-                            <TextBlock Padding="8,5,5,5" Foreground="#f2f2f2" Panel.ZIndex="3" IsHitTestVisible="False" Height="35" HorizontalAlignment="Left" VerticalAlignment="Center" Text="Search for Filter...">
+                        <Grid Name="PLUSSearchBar" Panel.ZIndex="2" Margin="10,5,3,5" Height="35" VerticalAlignment="Center" Background="{DynamicResource PrimaryBrush}">
+                            <TextBox x:Name="PLUS_SearchBar" Background="{DynamicResource PrimaryBrush}" Foreground="{DynamicResource TextBrush}" BorderBrush="#353535" Padding="5" TextWrapping="NoWrap" TextChanged="UpdatePLUSfilter"/>
+                            <TextBlock Padding="8,5,5,5" Foreground="{DynamicResource TextBrush}" Panel.ZIndex="3" IsHitTestVisible="False" Height="35" HorizontalAlignment="Left" VerticalAlignment="Center" Text="Search for Filter...">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
                                         <Style.Triggers>
@@ -825,7 +826,7 @@
                             </TextBlock>
                         </Grid>
                         <StackPanel x:Name="TutorialPanel" Orientation="Vertical" Margin="0,0,0,30" Tag="Tutorial" HorizontalAlignment="Left">
-                            <Button x:Name="ReplayTutorial" Click="ReplayTutorial_Click" Height="30" HorizontalAlignment="Left" Background="#3b82f6" Foreground="White" BorderThickness="0" Cursor="Hand">
+                            <Button x:Name="ReplayTutorial" Click="ReplayTutorial_Click" Height="30" HorizontalAlignment="Left" Background="#3b82f6" Foreground="{DynamicResource TextBrush}" Cursor="Hand">
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                     <Image Source="pack://application:,,,/PizzaOven;component/Icons/Ronnie.png" Height="30" Width="30" Margin="0,0,5,0"/>
                                     <TextBlock Text="Replay Tutorial" VerticalAlignment="Center"/>
@@ -834,22 +835,22 @@
                         </StackPanel>
                         <StackPanel Orientation="Vertical" Margin="0,0,0,30" Tag="Links:" HorizontalAlignment="Left">
                             <StackPanel Orientation="Vertical" Margin="0,0,0,30" HorizontalAlignment="Left">
-                                <TextBlock Text="Links:" Margin="0,5,0,2" Foreground="#f2f2f2"/>
-                                <Button x:Name="OpenSuggestForm" Click="OpenSuggestForm_Click" Height="30" HorizontalAlignment="Left" Background="#3b82f6" Foreground="White" BorderThickness="0" Cursor="Hand">
+                                <TextBlock Text="Links:" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
+                                <Button x:Name="OpenSuggestForm" Click="OpenSuggestForm_Click" Height="30" HorizontalAlignment="Left" Background="#3b82f6" Foreground="{DynamicResource TextBrush}" Cursor="Hand">
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                         <Image Source="pack://application:,,,/PizzaOven;component/Icons/GoogleForm.png" Height="30" Width="30" Margin="0,0,5,0"/>
                                         <TextBlock Text="Open Suggestion Form" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
 
-                                <Button x:Name="OpenEmail" Click="OpenEmail_Click" Height="30" HorizontalAlignment="Left" Background="#3b82f6" Foreground="White" BorderThickness="0" Cursor="Hand">
+                                <Button x:Name="OpenEmail" Click="OpenEmail_Click" Height="30" HorizontalAlignment="Left" Background="#3b82f6" Foreground="{DynamicResource TextBrush}" Cursor="Hand">
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                         <Image Source="pack://application:,,,/PizzaOven;component/Icons/Email.png" Height="30" Width="30" Margin="0,0,5,0"/>
                                         <TextBlock Text="Open PO+ Email" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
 
-                                <Button x:Name="OpenTwitterX" Click="OpenTwitterX_Click" Height="30" HorizontalAlignment="Left" Background="#3b82f6" Foreground="White" BorderThickness="0" Cursor="Hand">
+                                <Button x:Name="OpenTwitterX" Click="OpenTwitterX_Click" Height="30" HorizontalAlignment="Left" Background="#3b82f6" Foreground="{DynamicResource TextBrush}" Cursor="Hand">
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                         <Image Source="pack://application:,,,/PizzaOven;component/Icons/TwitterX.png" Height="30" Width="30" Margin="0,0,5,0"/>
                                         <TextBlock Text="Open My Personal Twitter/X (may have updates on PO+)" VerticalAlignment="Center"/>
@@ -859,19 +860,31 @@
                         </StackPanel>
 
                         <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="PO. Files">
-                            <TextBlock Text="PO. Files:" Margin="0,5,0,2" Foreground="#f2f2f2"/>
+                            <TextBlock Text="PO. Files:" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
                             <Button Content="Clean PO. Files" Height="30" HorizontalAlignment="Left" Click="CleanPO_click"/>
                             <Button x:Name="POLanguage" Content="Do not Apply to Language Files" Height="30" HorizontalAlignment="Left" Click="POLanguage_Click"/>
                             <Button x:Name="POOverwriteBackup" Content="Make/Overwrite new data.win.po" Height="30" HorizontalAlignment="Left" Click="POOverwriteBackup_Click"/>
                         </StackPanel>
 
-                        <StackPanel Orientation="Vertical" Margin="0,0,0,20" Tag="Launch Settings">
-                            <TextBlock Text="Launch Settings:" Margin="0,5,0,2" Foreground="#f2f2f2"/>
-                            <Button x:Name="OpenPTFolder" Foreground="#f2f2f2" Content="Open Pizza Tower Folder" Height="35" HorizontalAlignment="Left" Click="OpenPTFolder_Click"/>
-                            <Button x:Name="ChooseNewPTFolder" Foreground="#f2f2f2" Content="Choose Temporary New Pizza Tower Folder" Height="35" HorizontalAlignment="Left" Click="ChooseNewPTFolder_Click"/>
-                            <Button x:Name="DebugToggle" Foreground="#f2f2f2" Content="Disable Debug?" Height="35" HorizontalAlignment="Left" Click="DebugToggle_Click"/>
+                        <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="Themes">
+                            <TextBlock Text="Theme colors:" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
+                            
+                            <StackPanel Orientation="Horizontal" Margin="0,2">
+                                <TextBlock Text="Primary:" Width="100" Foreground="{DynamicResource TextBrush}"/>
 
-                            <Button x:Name="SteamLaunchToggle" Height="35" HorizontalAlignment="Left" Click="SteamLaunch_Click" Foreground="#f2f2f2" Background="#3b82f6" BorderThickness="0" Cursor="Hand" Content="Use Steam?">
+                            </StackPanel>
+                            
+                        </StackPanel>
+                        
+                       
+
+                        <StackPanel Orientation="Vertical" Margin="0,0,0,20" Tag="Launch Settings">
+                            <TextBlock Text="Launch Settings:" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
+                            <Button x:Name="OpenPTFolder" Foreground="{DynamicResource TextBrush}" Content="Open Pizza Tower Folder" Height="35" HorizontalAlignment="Left" Click="OpenPTFolder_Click"/>
+                            <Button x:Name="ChooseNewPTFolder" Foreground="{DynamicResource TextBrush}" Content="Choose Temporary New Pizza Tower Folder" Height="35" HorizontalAlignment="Left" Click="ChooseNewPTFolder_Click"/>
+                            <Button x:Name="DebugToggle" Foreground="{DynamicResource TextBrush}" Content="Disable Debug?" Height="35" HorizontalAlignment="Left" Click="DebugToggle_Click"/>
+
+                            <Button x:Name="SteamLaunchToggle" Height="35" HorizontalAlignment="Left" Click="SteamLaunch_Click" Foreground="{DynamicResource TextBrush}" Background="#3b82f6" Cursor="Hand" Content="Use Steam?">
                                 <Button.ContentTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" Tag="Launch Settings">
@@ -884,10 +897,10 @@
                         </StackPanel>
 
                         <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="Patch Version">
-                            <TextBlock Text="Patch Version:" Margin="0,5,0,2" Foreground="#f2f2f2"/>
+                            <TextBlock Text="Patch Version:" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
                             <ComboBox Name="DowngradeCombo" Width="200" Height="30" HorizontalAlignment="Left"/>
 
-                            <TextBlock Text="Downgrade Download:" Margin="0,8,0,2" Foreground="#f2f2f2"/>
+                            <TextBlock Text="Downgrade Download:" Margin="0,8,0,2" Foreground="{DynamicResource TextBrush}"/>
                             <StackPanel Orientation="Horizontal"  Tag="Patch Version">
                                 <ComboBox Name="DowngradeDownloadCombo" Width="200" Height="30"/>
                                 <Button Name="DowngradeDownloadButton" Content="Download" Width="90" Height="30" Margin="8,0,0,0" Click="DowngradeDownload_Click"/>
@@ -895,18 +908,18 @@
                         </StackPanel>
                         
                         <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="GMLoader">
-                            <TextBlock Text="GMLoader by Senjay (allows you to stack mods):" Margin="0,5,0,2" Foreground="#f2f2f2"/>
-                            <Button x:Name="GMLoaderConvert" Click="GMLoaderConvert_Click" Height="30" HorizontalAlignment="Left" Background="#3b82f6" Foreground="White" BorderThickness="0" Cursor="Hand">
+                            <TextBlock Text="GMLoader by Senjay (allows you to stack mods):" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
+                            <Button x:Name="GMLoaderConvert" Click="GMLoaderConvert_Click" Height="30" HorizontalAlignment="Left" Background="#3b82f6" Foreground="{DynamicResource TextBrush}" Cursor="Hand">
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                     <Image Source="pack://application:,,,/PizzaOven;component/Icons/GMLoader.png" Height="30" Width="30" Margin="0,0,5,0"/>
                                     <TextBlock Text="Convert XDelta/Win to GMLoader" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
-                            <Button x:Name="KillGMLoader" Foreground="#f2f2f2" Content="Kill GMLoader (sometimes background gmloader processes mess up PO+)" Height="35" HorizontalAlignment="Left" Click="KillGMLoader_Click"/>
+                            <Button x:Name="KillGMLoader" Foreground="{DynamicResource TextBrush}" Content="Kill GMLoader (sometimes background gmloader processes mess up PO+)" Height="35" HorizontalAlignment="Left" Click="KillGMLoader_Click"/>
                         </StackPanel>
 
                         <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="Mod Folder">
-                            <TextBlock Text="Mod Folder (You can set folders by selecting the mod, right clicking and adding a folder name):" Margin="0,5,0,2" Foreground="#f2f2f2"/>
+                            <TextBlock Text="Mod Folder (You can set folders by selecting the mod, right clicking and adding a folder name):" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                 <ComboBox x:Name="ModFolderCombo" Width="200" Height="30" HorizontalAlignment="Left">
 
@@ -924,22 +937,22 @@
                         </StackPanel>
 
                         <StackPanel Orientation="Vertical" Margin="0,0,0,20" Tag="Custom Assets">
-                            <TextBlock Text="Custom Assets:" Margin="0,5,0,2" Foreground="#f2f2f2"/>
-                            <Button x:Name="AssetsFolder" Foreground="#f2f2f2" Content="Open Assets Folder" Height="35" HorizontalAlignment="Left" Click="AssetsFolder_Click"/>
-                            <Button x:Name="RestoreMissingAssets" Foreground="#f2f2f2" Content="Restore Missing Assets" Height="35" HorizontalAlignment="Left" Click="RestoreMissingAssets_Click"/>
-                            <Button x:Name="RestoreALLAssets" Foreground="#f2f2f2" Content="Restore All Assets" Height="35" HorizontalAlignment="Left" Click="RestoreALLAssets_Click"/>
-                            <Button x:Name="MuteButton" Foreground="#f2f2f2" Content="Enable Mute?" Height="35" HorizontalAlignment="Left" Click="Mute_Click"/>
-                            <Button x:Name="UnfocusedMuteButton" Foreground="#f2f2f2" Content="Enable Unfocused Mute?" Height="35" HorizontalAlignment="Left" Click="UnfocusedMute_Click"/>
-                            <TextBlock Text="Volume:" Margin="0,0,0,5" Foreground="#f2f2f2"/>
+                            <TextBlock Text="Custom Assets:" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
+                            <Button x:Name="AssetsFolder" Foreground="{DynamicResource TextBrush}" Content="Open Assets Folder" Height="35" HorizontalAlignment="Left" Click="AssetsFolder_Click"/>
+                            <Button x:Name="RestoreMissingAssets" Foreground="{DynamicResource TextBrush}" Content="Restore Missing Assets" Height="35" HorizontalAlignment="Left" Click="RestoreMissingAssets_Click"/>
+                            <Button x:Name="RestoreALLAssets" Foreground="{DynamicResource TextBrush}" Content="Restore All Assets" Height="35" HorizontalAlignment="Left" Click="RestoreALLAssets_Click"/>
+                            <Button x:Name="MuteButton" Foreground="{DynamicResource TextBrush}" Content="Enable Mute?" Height="35" HorizontalAlignment="Left" Click="Mute_Click"/>
+                            <Button x:Name="UnfocusedMuteButton" Foreground="{DynamicResource TextBrush}" Content="Enable Unfocused Mute?" Height="35" HorizontalAlignment="Left" Click="UnfocusedMute_Click"/>
+                            <TextBlock Text="Volume:" Margin="0,0,0,5" Foreground="{DynamicResource TextBrush}"/>
                             <StackPanel Orientation="Horizontal" Tag="Custom Assets">
                                 <Slider x:Name="SoundVolume" Minimum="0" Maximum="100" Width="120" ValueChanged="SoundVolume_ValueChanged"/>
-                                <TextBlock Text="{Binding ElementName=SoundVolume, Path=Value, StringFormat={}{0:0}}" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="#f2f2f2"/>
+                                <TextBlock Text="{Binding ElementName=SoundVolume, Path=Value, StringFormat={}{0:0}}" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}"/>
                             </StackPanel>
                         </StackPanel>
 
                         <StackPanel Orientation="Vertical" Margin="0,0,0,20" Tag="Discord RPC">
-                            <TextBlock Text="Discord RPC (Displays on Discord):" Margin="0,5,0,2" Foreground="#f2f2f2"/>
-                            <Button x:Name="RPCtoggle" Height="35" HorizontalAlignment="Left" Click="RPCtoggle_Click" Foreground="#f2f2f2" Background="#3b82f6" BorderThickness="0" Cursor="Hand" Content="Disable RPC?">
+                            <TextBlock Text="Discord RPC (Displays on Discord):" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
+                            <Button x:Name="RPCtoggle" Height="35" HorizontalAlignment="Left" Click="RPCtoggle_Click" Foreground="{DynamicResource TextBrush}" Background="#3b82f6" Cursor="Hand" Content="Disable RPC?">
                                 <Button.ContentTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" Tag="Discord RPC">
@@ -952,8 +965,8 @@
                         </StackPanel>
 
                         <StackPanel Orientation="Vertical" Margin="0,0,0,20" Tag="Low-End Settings">
-                            <TextBlock Text="Low-End Settings(Disables Features to allow a smoother experience for low-end devices):" Margin="0,5,0,2" Foreground="#f2f2f2"/>
-                            <Button x:Name="MODUPDATERtoggle" Foreground="#f2f2f2" Content="Disable Check for Mod Updates?" HorizontalAlignment="Left" Click="MODUPDATERtoggle_Click"/>
+                            <TextBlock Text="Low-End Settings(Disables Features to allow a smoother experience for low-end devices):" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
+                            <Button x:Name="MODUPDATERtoggle" Foreground="{DynamicResource TextBrush}" Content="Disable Check for Mod Updates?" HorizontalAlignment="Left" Click="MODUPDATERtoggle_Click"/>
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>

@@ -1,0 +1,17 @@
+﻿<Window x:Class="PizzaOven.ColorPicker"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:colorpicker="clr-namespace:ColorPicker;assembly=ColorPicker"
+        Title="Pick a Color" 
+        Height="486" Width="500"
+        WindowStartupLocation="CenterScreen"
+        Background="#353535"
+        ResizeMode="NoResize">
+
+    <Grid>
+        <colorpicker:StandardColorPicker 
+
+        />
+    </Grid>
+
+</Window>

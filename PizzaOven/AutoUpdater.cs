@@ -142,7 +142,7 @@ namespace PizzaOven
                 progressBox = new ProgressBox(cancellationToken);
                 progressBox.progressBar.Value = 0;
                 progressBox.progressText.Text = $"Downloading {fileName}";
-                progressBox.Title = "Pizza Oven Update Progress";
+                progressBox.Title = "Pizza Oven+ Update Progress";
                 progressBox.finished = false;
                 progressBox.Show();
                 progressBox.Activate();

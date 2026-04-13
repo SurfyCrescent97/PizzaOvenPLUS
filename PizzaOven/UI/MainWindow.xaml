@@ -358,7 +358,13 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
+                    <Grid Height="30" Background="{DynamicResource PrimaryBrush}"  Panel.ZIndex="5" Visibility="{Binding GMLoader, Converter={StaticResource BooleanToVisibilityConverter}}" Grid.Row="0" VerticalAlignment="Top">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <CheckBox VerticalAlignment="Center" Margin="5,0,5,0" IsChecked="{Binding GMLoader_enabled, Mode=TwoWay}"/>
 
+                            <TextBlock VerticalAlignment="Center" Text="Enable GMLoader Mod" Foreground="{DynamicResource TextBrush}"/>
+                        </StackPanel>
+                    </Grid>
                     <TextBlock VerticalAlignment="Center" Panel.ZIndex="4" FontSize="40" FontWeight="Medium" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}"/>
                     <Image Margin="5,10,5,5" Source="{Binding Path=preview,Mode=OneWay,IsAsync=True}" Height="168" Panel.ZIndex="3"  VerticalAlignment="Center" Stretch="Uniform"/>
                     <Rectangle Height="168" Panel.ZIndex="1" Fill="Black" Stretch="UniformToFill" Margin="5,10,5,5" VerticalAlignment="Center">
@@ -417,13 +423,13 @@
                                      Value="True">
                                         <Setter TargetName="Border"
                                         Property="Background"
-                                        Value="#353535" />
+                                        Value="{DynamicResource SecondaryBrush}" />
                                     </Trigger>
                                     <Trigger Property="IsSelected"
                                      Value="True">
                                         <Setter TargetName="Border"
                                         Property="Background"
-                                        Value="#353535" />
+                                        Value="{DynamicResource SecondaryBrush}" />
                                     </Trigger>
                                 </ControlTemplate.Triggers>
                             </ControlTemplate>
@@ -466,7 +472,7 @@
                                 <TextBlock Foreground="{DynamicResource TextBrush}" FontSize="40" Panel.ZIndex="3" VerticalAlignment="Center" HorizontalAlignment="Center">Drop files here to install mod<LineBreak/>or use Browse Mods tab on top</TextBlock>
                             </Grid>
                             <Grid Name="ModGridSearchBarGrid" Panel.ZIndex="2" Margin="10,5,3,5" Height="35" VerticalAlignment="Center">
-                                <TextBox Margin="0,0,35,0" Background="{DynamicResource PrimaryBrush}" Foreground="{DynamicResource TextBrush}" BorderBrush="#353535" x:Name="ModGrid_SearchBar" KeyDown="ModGrid_SearchBar_KeyDown" Padding="5" TextWrapping="NoWrap"/>
+                                <TextBox Margin="0,0,35,0" Background="{DynamicResource SecondaryBrush}" Foreground="{DynamicResource TextBrush}" BorderBrush="#353535" x:Name="ModGrid_SearchBar" KeyDown="ModGrid_SearchBar_KeyDown" Padding="5" TextWrapping="NoWrap"/>
                                 <TextBlock Padding="8,5,5,5" Foreground="{DynamicResource TextBrush}" Panel.ZIndex="3" IsHitTestVisible="False" Height="35"  HorizontalAlignment="Left" Text="Search..." VerticalAlignment="Center">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
@@ -496,7 +502,7 @@
                                     <fa5:ImageAwesome Icon="Solid_Search" Foreground="{DynamicResource TextBrush}" Margin="3"/>
                                 </Button>
                             </Grid>
-                            <Border CornerRadius="5" Grid.Row="1" Margin="10,5,3,3" DragEnter="Add_Enter">
+                            <Border CornerRadius="5" Grid.Row="1" Margin="10,5,3,3" DragEnter="Add_Enter" x:Name="ModGrid_Border">
                                 <Border.BorderBrush>
                                     <SolidColorBrush Color="Black" Opacity="0.75"/>
                                 </Border.BorderBrush>
@@ -537,7 +543,7 @@
                                 </Image>
 
                                 <fa5:ImageAwesome Height="50" VerticalAlignment="Center" HorizontalAlignment="Center" Spin="True" SpinDuration="2"/>
-                                <RichTextBox FontSize="12" Padding="10" Grid.Row="1" Margin="3,5,10,3" Name="DescriptionWindow" Foreground="{DynamicResource TextBrush}" Background="#202020" BorderBrush="#424242" ClipToBounds="False"
+                                <RichTextBox FontSize="12" Padding="10" Grid.Row="1" Margin="3,5,10,3" Name="DescriptionWindow" Foreground="{DynamicResource TextBrush}" Background="{DynamicResource PrimaryBrush}" BorderBrush="#424242" ClipToBounds="False"
                      VerticalContentAlignment="Center" VerticalAlignment="Stretch" VerticalScrollBarVisibility="Auto" IsReadOnly="True" Grid.ColumnSpan="5" IsDocumentEnabled="True"
                              FontWeight="Medium"/>
                             </Grid>
@@ -555,7 +561,7 @@
                 </TabItem.Content>
             </TabItem>
             <TabItem Name="ModBrowser" Selector.Selected="OnBrowserTabSelected" FontSize="18" HorizontalAlignment="Center" Header="Browse Mods">
-                <Grid>
+                <Grid Name="ModBrowserGrid">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="50"/>
                         <RowDefinition/>
@@ -706,7 +712,7 @@
                             </DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>
-                    <TextBox Margin="5,0,35,0" Background="#353535" Foreground="{DynamicResource TextBrush}" BorderBrush="#353535" Padding="4,0,0,0" Grid.Column="4" IsEnabled="False" KeyDown="SearchBar_KeyDown" Name="SearchBar" Height="35" MinWidth="200" HorizontalAlignment="Stretch" VerticalContentAlignment="Center"/>
+                    <TextBox Margin="5,0,35,0" Background="{DynamicResource SecondaryBrush}" Foreground="{DynamicResource TextBrush}" BorderBrush="#353535" Padding="4,0,0,0" Grid.Column="4" IsEnabled="False" KeyDown="SearchBar_KeyDown" Name="SearchBar" Height="35" MinWidth="200" HorizontalAlignment="Stretch" VerticalContentAlignment="Center"/>
                     <TextBlock Margin="5,0,35,0" Padding="7,5.5,3,3" Grid.Column="4" IsHitTestVisible="False" Height="35" MinWidth="200" HorizontalAlignment="Left" Text="Search..." VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
@@ -776,7 +782,7 @@
                             </Button.Resources>
                         </Button>
                     </StackPanel>
-                    <Border Grid.ColumnSpan="8" Grid.Row="1" CornerRadius="5" Margin="10,0,10,0">
+                    <Border x:Name="ModBrowserBorder" Grid.ColumnSpan="8" Grid.Row="1" CornerRadius="5" Margin="10,0,10,0">
                         <Border.BorderBrush>
                             <SolidColorBrush Color="Black" Opacity="0.75"/>
                         </Border.BorderBrush>
@@ -807,172 +813,254 @@
                     </Border>
                 </Grid>
             </TabItem>
-            <TabItem Name="Settings" Header="PLUS' Settings" FontSize="18">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-
-                    <StackPanel Margin="10" Orientation="Vertical" VerticalAlignment="Top" >
-                        <Grid Name="PLUSSearchBar" Panel.ZIndex="2" Margin="10,5,3,5" Height="35" VerticalAlignment="Center" Background="{DynamicResource PrimaryBrush}">
-                            <TextBox x:Name="PLUS_SearchBar" Background="{DynamicResource PrimaryBrush}" Foreground="{DynamicResource TextBrush}" BorderBrush="#353535" Padding="5" TextWrapping="NoWrap" TextChanged="UpdatePLUSfilter"/>
-                            <TextBlock Padding="8,5,5,5" Foreground="{DynamicResource TextBrush}" Panel.ZIndex="3" IsHitTestVisible="False" Height="35" HorizontalAlignment="Left" VerticalAlignment="Center" Text="Search for Filter...">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding ElementName=PLUS_SearchBar, Path=Text.IsEmpty}" Value="False">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                        </Grid>
-                        <StackPanel x:Name="TutorialPanel" Orientation="Vertical" Margin="0,0,0,30" Tag="Tutorial" HorizontalAlignment="Left">
-                            <Button x:Name="ReplayTutorial" Click="ReplayTutorial_Click" Height="30" HorizontalAlignment="Left" Background="#3b82f6" Foreground="{DynamicResource TextBrush}" Cursor="Hand">
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <Image Source="pack://application:,,,/PizzaOven;component/Icons/Ronnie.png" Height="30" Width="30" Margin="0,0,5,0"/>
-                                    <TextBlock Text="Replay Tutorial" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
-                        </StackPanel>
-                        <StackPanel Orientation="Vertical" Margin="0,0,0,30" Tag="Links:" HorizontalAlignment="Left">
-                            <StackPanel Orientation="Vertical" Margin="0,0,0,30" HorizontalAlignment="Left">
-                                <TextBlock Text="Links:" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
-                                <Button x:Name="OpenSuggestForm" Click="OpenSuggestForm_Click" Height="30" HorizontalAlignment="Left" Background="#3b82f6" Foreground="{DynamicResource TextBrush}" Cursor="Hand">
+            <TabItem Name="Settings" Header="PLUS' Settings" HorizontalAlignment="Center" FontSize="18">
+                <Grid Name="SettingsGrid">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="10" Orientation="Vertical" VerticalAlignment="Top">
+                            <StackPanel Orientation="Vertical" Margin="0,0,0,30" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="SettingOptions">
+                                <Button x:Name="TutorialButton" Content="Tutorial" Height="40" Margin="0,5" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}" Background="{DynamicResource SecondaryBrush}" Click="FilterButton_Click" MouseEnter="FilterButton_HoverOn" MouseLeave="FilterButton_HoverOff"/>
+                                <Button Content="Links" Height="40" Margin="0,5" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}" Background="{DynamicResource SecondaryBrush}" Click="FilterButton_Click" MouseEnter="FilterButton_HoverOn" MouseLeave="FilterButton_HoverOff"/>
+                                <Button Content="App Settings" Height="40" Margin="0,5" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}" Background="{DynamicResource SecondaryBrush}" Click="FilterButton_Click" MouseEnter="FilterButton_HoverOn" MouseLeave="FilterButton_HoverOff"/>
+                                <Button Content="Launch Settings" Height="40" Margin="0,5" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}" Background="{DynamicResource SecondaryBrush}" Click="FilterButton_Click" MouseEnter="FilterButton_HoverOn" MouseLeave="FilterButton_HoverOff"/>
+                                <Button Content="Mod Settings" Height="40" Margin="0,5" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}" Background="{DynamicResource SecondaryBrush}" Click="FilterButton_Click" MouseEnter="FilterButton_HoverOn" MouseLeave="FilterButton_HoverOff"/>
+                                <Button Content="App Customization" Height="40" Margin="0,5" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}" Background="{DynamicResource SecondaryBrush}" Click="FilterButton_Click" MouseEnter="FilterButton_HoverOn" MouseLeave="FilterButton_HoverOff"/>
+                                <Button Content="GMLoader" Height="40" Margin="0,5" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}" Background="{DynamicResource SecondaryBrush}" Click="FilterButton_Click" MouseEnter="FilterButton_HoverOn" MouseLeave="FilterButton_HoverOff"/>
+                                <Button Content="Credits" Height="40" Margin="0,5" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}" Background="{DynamicResource SecondaryBrush}" Click="FilterButton_Click" MouseEnter="FilterButton_HoverOn" MouseLeave="FilterButton_HoverOff"/>
+                            </StackPanel>
+                            
+                            <StackPanel x:Name="TutorialPanel" Orientation="Vertical" Margin="0,0,0,30" Tag="Tutorial" HorizontalAlignment="Left">
+                                <Button Content="Back" Height="30" HorizontalAlignment="Left" Click="FilterButtonBack_Click"/>
+                                <Button x:Name="ReplayTutorial" Click="ReplayTutorial_Click" Height="30" HorizontalAlignment="Left" Background="#3b82f6" Foreground="{DynamicResource TextBrush}" Cursor="Hand">
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <Image Source="pack://application:,,,/PizzaOven;component/Icons/GoogleForm.png" Height="30" Width="30" Margin="0,0,5,0"/>
-                                        <TextBlock Text="Open Suggestion Form" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-
-                                <Button x:Name="OpenEmail" Click="OpenEmail_Click" Height="30" HorizontalAlignment="Left" Background="#3b82f6" Foreground="{DynamicResource TextBrush}" Cursor="Hand">
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <Image Source="pack://application:,,,/PizzaOven;component/Icons/Email.png" Height="30" Width="30" Margin="0,0,5,0"/>
-                                        <TextBlock Text="Open PO+ Email" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-
-                                <Button x:Name="OpenTwitterX" Click="OpenTwitterX_Click" Height="30" HorizontalAlignment="Left" Background="#3b82f6" Foreground="{DynamicResource TextBrush}" Cursor="Hand">
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <Image Source="pack://application:,,,/PizzaOven;component/Icons/TwitterX.png" Height="30" Width="30" Margin="0,0,5,0"/>
-                                        <TextBlock Text="Open My Personal Twitter/X (may have updates on PO+)" VerticalAlignment="Center"/>
+                                        <Image Source="pack://application:,,,/PizzaOven;component/Icons/Ronnie.png" Height="30" Width="30" Margin="0,0,5,0"/>
+                                        <TextBlock Text="Replay Tutorial" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
                             </StackPanel>
-                        </StackPanel>
 
-                        <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="PO. Files">
-                            <TextBlock Text="PO. Files:" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
-                            <Button Content="Clean PO. Files" Height="30" HorizontalAlignment="Left" Click="CleanPO_click"/>
-                            <Button x:Name="POLanguage" Content="Do not Apply to Language Files" Height="30" HorizontalAlignment="Left" Click="POLanguage_Click"/>
-                            <Button x:Name="POOverwriteBackup" Content="Make/Overwrite new data.win.po" Height="30" HorizontalAlignment="Left" Click="POOverwriteBackup_Click"/>
-                        </StackPanel>
-
-                        <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="Themes">
-                            <TextBlock Text="Theme colors:" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
-                            
-                            <StackPanel Orientation="Horizontal" Margin="0,2">
-                                <TextBlock Text="Primary:" Width="100" Foreground="{DynamicResource TextBrush}"/>
-
-                            </StackPanel>
-                            
-                        </StackPanel>
-                        
-                       
-
-                        <StackPanel Orientation="Vertical" Margin="0,0,0,20" Tag="Launch Settings">
-                            <TextBlock Text="Launch Settings:" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
-                            <Button x:Name="OpenPTFolder" Foreground="{DynamicResource TextBrush}" Content="Open Pizza Tower Folder" Height="35" HorizontalAlignment="Left" Click="OpenPTFolder_Click"/>
-                            <Button x:Name="ChooseNewPTFolder" Foreground="{DynamicResource TextBrush}" Content="Choose Temporary New Pizza Tower Folder" Height="35" HorizontalAlignment="Left" Click="ChooseNewPTFolder_Click"/>
-                            <Button x:Name="DebugToggle" Foreground="{DynamicResource TextBrush}" Content="Disable Debug?" Height="35" HorizontalAlignment="Left" Click="DebugToggle_Click"/>
-
-                            <Button x:Name="SteamLaunchToggle" Height="35" HorizontalAlignment="Left" Click="SteamLaunch_Click" Foreground="{DynamicResource TextBrush}" Background="#3b82f6" Cursor="Hand" Content="Use Steam?">
-                                <Button.ContentTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Orientation="Horizontal" Tag="Launch Settings">
-                                            <Image Source="pack://application:,,,/PizzaOven;component/Icons/Steam.png" Height="30" Width="30" Margin="0,0,5,0"/>
-                                            <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+                            <StackPanel Orientation="Vertical" Margin="0,0,0,30" Tag="Links" HorizontalAlignment="Left">
+                                <Button Content="Back" Height="30" HorizontalAlignment="Left" Click="FilterButtonBack_Click"/>
+                                <StackPanel Orientation="Vertical" Margin="0,0,0,30" HorizontalAlignment="Left">
+                                    <Button x:Name="OpenSuggestForm" Click="OpenLink_Click" Height="30" HorizontalAlignment="Left" Background="#3b82f6" Foreground="{DynamicResource TextBrush}" Cursor="Hand">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <Image Source="pack://application:,,,/PizzaOven;component/Icons/GoogleForm.png" Height="30" Width="30" Margin="0,0,5,0"/>
+                                            <TextBlock Text="Open Suggestion Form" VerticalAlignment="Center"/>
                                         </StackPanel>
-                                    </DataTemplate>
-                                </Button.ContentTemplate>
-                            </Button>
-                        </StackPanel>
+                                    </Button>
 
-                        <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="Patch Version">
-                            <TextBlock Text="Patch Version:" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
-                            <ComboBox Name="DowngradeCombo" Width="200" Height="30" HorizontalAlignment="Left"/>
+                                    <Button x:Name="OpenEmail" Click="OpenLink_Click" Height="30" HorizontalAlignment="Left" Background="#3b82f6" Foreground="{DynamicResource TextBrush}" Cursor="Hand">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <Image Source="pack://application:,,,/PizzaOven;component/Icons/Email.png" Height="30" Width="30" Margin="0,0,5,0"/>
+                                            <TextBlock Text="Open PO+ Email" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
 
-                            <TextBlock Text="Downgrade Download:" Margin="0,8,0,2" Foreground="{DynamicResource TextBrush}"/>
-                            <StackPanel Orientation="Horizontal"  Tag="Patch Version">
-                                <ComboBox Name="DowngradeDownloadCombo" Width="200" Height="30"/>
-                                <Button Name="DowngradeDownloadButton" Content="Download" Width="90" Height="30" Margin="8,0,0,0" Click="DowngradeDownload_Click"/>
-                            </StackPanel>
-                        </StackPanel>
-                        
-                        <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="GMLoader">
-                            <TextBlock Text="GMLoader by Senjay (allows you to stack mods):" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
-                            <Button x:Name="GMLoaderConvert" Click="GMLoaderConvert_Click" Height="30" HorizontalAlignment="Left" Background="#3b82f6" Foreground="{DynamicResource TextBrush}" Cursor="Hand">
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <Image Source="pack://application:,,,/PizzaOven;component/Icons/GMLoader.png" Height="30" Width="30" Margin="0,0,5,0"/>
-                                    <TextBlock Text="Convert XDelta/Win to GMLoader" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
-                            <Button x:Name="KillGMLoader" Foreground="{DynamicResource TextBrush}" Content="Kill GMLoader (sometimes background gmloader processes mess up PO+)" Height="35" HorizontalAlignment="Left" Click="KillGMLoader_Click"/>
-                        </StackPanel>
+                                    <Button x:Name="OpenTwitterX" Click="OpenLink_Click" Height="30" HorizontalAlignment="Left" Background="#3b82f6" Foreground="{DynamicResource TextBrush}" Cursor="Hand">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <Image Source="pack://application:,,,/PizzaOven;component/Icons/TwitterX.png" Height="30" Width="30" Margin="0,0,5,0"/>
+                                            <TextBlock Text="Open My Personal Twitter/X (may have updates on PO+)" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
 
-                        <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="Mod Folder">
-                            <TextBlock Text="Mod Folder (You can set folders by selecting the mod, right clicking and adding a folder name):" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <ComboBox x:Name="ModFolderCombo" Width="200" Height="30" HorizontalAlignment="Left">
-
-                                </ComboBox>
-
-                                <Button x:Name="DeleteModFolderButton" Content="X" Width="25" Height="25" Margin="5,0,0,0" Click="DeleteModFolder_Click">
-                                    <Button.Style>
-                                        <Style TargetType="Button">
-                                            <Setter Property="Foreground" Value="Black"/>
-                                            <Setter Property="IsEnabled" Value="True"/>
-                                        </Style>
-                                    </Button.Style>
-                                </Button>
-                            </StackPanel>
-                        </StackPanel>
-
-                        <StackPanel Orientation="Vertical" Margin="0,0,0,20" Tag="Custom Assets">
-                            <TextBlock Text="Custom Assets:" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
-                            <Button x:Name="AssetsFolder" Foreground="{DynamicResource TextBrush}" Content="Open Assets Folder" Height="35" HorizontalAlignment="Left" Click="AssetsFolder_Click"/>
-                            <Button x:Name="RestoreMissingAssets" Foreground="{DynamicResource TextBrush}" Content="Restore Missing Assets" Height="35" HorizontalAlignment="Left" Click="RestoreMissingAssets_Click"/>
-                            <Button x:Name="RestoreALLAssets" Foreground="{DynamicResource TextBrush}" Content="Restore All Assets" Height="35" HorizontalAlignment="Left" Click="RestoreALLAssets_Click"/>
-                            <Button x:Name="MuteButton" Foreground="{DynamicResource TextBrush}" Content="Enable Mute?" Height="35" HorizontalAlignment="Left" Click="Mute_Click"/>
-                            <Button x:Name="UnfocusedMuteButton" Foreground="{DynamicResource TextBrush}" Content="Enable Unfocused Mute?" Height="35" HorizontalAlignment="Left" Click="UnfocusedMute_Click"/>
-                            <TextBlock Text="Volume:" Margin="0,0,0,5" Foreground="{DynamicResource TextBrush}"/>
-                            <StackPanel Orientation="Horizontal" Tag="Custom Assets">
-                                <Slider x:Name="SoundVolume" Minimum="0" Maximum="100" Width="120" ValueChanged="SoundVolume_ValueChanged"/>
-                                <TextBlock Text="{Binding ElementName=SoundVolume, Path=Value, StringFormat={}{0:0}}" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}"/>
-                            </StackPanel>
-                        </StackPanel>
-
-                        <StackPanel Orientation="Vertical" Margin="0,0,0,20" Tag="Discord RPC">
-                            <TextBlock Text="Discord RPC (Displays on Discord):" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
-                            <Button x:Name="RPCtoggle" Height="35" HorizontalAlignment="Left" Click="RPCtoggle_Click" Foreground="{DynamicResource TextBrush}" Background="#3b82f6" Cursor="Hand" Content="Disable RPC?">
-                                <Button.ContentTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Orientation="Horizontal" Tag="Discord RPC">
+                                    <Button x:Name="OpenDiscord" Click="OpenLink_Click" Height="30" HorizontalAlignment="Left" Background="#3b82f6" Foreground="{DynamicResource TextBrush}" Cursor="Hand">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                             <Image Source="pack://application:,,,/PizzaOven;component/Icons/Discord.png" Height="30" Width="30" Margin="0,0,5,0"/>
-                                            <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+                                            <TextBlock Text="Join Our Offical Discord" VerticalAlignment="Center"/>
                                         </StackPanel>
-                                    </DataTemplate>
-                                </Button.ContentTemplate>
-                            </Button>
-                        </StackPanel>
+                                    </Button>
 
-                        <StackPanel Orientation="Vertical" Margin="0,0,0,20" Tag="Low-End Settings">
-                            <TextBlock Text="Low-End Settings(Disables Features to allow a smoother experience for low-end devices):" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
-                            <Button x:Name="MODUPDATERtoggle" Foreground="{DynamicResource TextBrush}" Content="Disable Check for Mod Updates?" HorizontalAlignment="Left" Click="MODUPDATERtoggle_Click"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="App Settings">
+                                <Button Content="Back" Height="30" HorizontalAlignment="Left" Click="FilterButtonBack_Click"/>
+                                <Button x:Name="StartupToggle" Content="Do not open on Device Startup" Height="30" HorizontalAlignment="Left" Click="StartupToggle_Click"/>
+                                <TextBlock Text="Discord RPC (Displays on Discord):" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
+                                <Button x:Name="RPCtoggle" Height="35" HorizontalAlignment="Left" Click="RPCtoggle_Click" Foreground="{DynamicResource TextBrush}" Background="#3b82f6" Cursor="Hand" Content="Disable RPC?">
+                                    <Button.ContentTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Image Source="pack://application:,,,/PizzaOven;component/Icons/Discord.png" Height="30" Width="30" Margin="0,0,5,0"/>
+                                                <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </Button.ContentTemplate>
+                                </Button>
+                                <TextBlock Text="Low-End Settings(Disables Features to allow a smoother experience for low-end devices):" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
+                                <Button x:Name="MODUPDATERtoggle" Foreground="{DynamicResource TextBrush}" Content="Disable Check for Mod Updates?" HorizontalAlignment="Left" Click="MODUPDATERtoggle_Click"/>
+                            </StackPanel>
+                            
+                            <StackPanel Orientation="Vertical" Margin="0,0,0,20" Tag="Launch Settings">
+                                <Button Content="Back" Height="30" HorizontalAlignment="Left" Click="FilterButtonBack_Click"/>
+                                <TextBlock Text="Patch Version:" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
+                                <ComboBox Name="DowngradeCombo" Width="200" Height="30" HorizontalAlignment="Left"/>
+
+                                <TextBlock Text="Downgrade Download:" Margin="0,8,0,2" Foreground="{DynamicResource TextBrush}"/>
+                                <StackPanel Orientation="Horizontal"  Tag="Patch Version">
+                                    <ComboBox Name="DowngradeDownloadCombo" Width="200" Height="30"/>
+                                    <Button Name="DowngradeDownloadButton" Content="Download" Width="90" Height="30" Margin="8,0,0,0" Click="DowngradeDownload_Click"/>
+                                </StackPanel>
+
+                                <Button x:Name="OpenPTFolder" Foreground="{DynamicResource TextBrush}" Content="Open Pizza Tower Folder" Height="35" HorizontalAlignment="Left" Click="OpenPTFolder_Click"/>
+                                <Button x:Name="ChooseNewPTFolder" Foreground="{DynamicResource TextBrush}" Content="Choose Temporary New Pizza Tower Folder" Height="35" HorizontalAlignment="Left" Click="ChooseNewPTFolder_Click"/>
+                                <Button x:Name="DebugToggle" Foreground="{DynamicResource TextBrush}" Content="Disable Debug?" Height="35" HorizontalAlignment="Left" Click="DebugToggle_Click"/>
+
+                                <Button x:Name="SteamLaunchToggle" Height="35" HorizontalAlignment="Left" Click="SteamLaunch_Click" Foreground="{DynamicResource TextBrush}" Background="#3b82f6" Cursor="Hand" Content="Use Steam?">
+                                    <Button.ContentTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Tag="Launch Settings">
+                                                <Image Source="pack://application:,,,/PizzaOven;component/Icons/Steam.png" Height="30" Width="30" Margin="0,0,5,0"/>
+                                                <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </Button.ContentTemplate>
+                                </Button>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="Mod Settings">
+                                <Button Content="Back" Height="30" HorizontalAlignment="Left" Click="FilterButtonBack_Click"/>
+                                <TextBlock Text="PO. Files:" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
+                                <Button Content="Clean PO. Files" Height="30" HorizontalAlignment="Left" Click="CleanPO_click"/>
+                                <Button x:Name="POLanguage" Content="Do not Apply to Language Files" Height="30" HorizontalAlignment="Left" Click="POLanguage_Click"/>
+                                <Button x:Name="POOverwriteBackup" Content="Make/Overwrite new data.win.po" Height="30" HorizontalAlignment="Left" Click="POOverwriteBackup_Click"/>
+                                <TextBlock Text="Mod Folder (You can set folders by selecting the mod, right clicking and adding a folder name):" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <ComboBox x:Name="ModFolderCombo" Width="200" Height="30" HorizontalAlignment="Left">
+                                    </ComboBox>
+
+                                    <Button x:Name="DeleteModFolderButton" Content="X" Width="25" Height="25" Margin="5,0,0,0" Click="DeleteModFolder_Click">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Foreground" Value="Black"/>
+                                                <Setter Property="IsEnabled" Value="True"/>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                </StackPanel>
+                                <TextBlock Text="Pizza Tower Folder:" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
+                                <Button x:Name="SavePTFolderMod" Content="Save Pizza Tower Folder as Mod (Do not upload since contains data.win)" Height="30" HorizontalAlignment="Left" Click="SavePTFolderMod_Click"/>
+                            </StackPanel>
+                            
+                            <StackPanel Orientation="Vertical" Margin="0,0,0,20" Tag="App Customization">
+                                <Button Content="Back" Height="30" HorizontalAlignment="Left" Click="FilterButtonBack_Click"/>
+                                <TextBlock Text="Themes:" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <Button x:Name="ThemesSave" Content="Save" Height="30" Margin="5,0,0,0" Click="ThemesSave_Click"/>
+                                    <Button x:Name="ThemesLoad" Content="Load" Height="30" Margin="5,0,0,0" Click="ThemesLoad_Click"/>
+                                    <Button x:Name="ThemesResetAll" Content="Reset All" Height="30" Margin="5,0,0,0" Click="ThemesResetAll_Click"/>
+                                </StackPanel>
+                                
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <TextBlock Text="Theme Presets:" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
+                                    <ComboBox Name="ThemePresetsCombo" Width="200" Height="30" HorizontalAlignment="Left" SelectedIndex="0"/>
+                                    <Button x:Name="ThemePresetsApply" Content="Apply" Height="30" Margin="5,0,0,0" Click="ThemePresetsApply_Click"/>
+                                </StackPanel>
+                                
+                                <TextBlock Text="Theme colors/background:" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
+                                
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <TextBlock Text="Background:" Width="100" Foreground="{DynamicResource TextBrush}"/>
+                                    <Button x:Name="ThemesBackgroundUpload" Content="Upload" Height="30" HorizontalAlignment="Left" Click="ThemesBackgroundUpload_Click"/>
+                                    <Button x:Name="ThemesBackgroundReset" Content="Reset" Height="30" Margin="5,0,0,0" Click="ThemesBackgroundReset_Click"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <TextBlock Text="Primary:" Width="100" Foreground="{DynamicResource TextBrush}"/>
+                                    <Button x:Name="ThemesPrimary" Content="Select" Height="30" HorizontalAlignment="Left" Click="Theme_Click"/>
+                                    <Button x:Name="ThemesPrimaryReset" Content="Reset" Height="30" Margin="5,0,0,0" Click="ThemeReset_Click"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <TextBlock Text="Secondary:" Width="100" Foreground="{DynamicResource TextBrush}"/>
+                                    <Button x:Name="ThemesSecondary" Content="Select" Height="30" HorizontalAlignment="Left" Click="Theme_Click"/>
+                                    <Button x:Name="ThemesSecondaryReset" Content="Reset" Height="30" Margin="5,0,0,0" Click="ThemeReset_Click"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <TextBlock Text="Inner:" Width="100" Foreground="{DynamicResource TextBrush}"/>
+                                    <Button x:Name="ThemesInner" Content="Select" Height="30" HorizontalAlignment="Left" Click="Theme_Click"/>
+                                    <Button x:Name="ThemesInnerReset" Content="Reset" Height="30" Margin="5,0,0,0" Click="ThemeReset_Click"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <TextBlock Text="Loading:" Width="100" Foreground="{DynamicResource TextBrush}"/>
+                                    <Button x:Name="ThemesLoading" Content="Select" Height="30" HorizontalAlignment="Left" Click="Theme_Click"/>
+                                    <Button x:Name="ThemesLoadingReset" Content="Reset" Height="30" Margin="5,0,0,0" Click="ThemeReset_Click"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <TextBlock Text="Text:" Width="100" Foreground="{DynamicResource TextBrush}"/>
+                                    <Button x:Name="ThemesText" Content="Select" Height="30" HorizontalAlignment="Left" Click="Theme_Click"/>
+                                    <Button x:Name="ThemesTextReset" Content="Reset" Height="30" Margin="5,0,0,0" Click="ThemeReset_Click"/>
+                                </StackPanel>
+                                
+                                <TextBlock Text="Transparent Settings:" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
+                                
+                                <TextBlock Text="Logger:" Margin="0,0,0,5" Foreground="{DynamicResource TextBrush}"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <Slider x:Name="Transparency_Logger" Minimum="0" Maximum="100" Width="120" ValueChanged="Transparent_ValueChanged" Foreground="{DynamicResource TextBrush}"/>
+                                    <TextBlock Text="{Binding ElementName=Transparency_Logger, Path=Value, StringFormat={}{0:0}}" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}"/>
+                                </StackPanel>
+
+                                <TextBlock Text="Mod Description:" Margin="0,0,0,5" Foreground="{DynamicResource TextBrush}"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <Slider x:Name="Transparency_ModDescription" Minimum="0" Maximum="100" Width="120" ValueChanged="Transparent_ValueChanged" Foreground="{DynamicResource TextBrush}"/>
+                                    <TextBlock Text="{Binding ElementName=Transparency_ModDescription, Path=Value, StringFormat={}{0:0}}" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}"/>
+                                </StackPanel>
+                                
+                                <TextBlock Text="Mod Grid:" Margin="0,0,0,5" Foreground="{DynamicResource TextBrush}"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <Slider x:Name="Transparency_ModGrid" Minimum="0" Maximum="100" Width="120" ValueChanged="Transparent_ValueChanged" Foreground="{DynamicResource TextBrush}"/>
+                                    <TextBlock Text="{Binding ElementName=Transparency_ModGrid, Path=Value, StringFormat={}{0:0}}" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}"/>
+                                </StackPanel>
+                                
+                                <TextBlock Text="Custom Assets:" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
+                                <Button x:Name="AssetsFolder" Foreground="{DynamicResource TextBrush}" Content="Open Assets Folder" Height="35" HorizontalAlignment="Left" Click="AssetsFolder_Click"/>
+                                <Button x:Name="RestoreMissingAssets" Foreground="{DynamicResource TextBrush}" Content="Restore Missing Assets" Height="35" HorizontalAlignment="Left" Click="RestoreMissingAssets_Click"/>
+                                <Button x:Name="RestoreALLAssets" Foreground="{DynamicResource TextBrush}" Content="Restore All Assets" Height="35" HorizontalAlignment="Left" Click="RestoreALLAssets_Click"/>
+                                <Button x:Name="MuteButton" Foreground="{DynamicResource TextBrush}" Content="Enable Mute?" Height="35" HorizontalAlignment="Left" Click="Mute_Click"/>
+                                <Button x:Name="UnfocusedMuteButton" Foreground="{DynamicResource TextBrush}" Content="Enable Unfocused Mute?" Height="35" HorizontalAlignment="Left" Click="UnfocusedMute_Click"/>
+                                <TextBlock Text="Volume:" Margin="0,0,0,5" Foreground="{DynamicResource TextBrush}"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <Slider x:Name="SoundVolume" Minimum="0" Maximum="100" Width="120" ValueChanged="SoundVolume_ValueChanged" Foreground="{DynamicResource TextBrush}"/>
+                                    <TextBlock Text="{Binding ElementName=SoundVolume, Path=Value, StringFormat={}{0:0}}" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="GMLoader">
+                                <Button Content="Back" Height="30" HorizontalAlignment="Left" Click="FilterButtonBack_Click"/>
+                                <TextBlock Text="GMLoader by Senjay (allows you to stack mods):" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
+                                <Button x:Name="GMLoaderConvert" Click="GMLoaderConvert_Click" Height="30" HorizontalAlignment="Left" Background="#3b82f6" Foreground="{DynamicResource TextBrush}" Cursor="Hand">
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <Image Source="pack://application:,,,/PizzaOven;component/Icons/GMLoader.png" Height="30" Width="30" Margin="0,0,5,0"/>
+                                        <TextBlock Text="Convert XDelta/Win to GMLoader" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="KillGMLoader" Foreground="{DynamicResource TextBrush}" Content="Kill GMLoader (sometimes background gmloader processes mess up PO+)" Height="35" HorizontalAlignment="Left" Click="KillGMLoader_Click"/>
+                            </StackPanel>
+
+                            <StackPanel x:Name="CreditsPanel" Tag="Credits" Orientation="Vertical" Margin="0,0,0,20">
+                                <Button Content="Back" Height="30" HorizontalAlignment="Left" Click="FilterButtonBack_Click"/>
+                                
+                            </StackPanel>
                         </StackPanel>
-                    </StackPanel>
-                </ScrollViewer>
+                    </ScrollViewer>
+                </Grid>
             </TabItem>
+            <TabItem Name="PatchNotes" FontSize="18" Header="Latest Patch Notes" Selector.Selected="OnPatchNotesSelected" Background="{DynamicResource SecondaryBrush}">
+                <Grid Name="PatchNotesGrid">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="10">
+                            <Button Content="Checking for Launcher Updates" Height="30" HorizontalAlignment="Left" Click="CheckLauncherUpdates_Click"/>
 
+                            <TextBlock Text="These are taken from the Gamebanana itself and may have other additional notes (once the update is downloaded it will display)" Margin="0,5,0,10" TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}"/>
 
+                            <StackPanel x:Name="PatchNotesPanel"/>
+
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </TabItem>
         </TabControl>
     </Grid>
 

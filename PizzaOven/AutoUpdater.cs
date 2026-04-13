@@ -189,7 +189,7 @@ namespace PizzaOven
             progressBox.progressText.Text = $"{Math.Round(progress.Percentage * 100, 2)}% " +
                 $"({StringConverters.FormatSize(progress.DownloadedBytes)} of {StringConverters.FormatSize(progress.TotalBytes)})";
         }
-        private static bool UpdateAvailable(string onlineVersion, string localVersion)
+        public static bool UpdateAvailable(string onlineVersion, string localVersion)
         {
             if (onlineVersion is null || localVersion is null)
             {

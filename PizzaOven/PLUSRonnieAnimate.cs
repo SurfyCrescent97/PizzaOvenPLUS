@@ -81,6 +81,24 @@ namespace PizzaOven
             Canvas.SetTop(_image, startY);
         }
 
+        public async Task DanceAsync(int times, int delayMs = 200)
+        {
+            for (int i = 0; i < times; i++)
+            {
+                this.SetExpression("happy");
+                await Task.Delay(delayMs);
+
+                this.SetExpression("pointerup");
+                await Task.Delay(delayMs);
+
+                this.SetExpression("happy2");
+                await Task.Delay(delayMs);
+
+                this.SetExpression("pointerup");
+                await Task.Delay(delayMs);
+
+            }
+        }
 
         public void Destroy()
         {
@@ -254,10 +272,24 @@ namespace PizzaOven
                 Content = new Image
                 {
                     Source = new BitmapImage(
-                        new Uri("pack://application:,,,/PizzaOven;component/OvenRonnie/skip.png"))
+                        new Uri("pack://application:,,,/PizzaOven;component/OvenRonnie/skip.png")),
+                    Stretch = Stretch.None
                 },
-                IsHitTestVisible = true,
-                Focusable = true
+
+                Style = null,                   
+
+                Background = Brushes.Transparent,
+                BorderBrush = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                Padding = new Thickness(0),
+
+                Focusable = false,
+                FocusVisualStyle = null,
+
+                Template = new ControlTemplate(typeof(Button))
+                {
+                    VisualTree = new FrameworkElementFactory(typeof(ContentPresenter))
+                }
             };
 
             parent.IsHitTestVisible = true;
@@ -274,7 +306,7 @@ namespace PizzaOven
                 tcs.TrySetResult(true);
             };
             
-            await MainWindow.WaitSeconds(1);
+            await PLUSWait.WaitSeconds(1);
             var finishedTask = await Task.WhenAny(tcs.Task, this.WaitForClickOnImageAsync());
 
             if (parent.Children.Contains(skipButton))

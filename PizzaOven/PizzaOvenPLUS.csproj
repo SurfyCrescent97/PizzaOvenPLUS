@@ -7,7 +7,7 @@
     <AssemblyName>PizzaOven</AssemblyName>
 	<AssemblyTitle>PizzaOven+</AssemblyTitle>
 	<AssemblyDescription>Extension by SurfyCrescent97</AssemblyDescription>
-    <AssemblyVersion>1.0.4.0</AssemblyVersion>
+    <AssemblyVersion>1.0.5.0</AssemblyVersion>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>Assets\PizzaOvenPLUSIcon.ico</ApplicationIcon>
 	<Authors>SurfyCrescent97, Tekka</Authors>
@@ -40,6 +40,7 @@
     <EmbeddedResource Include="Language\**\*" />
 	<Resource Include="Icons\**\*" />
     <Resource Include="OvenRonnie\**\*" />
+	<Resource Include="Themes\**\*" />
 	<Resource Include="TutorialMod\**\*" />
   </ItemGroup>
 
@@ -53,6 +54,7 @@
 	<None Update="Dependencies\ptversions.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update=".disable_gb1click" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Downgrades\**\*" CopyToOutputDirectory="PreserveNewest" />
+	<None Update="Themes\**\*" CopyToOutputDirectory="PreserveNewest" />
 	<None Update="Dependencies\DepotDownloader\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

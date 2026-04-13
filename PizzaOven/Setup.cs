@@ -48,7 +48,7 @@ namespace PizzaOven
                 dialog.Title = $"Select PizzaTower.exe from your Steam Install folder";
                 dialog.Multiselect = false;
                 dialog.InitialDirectory = Global.assemblyLocation;
-				RonnieVariables.SetupSucessful = 0;
+                PLUSTutorial.RonnieVariables.SetupSucessful = 0;
                 dialog.ShowDialog();
                 if (!String.IsNullOrEmpty(dialog.FileName)
                     && Path.GetFileName(dialog.FileName).Equals("PizzaTower.exe", StringComparison.InvariantCultureIgnoreCase))
@@ -64,7 +64,7 @@ namespace PizzaOven
             Global.config.ModsFolder = Path.GetDirectoryName(defaultPath);
             Global.config.Launcher = defaultPath;
             Global.UpdateConfig();
-            RonnieVariables.SetupSucessful = 1;
+            PLUSTutorial.RonnieVariables.SetupSucessful = 1;
             Global.logger.WriteLine($"Setup completed for Pizza Tower!", LoggerType.Info);
             return true;
         }

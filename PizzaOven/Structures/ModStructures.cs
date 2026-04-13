@@ -1,15 +1,66 @@
-﻿using System;
+﻿using PizzaOven.UI;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using PizzaOven.UI;
+using System.Windows;
+using System.Text.Json.Serialization;
+using System.ComponentModel;
 
 namespace PizzaOven
 {
-    public class Mod
+    public class Mod : INotifyPropertyChanged
     {
         public string name { get; set; }
+
         public bool enabled { get; set; }
+
         public Uri preview { get; set; }
+
+        private bool _gmlLoader;
+        [JsonIgnore]
+        public bool GMLoader
+        {
+            get => _gmlLoader;
+            set
+            {
+                if (_gmlLoader != value)
+                {
+                    _gmlLoader = value;
+                    OnPropertyChanged(nameof(GMLoader));
+                    OnPropertyChanged(nameof(GMLoaderVisibility));
+                }
+            }
+        }
+
+        private bool _gmlLoaderEnabled = false;
+        [JsonIgnore]
+        public bool GMLoader_enabled
+        {
+            get => _gmlLoaderEnabled;
+            set
+            {
+                if (_gmlLoaderEnabled != value)
+                {
+                    _gmlLoaderEnabled = value;
+                    OnPropertyChanged(nameof(GMLoader_enabled));
+                }
+            }
+        }
+
+        [JsonIgnore]
+        public Visibility GMLoaderVisibility
+        {
+            get
+            {
+                return GMLoader ? Visibility.Visible : Visibility.Collapsed;
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
     }
     public class Metadata
     {

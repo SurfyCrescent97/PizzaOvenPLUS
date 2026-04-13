@@ -22,30 +22,31 @@ namespace PizzaOven
         private static float foregroundVolume = 1.0f;
 
         private static WaveOutEvent tutorialOutput;
-        private static AudioFileReader tutorialReader;
+        private static WaveStream tutorialReader;
         private static LoopStream tutorialLoop;
-
 
         public static async Task Play_TutorialMusic()
         {
             try
             {
+                string resourceUri = "PizzaOven;component/OvenRonnie/TutorialMusic.wav";
 
-                string resourceUri = "PizzaOven;component/OvenRonnie/TutorialMusic.mp3";
-                var streamResourceInfo = Application.GetResourceStream(new Uri($"pack://application:,,,/{resourceUri}"));
-                string tempFile = Path.Combine(Path.GetTempPath(), "TutorialMusic.mp3");
-                using (var fs = new FileStream(tempFile, FileMode.Create, FileAccess.Write))
-                {
-                    streamResourceInfo.Stream.CopyTo(fs);
-                }
+                var streamResourceInfo = Application.GetResourceStream(
+                    new Uri($"pack://application:,,,/{resourceUri}")
+                );
 
-                tutorialReader = new AudioFileReader(tempFile);
+                var memoryStream = new MemoryStream();
+                streamResourceInfo.Stream.CopyTo(memoryStream);
+                memoryStream.Position = 0;
+
+                tutorialReader = new WaveFileReader(memoryStream);
                 tutorialLoop = new LoopStream(tutorialReader);
 
                 tutorialOutput = new WaveOutEvent();
-                tutorialOutput.Init(tutorialLoop);             
-                tutorialOutput.Play();
+                tutorialOutput.Init(tutorialLoop);
+
                 tutorialOutput.Volume = 1.0f;
+                tutorialOutput.Play();
             }
             catch 
             {

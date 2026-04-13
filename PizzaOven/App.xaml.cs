@@ -35,6 +35,25 @@ namespace PizzaOven
             catch { }
             return running;
         }
+        protected static void KillAllOtherInstances()
+        {
+            var current = Process.GetCurrentProcess();
+
+            foreach (var p in Process.GetProcessesByName(current.ProcessName))
+            {
+                try
+                {
+                    if (p.Id != current.Id)
+                    {
+                        p.Kill();
+                        p.WaitForExit();
+                    }
+                }
+                catch
+                {
+                }
+            }
+        }
         protected async override void OnStartup(StartupEventArgs e)
         {
             DispatcherUnhandledException += App_DispatcherUnhandledException;
@@ -65,7 +84,12 @@ namespace PizzaOven
             }
             else if (running)
             {
-                MessageBox.Show("Pizza Oven+ is already running", "Warning", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                var result = MessageBox.Show("Pizza Oven+ is already running.\n\nDo you want to close other instances and this one?","Warning",MessageBoxButton.YesNo,MessageBoxImage.Exclamation);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    KillAllOtherInstances();
+                }
                 Application.Current.Shutdown();
             }
         }

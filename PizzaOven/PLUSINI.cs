@@ -63,7 +63,7 @@ namespace PizzaOven
 		}
 
 		
-        public static void delete_ini(string filePath, string section, string key)
+        public static void delete_ini_value(string filePath, string section, string key)
         {
             if (string.IsNullOrWhiteSpace(section) || string.IsNullOrWhiteSpace(key))
                 return;
@@ -110,7 +110,6 @@ namespace PizzaOven
                 save_all(filePath, data);
             }
         }
-		
         private static Dictionary<string, Dictionary<string, string>> read_all(string filePath)
         {
             var result = new Dictionary<string, Dictionary<string, string>>(StringComparer.OrdinalIgnoreCase);

@@ -1,5 +1,7 @@
 ﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -9,7 +11,6 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System;
 
 namespace PizzaOven
 {
@@ -126,5 +127,52 @@ namespace PizzaOven
                 return reg?.GetValue(register) as string ?? "";
             }
         }
+
+        public static void ToggleStartup()
+        {
+            string runKeyPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
+            string itemName = "PizzaOven+";
+
+            using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(runKeyPath, true))
+            {
+                if (key == null)
+                    return; 
+
+                var value = key.GetValue(itemName) as byte[];
+                if (value == null || value.Length == 0) 
+                    return;
+
+                if (value[0] == 2)
+                    value[0] = 3;        // To Disabled
+                else if (value[0] == 3) 
+                    value[0] = 2;   // To Enabled
+                else 
+                    return;                      
+
+                key.SetValue(itemName, value, Microsoft.Win32.RegistryValueKind.Binary);
+            }
+        }
+
+        public static string GetStartupStatus()
+        {
+            string runKeyPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
+            string itemName = "PizzaOven+";
+
+            using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(runKeyPath))
+            {
+                if (key == null) return "Unknown";
+
+                var value = key.GetValue(itemName) as byte[];
+                if (value == null || value.Length == 0) return "Unknown";
+
+                if (value[0] == 2) 
+                    return "Enabled";
+                if (value[0] == 3) 
+                    return "Disabled";
+            }
+
+            return "Unknown";
+        }
     }
 }
+

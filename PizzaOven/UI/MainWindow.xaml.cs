@@ -9,9 +9,11 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.Eventing.Reader;
 using System.DirectoryServices.ActiveDirectory;
 using System.IO;
 using System.Linq;
+using System.Media;
 using System.Net.Http;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -32,6 +34,7 @@ using System.Windows.Shapes;
 using System.Windows.Threading;
 using System.Xml.Linq;
 using static System.Collections.Specialized.BitVector32;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 using Path = System.IO.Path;
 
 
@@ -49,801 +52,57 @@ namespace PizzaOven
             public string version { get; set; }
             public string type { get; set; }
         }
-        public class ModJSON
+
+        public static readonly string[] themebrushes = { "Primary", "Secondary", "Inner", "Loading", "Text" };
+        public static readonly string[] themeimageExtensions = { ".png", ".jpg", ".jpeg", ".bmp" };
+
+        class CreditItem
         {
-            public string title { get; set; }
-            public string preview { get; set; }
-            public string submitter { get; set; }
-            public string avi { get; set; }
-            public string upic { get; set; }
-            public string caticon { get; set; }
-            public string cat { get; set; }
-            public string description { get; set; }
-            public string filedescription { get; set; }
-            public string homepage { get; set; }
-            public DateTime lastupdate { get; set; }
+            public string Name { get; set; }
+            public string SmallText { get; set; }
         }
-        public async Task WaitForRonnieModClick()
+
+        Dictionary<string, List<CreditItem>> credits = new Dictionary<string, List<CreditItem>>()
         {
-            while (true)
             {
-                var first = Global.config.ModList.FirstOrDefault(x => x.enabled);
-
-                if (first != null && first.name == "Ronnie Oven Mod")
-                    return;
-
-                await Task.Delay(100);
-            }
-        }
-        public static async Task WaitUntil(Func<bool> condition, int checkDelayMs = 16)
-        {
-            while (!condition())
-                await Task.Delay(checkDelayMs);
-        }
-
-        public static async Task WaitSeconds(double seconds)
-        {
-            int ms = (int)(seconds * 1000);
-            await Task.Delay(ms);
-        }
-
-        public static async Task<bool> WaitUntilOrTimeout(Func<bool> condition, double timeoutSeconds, int checkDelayMs = 16)
-        {
-            int elapsedMs = 0;
-            int timeoutMs = (int)(timeoutSeconds * 1000);
-
-            while (!condition())
-            {
-                if (elapsedMs >= timeoutMs)
-                    return false;
-
-                await Task.Delay(checkDelayMs);
-                elapsedMs += checkDelayMs;
-            }
-
-            return true;
-        }
-
-
-        public static class RonnieVariables
-        {
-            public static bool BrokenModSkip = false;
-            public static int ModLaunchAmount = 0;
-            public static bool LauncherAllow = false;
-            public static bool SetupAllow = false;
-            public static bool AllowDownloadMod = false;
-            public static bool RonnieModSkip = false;
-            public static int SetupSucessful = -1;
-            public static bool FinishedLaunch = false;
-            public static bool FailedPatch = false;
-            public static bool KeptMod = false;
-            public static bool ModDeleted = false;
-            public static int DeclineReplay = 0;
-        }
-
-
-        bool tutorialskip = false;
-
-        private async Task DanceAsync(PLUSRonnieAnimate animator, int times, int delayMs = 200)
-        {
-            if (animator == null)
-                return;
-
-            for (int i = 0; i < times; i++)
-            {
-                animator.SetExpression("happy");
-                await Task.Delay(delayMs);
-
-                animator.SetExpression("pointerup");
-                await Task.Delay(delayMs);
-
-                animator.SetExpression("happy2");
-                await Task.Delay(delayMs);
-
-                animator.SetExpression("pointerup");
-                await Task.Delay(delayMs);
-
-            }
-        }
-
-
-
-
-        public static async Task<bool> WaitUntilTutorialDownloaded(int checkDelayMs = 16)
-        {
-            string modPath = $"{Global.assemblyLocation}{Global.s}Mods{Global.s}Ronnie Oven Mod";
-            string jsonFile = Path.Combine(modPath, "mod.json");
-
-            while (true)
-            {
-                if (Directory.Exists(modPath) && File.Exists(jsonFile))
+                "Orginal PizzaOven",
+                new List<CreditItem>
                 {
-                    try
-                    {
-                        string jsonText = await File.ReadAllTextAsync(jsonFile);
-                        using var doc = JsonDocument.Parse(jsonText);
-                        var root = doc.RootElement;
-
-                        if (root.TryGetProperty("homepage", out JsonElement homepage))
-                        {
-                            return homepage.ValueKind == JsonValueKind.Null ||
-                                   string.IsNullOrWhiteSpace(homepage.GetString());
-                        }
-                    }
-                    catch
-                    {
-                    }
+                    new CreditItem { Name = "Tekka", SmallText = "All of the original PizzaOven Code and owner of PizzaOven" },
+                    new CreditItem { Name = "Keku", SmallText = "Original PizzaOven Logo" },
+                    new CreditItem { Name = "ARandomGuy231", SmallText = "Named the original PizzaOven" },
+                    new CreditItem { Name = "Tom", SmallText = "Original Request and Owner of Gamebanana" },
+                    new CreditItem { Name = "C1229", SmallText = "PizzaOven's Misc. Pull Requests" }
                 }
-
-                await Task.Delay(checkDelayMs);
-            }
-        }
-
-        public static string TutorialModPath()
-        {
-            var currentModDirectory = $@"{Global.assemblyLocation}{Global.s}Mods";
-
-            foreach (var mod in Directory.GetDirectories(currentModDirectory))
+            },
             {
-                string jsonFile = Path.Combine(mod, "mod.json");
-
-                if (!File.Exists(jsonFile))
-                    continue;
-
-                try
+                "PizzaOven+",
+                new List<CreditItem>
                 {
-                    string jsonText = File.ReadAllText(jsonFile);
-                    using var doc = JsonDocument.Parse(jsonText);
-                    var root = doc.RootElement;
-
-                    string preview = root.TryGetProperty("preview", out var p) ? p.GetString() : null;
-                    string avi = root.TryGetProperty("avi", out var a) ? a.GetString() : null;
-                    string upic = root.TryGetProperty("upic", out var u) ? u.GetString() : null;
-
-                    if (preview == "pack://application:,,,/PizzaOven;component/TutorialMod/mod.png" ||
-                        avi == "pack://application:,,,/PizzaOven;component/TutorialMod/profile.png" ||
-                        upic == "pack://application:,,,/PizzaOven;component/TutorialMod/upic.gif")
-                    {
-                        return mod;
-                    }
+                    new CreditItem { Name = "SurfyCrescent97", SmallText = "Main Programmer and made PizzaOven+" },
+                    new CreditItem { Name = "Mak n' Sauce", SmallText = "All Assets that aren't PizzaOven" },
+                    new CreditItem { Name = "noodlecup", SmallText = "Made Tutorial Theme" },
+                    new CreditItem { Name = "Joel Eastwood", SmallText = "Made Ronnie's Jingle" }
                 }
-                catch
+            },
+            {
+                "Others",
+                new List<CreditItem>
                 {
+                    new CreditItem { Name = "EmeraldMan", SmallText = "AFOM" },
+                    new CreditItem { Name = "C1229", SmallText = "Depots List" },
+                    new CreditItem { Name = "Senjay", SmallText = "GMLoader" },
                 }
             }
-
-            return "";
-        }
-
-        public static bool IsTutorialDownloaded()
-        {
-            string modPath = $"{Global.assemblyLocation}{Global.s}Mods{Global.s}Ronnie Oven Mod";
-            string jsonFile = Path.Combine(modPath, "mod.json");
-
-            if (Directory.Exists(modPath) && File.Exists(jsonFile))
-            {
-                try
-                {
-                    string jsonText = File.ReadAllText(jsonFile);
-                    using var doc = JsonDocument.Parse(jsonText);
-                    var root = doc.RootElement;
-
-                    if (root.TryGetProperty("homepage", out JsonElement homepage))
-                    {
-                        return homepage.ValueKind == JsonValueKind.Null ||
-                               string.IsNullOrWhiteSpace(homepage.GetString());
-                    }
-                }
-                catch
-                {
-                }
-            }
-
-            return false;
-        }
-        private async Task RunIntro()
-        {
-            var curtextbox = introanimator.MakeTextbox(introanimator.GetX() + 110, introanimator.GetY() + 25, "");
-            if (!RonnieVariables.ModDeleted)
-            {
-                introanimator.SetExpression("happy2");
-                introanimator.DestroyTextbox(curtextbox);
-                curtextbox = introanimator.MakeTextbox(introanimator.GetX() + 110, introanimator.GetY() + 25, "I saw that broken mod's thumbnail and deleted the mod for you! You are welcome");
-                await WaitSeconds(5);
-            }
-
-            if (RonnieVariables.KeptMod)
-            {
-                introanimator.SetExpression("inspect");
-                introanimator.DestroyTextbox(curtextbox);
-                curtextbox = introanimator.MakeTextbox(introanimator.GetX() + 110, introanimator.GetY() + 25, "I also know you kept the mod and played it after the tutorial");
-                await WaitSeconds(5);
-            }
-            introanimator.DestroyTextbox(curtextbox);
-            introanimator.SetExpression("normal");
-            curtextbox = introanimator.MakeTextbox(introanimator.GetX() + 110, introanimator.GetY() + 25, "Safe Travels");
-            var _followtimer = new DispatcherTimer();
-            _followtimer.Interval = TimeSpan.FromSeconds(0.01);
-            _followtimer.Tick += (s, e) =>
-            {
-                Canvas.SetLeft(introanimator.GetTextbox(curtextbox), introanimator.GetX() + 110);
-                Canvas.SetTop(introanimator.GetTextbox(curtextbox), introanimator.GetY() + 25);
-            };
-            _followtimer.Start();
-
-
-            introanimator.GlideTo((this.Width / 2), -300, 5);
-            await WaitUntil(() => introanimator.GetY() <= 0);
-            _followtimer.Stop();
-            introanimator.DestroyTextbox(curtextbox);
-            await WaitUntil(() => introanimator.GetY() <= -300);
-
-            introanimator.Destroy();
-        }
-
-        public class PLUSAnnouncement
-        {
-            public DateTime date { get; set; }
-            public bool enabled { get; set; }
-            public string message { get; set; }
-            public string expression { get; set; }
-            public bool shake { get; set; }
-            public string url { get; set; }
-        }
-        public static async Task<PLUSAnnouncement> GetLatestAnnouncement()
-        {
-            string url = "https://raw.githubusercontent.com/SurfyCrescent97/PizzaOvenPLUS/main/announcements.json";
-
-            using HttpClient client = new HttpClient();
-            string json = await client.GetStringAsync(url);
-
-            var announcement = JsonSerializer.Deserialize<PLUSAnnouncement>(json);
-
-            return announcement;
-        }
-
-
-        private async Task RunTutorial()
-        {
-            if (File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaTower_GM2", "RonnieTutorial.ini")))
-            {
-                File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaTower_GM2", "RonnieTutorial.ini"));
-            }
-
-            TutorialPanel.Visibility = Visibility.Collapsed;
-
-            tutorialanimator = new PLUSRonnieAnimate();
-            tutorialanimator.Initialize(this, this.Width / 6, -100, 1.5);
-            ModBrowser.IsEnabled = false;
-            Settings.IsEnabled = false;
-
-            this.SizeChanged += (s, e) =>
-            {
-                tutorialanimator._overlayCanvas.Width = this.ActualWidth;
-                tutorialanimator._overlayCanvas.Height = this.ActualHeight;
-            };
-
-
-            tutorialanimator.GlideTo(this.Width / 6, 250, 30);
-
-            await WaitUntil(() => tutorialanimator.GetY() >= 250);
-
-            tutorialanimator.SetExpression("normal");
-            PLUSMUSIC.Play_TutorialMusic();
-            var curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Hi!! Hello!! Hi!![click to proceed]");
-
-            await tutorialanimator.WaitForClickOnImageAsync();
-
-            tutorialanimator.SetExpression("dumb");
-            tutorialanimator.DestroyTextbox(curtextbox);
-            curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "I'm Ronnie, Ronnie the Oven!");
-            RonnieVariables.RonnieModSkip = IsTutorialDownloaded();
-            if (!RonnieVariables.RonnieModSkip)
-            {
-                PLUSSavesystem.write_ini("Tutorial", "BrokenModSkip", "false");        
-                await tutorialanimator.WaitForClickOnImageAsync();
-                tutorialanimator.SetExpression("happy2");
-                tutorialanimator.DestroyTextbox(curtextbox);
-                curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Welcome to PizzaOVEN+ (Plus)");
-
-                await tutorialanimator.WaitForClickOnImageAsync();
-                tutorialanimator.SetExpression("inspect");
-                tutorialanimator.DestroyTextbox(curtextbox);
-                curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Nice to meet you, Random Pizza Tower fan! or so I think you are");
-
-                await tutorialanimator.WaitForClickOnImageAsync();
-                tutorialanimator.SetExpression("happy2");
-                tutorialanimator.DestroyTextbox(curtextbox);
-                curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "I will be your personnel and annoying guide to understand this wacky and wonderful tool!\r\n");
-
-                await tutorialanimator.WaitForClickOnImageAsync();
-                tutorialanimator.SetExpression("normal");
-                tutorialanimator.DestroyTextbox(curtextbox);
-                curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "What's this for you ask? You are using a Pizza Oven extension! It's basically the same thing but with more stuff.");
-
-                await tutorialanimator.WaitForClickOnImageAsync();
-                tutorialanimator.SetExpression("normal");
-                tutorialanimator.DestroyTextbox(curtextbox);
-                curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Allow me to give you a bunch of carefree tips to make your life easier! Consider me as a useful buddy.\r\n");
-
-                await tutorialanimator.WaitForClickOnImageAsync();
-                tutorialanimator.SetExpression("sad");
-                tutorialanimator.DestroyTextbox(curtextbox);
-                curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "You can choose to hate me but I don't really care because I don't make much friends anyway");
-
-                await tutorialanimator.WaitForClickOnImageAsync();
-                tutorialanimator.SetExpression("happy");
-                tutorialanimator.DestroyTextbox(curtextbox);
-                curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "but in case you don't, GREAT! Let me show you around...");
-
-                await tutorialanimator.WaitForClickOnImageAsync();
-                tutorialanimator.SetExpression("sad");
-                tutorialanimator.DestroyTextbox(curtextbox);
-                curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "If you'd like to skip the tutorial the button is there... heheh... or you can click me and listen to me");
-
-                await tutorialanimator.MakeSkipButtonAsync(tutorialanimator._overlayCanvas, () =>
-                {
-                    tutorialskip = true;
-                });
-
-
-                tutorialanimator._overlayCanvas.IsHitTestVisible = false;
-
-
-                if (tutorialskip)
-                {
-                    PLUSMUSIC.FadeOutTutorialMusic();
-                    if (PLUSSavesystem.read_ini("Tutorial", "Replay", "false") == "true")
-                    {
-                        PLUSSavesystem.write_ini("Tutorial", "ReplaySkip", "true"); // now your doing it on purpose
-                    }
-                    else
-                    {
-                        PLUSSavesystem.write_ini("Tutorial", "Skip", "true"); // (?) Ronnie will remember that you
-                    }
-                    PLUSSavesystem.write_ini("Tutorial", "Finished", "true");
-                    tutorialanimator.DestroyTextbox(curtextbox);
-                    curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Oh.. I guess I'll leave sigh");
-                    tutorialanimator.GlideTo((this.Width / 6), 100, 1);
-                    await WaitUntil(() => tutorialanimator.GetY() <= 100);
-
-                    tutorialanimator.DestroyTextbox(curtextbox);
-                    curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Are you sure?");
-
-                    await WaitSeconds(3);
-
-                    tutorialanimator.DestroyTextbox(curtextbox);
-                    curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "No no you're right bye...");
-                    tutorialanimator.GlideTo(tutorialanimator.GetX(), -100, 1);
-
-                    await WaitUntil(() => tutorialanimator.GetY() <= -100);
-
-                    TutorialState();
-                }
-                else
-                {
-                    tutorialanimator.SetExpression("happy2");
-                    tutorialanimator.DestroyTextbox(curtextbox);
-                    curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "REALLY WOWOWOW");
-
-                    await tutorialanimator.WaitForClickOnImageAsync();
-
-                    tutorialanimator.SetExpression("happy2");
-                    tutorialanimator.DestroyTextbox(curtextbox);
-                    curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "THIS MAKES ME WANNA DANCE");
-                    await DanceAsync(tutorialanimator, 10, 150);
-
-                    tutorialanimator.SetExpression("thinking");
-                    tutorialanimator.DestroyTextbox(curtextbox);
-                    curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Let's start off by looking for a mod to download.");
-
-                    Point relativePoint = ModBrowser.TransformToAncestor(this)
-                                    .Transform(new Point(0, 0));
-
-                    double tabX = relativePoint.X + 100;
-                    double tabY = relativePoint.Y;
-
-                    tutorialanimator.SetExpression("pointerup");
-                    tutorialanimator.MoveTo(tabX - 50, tabY + 50);
-                    tutorialanimator.DestroyTextbox(curtextbox);
-                    curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Click on browse mods to see what kind of goofy shenaenaes fellow people have been up to!");
-
-
-                    ModBrowser.IsEnabled = true;
-
-                    await WaitUntil(() => ModBrowser.IsSelected);
-
-                    ModManager.IsEnabled = false;
-
-                    tutorialanimator.MoveTo(this.Width / 2, 200);
-                    tutorialanimator.SetExpression("thinking");
-                    tutorialanimator.DestroyTextbox(curtextbox);
-                    curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Hmmm let's see...");
-
-                    await tutorialanimator.WaitForClickOnImageAsync();
-
-                    tutorialanimator.SetExpression("happy");
-                    tutorialanimator.DestroyTextbox(curtextbox);
-                    curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "OH LOOK THERE I AM!");
-
-                    await tutorialanimator.WaitForClickOnImageAsync();
-
-                    tutorialanimator.SetExpression("sad");
-                    tutorialanimator.DestroyTextbox(curtextbox);
-                    curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "sniff... How heartwarming... someone made a mod for me! WOW!");
-
-                    await tutorialanimator.WaitForClickOnImageAsync();
-                    tutorialanimator.SetExpression("thinking");
-                    tutorialanimator.DestroyTextbox(curtextbox);
-                    curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "If you ever want a mod added to your collection, simply download it!");
-
-                    await tutorialanimator.WaitForClickOnImageAsync();
-                    tutorialanimator.SetExpression("inspect");
-                    tutorialanimator.DestroyTextbox(curtextbox);
-                    curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Press on more info to check out the mod description!");
-
-                    await tutorialanimator.WaitForClickOnImageAsync();
-                    tutorialanimator.SetExpression("normal");
-                    tutorialanimator.DestroyTextbox(curtextbox);
-                    curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Download this for me real quick, it really won't take long!");
-
-                    RonnieVariables.AllowDownloadMod = true;
-
-                    await WaitUntilTutorialDownloaded();
-
-                    tutorialanimator.SetExpression("happy2");
-                    tutorialanimator.DestroyTextbox(curtextbox);
-                    curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Yippee!!");
-
-                    await tutorialanimator.WaitForClickOnImageAsync();
-
-                    tutorialanimator.SetExpression("thinking");
-                    tutorialanimator.DestroyTextbox(curtextbox);
-                    curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "OKAY now that you have a cool mod to your collection, give it a lil swirl!");
-
-                    await tutorialanimator.WaitForClickOnImageAsync();
-
-                    Point relativePoint_2 = ModManager.TransformToAncestor(this)
-                                  .Transform(new Point(0, 0));
-
-                    double tabX_2 = relativePoint_2.X + 100;
-                    double tabY_2 = relativePoint_2.Y;
-
-                    tutorialanimator.SetExpression("pointerup");
-                    tutorialanimator.MoveTo(tabX_2 - 50, tabY_2 + 50);
-                    tutorialanimator.DestroyTextbox(curtextbox);
-                    curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Now Let's now click back");
-
-
-                    ModManager.IsEnabled = true;
-
-                    await WaitUntil(() => ModManager.IsSelected);
-
-                    tutorialanimator.MoveTo(this.Width / 6, 250);
-                    ModBrowser.IsEnabled = false;
-                }
-            }
-            else
-            {
-                await tutorialanimator.WaitForClickOnImageAsync();
-                tutorialanimator.SetExpression("thinking");
-                tutorialanimator.DestroyTextbox(curtextbox);
-                curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Oh it seems like you have my mod installed");
-                await tutorialanimator.WaitForClickOnImageAsync();
-                tutorialanimator.SetExpression("pointerup");
-                tutorialanimator.DestroyTextbox(curtextbox);
-                curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "We can get to launching!!");
-                
-                if (PLUSSavesystem.read_ini("Tutorial","BrokenModSkip","false") == "true")
-                {
-                    await WaitSeconds(3);
-                    tutorialanimator.SetExpression("thinking");
-                    tutorialanimator.DestroyTextbox(curtextbox);
-                    curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Oh the mod might be broken uhm you can skip if you want lol to settings section or you can click me to try again");
-                    await WaitSeconds(1);
-                    await tutorialanimator.MakeSkipButtonAsync(tutorialanimator._overlayCanvas, () =>
-                    {
-                        RonnieVariables.BrokenModSkip = true;
-                    });
-
-                    tutorialanimator._overlayCanvas.IsHitTestVisible = false;
-                    
-                } 
-                else
-                {
-                    await tutorialanimator.WaitForClickOnImageAsync();
-                }
-  
-            }
-            if (!RonnieVariables.BrokenModSkip)
-            { 
-                RonnieVariables.SetupAllow = true;
-                tutorialanimator.SetExpression("thinking");
-                tutorialanimator.DestroyTextbox(curtextbox);
-                curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Before we do this though, we need to make sure we have your files in check! Click on setup just to make sure...");
-
-
-                DispatcherTimer setupTimer = new DispatcherTimer();
-                setupTimer.Interval = TimeSpan.FromMilliseconds(16);
-
-                setupTimer.Tick += async (s, e) =>
-                {
-                    if (RonnieVariables.SetupSucessful == 1)
-                    {
-                        setupTimer.Stop();
-                        return;
-                    }
-
-                    if (RonnieVariables.SetupSucessful == 0)
-                    {
-                        await WaitSeconds(3);
-                        if (RonnieVariables.SetupSucessful == 0)
-                        {
-                            tutorialanimator.SetExpression("sad");
-                            tutorialanimator.DestroyTextbox(curtextbox);
-
-                            curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Looks like I wasn't able to find your Pizza Tower folder.. Could you click on it for me, pretty pleaaaase?");
-
-                            RonnieVariables.SetupSucessful = -1;
-                        }
-                    }
-                };
-
-
-                setupTimer.Start();
-
-                await WaitUntil(() => RonnieVariables.SetupSucessful == 1);
-
-                setupTimer.Stop();
-
-                tutorialanimator.SetExpression("happy");
-                tutorialanimator.DestroyTextbox(curtextbox);
-                curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Alright! Now we're all fired up! First select the mod...");
-
-                await WaitForRonnieModClick();
-
-                tutorialanimator.SetExpression("normal");
-                tutorialanimator.DestroyTextbox(curtextbox);
-                curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "And then launch it!");
-
-                if (!IsTutorialDownloaded())
-                {
-                    await WaitSeconds(3);
-                    tutorialanimator.SetExpression("sad");
-                    tutorialanimator.DestroyTextbox(curtextbox);
-                    curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Wait... You were not meant to delete the mod...");
-                    await WaitSeconds(3);
-                    TutorialState("false");
-                }
-
-                RonnieVariables.LauncherAllow = true;
-
-                string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaTower_GM2", "RonnieTutorial.ini");
-
-
-                DispatcherTimer exetimer = new DispatcherTimer
-                {
-                    Interval = TimeSpan.FromMilliseconds(500)
-                };
-
-                exetimer.Tick += async (s, e) =>
-                {
-                    string processName = Path.GetFileNameWithoutExtension(Global.config.Launcher);
-
-                    if (RonnieVariables.FailedPatch)
-                    {
-                        RonnieVariables.FailedPatch = false;
-                        RonnieVariables.LauncherAllow = false;
-                        tutorialanimator.SetExpression("thinking");
-                        tutorialanimator.DestroyTextbox(curtextbox);
-                        curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Oh... that's weird... Uhmmmm why is it... not... working...");
-                        await tutorialanimator.WaitForClickOnImageAsync();
-
-                        tutorialanimator.SetExpression("sad");
-                        tutorialanimator.DestroyTextbox(curtextbox);
-                        curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Oh god im such a useless failure aren't I... I can't do anything right!");
-                        await tutorialanimator.WaitForClickOnImageAsync();
-
-                        tutorialanimator.SetExpression("thinking");
-                        tutorialanimator.DestroyTextbox(curtextbox);
-                        curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Hmm... oh I know! you should try messing around your steam settings! Trust me, it's super simple...");
-                        await tutorialanimator.WaitForClickOnImageAsync();
-
-                        tutorialanimator.DestroyTextbox(curtextbox);
-                        curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Then, going into your steam, go to Pizza Tower and click on properties.");
-                        await tutorialanimator.WaitForClickOnImageAsync();
-
-                        tutorialanimator.DestroyTextbox(curtextbox);
-                        curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "You're gonna want to click on Installed files and then verify integrity Once you've done that and it says no files are missing");
-                        await tutorialanimator.WaitForClickOnImageAsync();
-
-                        tutorialanimator.SetExpression("happy");
-                        tutorialanimator.DestroyTextbox(curtextbox);
-                        curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "try launching the mod again after that. make sure this will overwrite your existing modifed pt files");
-                        RonnieVariables.LauncherAllow = true;
-                    }
-
-                    if (File.Exists(path))
-                    {
-                        exetimer.Stop();
-                    }
-                    else
-                    {
-                        PLUSSavesystem.write_ini("Tutorial", "BrokenModSkip", "true");
-                        RonnieVariables.ModLaunchAmount += 1;
-                        await WaitUntil(() =>
-                        Process.GetProcessesByName(processName).Length > 0);
-                        PLUSMUSIC.SetTutorialMusicPaused(true);
-                        await WaitUntil(() =>
-                        Process.GetProcessesByName(processName).Length == 0);
-                        PLUSMUSIC.SetTutorialMusicPaused(false);
-                        if (!File.Exists(path) && !RonnieVariables.FinishedLaunch)
-                        {
-                            tutorialanimator.SetExpression("sad");
-                            tutorialanimator.DestroyTextbox(curtextbox);
-                            curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Atleast finish the intro...");
-                            await WaitSeconds(3);
-                            if (RonnieVariables.ModLaunchAmount > 1)
-                            {
-                                tutorialanimator.SetExpression("thinking");
-                                tutorialanimator.DestroyTextbox(curtextbox);
-                                curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Or I mean if the mod isn't working you can close PizzaOven+ and I will offer a skip");
-                            }
-                            if (Process.GetProcessesByName(processName).Length == 0)
-                            {
-                                var ps = new ProcessStartInfo(Global.config.Launcher)
-                                {
-                                    WorkingDirectory = Path.GetDirectoryName(Global.config.Launcher),
-                                    UseShellExecute = true,
-                                    Verb = "open"
-                                };
-                                Process.Start(ps);
-                            }
-                            exetimer.Stop();
-                            exetimer.Start();
-                        }
-                    }
-                };
-
-
-                exetimer.Start();
-
-                await WaitUntil(() => File.Exists(path));
-                RonnieVariables.FinishedLaunch = true;
-                ConfigButton.IsEnabled = false;
-                LaunchButton.IsEnabled = false;
-                exetimer.Stop();
-                PLUSMUSIC.SetTutorialMusicPaused(false);
-                File.Delete(path);
-                tutorialanimator.SetExpression("sad");
-                tutorialanimator.DestroyTextbox(curtextbox);
-                curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "someone is trolling me that mod SUCKED...");
-
-
-                await tutorialanimator.WaitForClickOnImageAsync();
-                tutorialanimator.SetExpression("dumb");
-                tutorialanimator.DestroyTextbox(curtextbox);
-                curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "ANYWAYS I think that was pretty helpful, don't you think?");
-            }
-
-            Point relativePoint_3 = Settings.TransformToAncestor(this)
-               .Transform(new Point(0, 0));
-
-            double tabX_3 = relativePoint_3.X + 100;
-            double tabY_3 = relativePoint_3.Y;
-
-            tutorialanimator.SetExpression("pointerup");
-            tutorialanimator.MoveTo(tabX_3 - 50, tabY_3 + 50);
-
-            tutorialanimator.DestroyTextbox(curtextbox);
-            curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Let's go to settings!");
-            Settings.IsEnabled = true;
-
-            await WaitUntil(() => Settings.IsSelected);
-
-            Settings.IsEnabled = false;
-            ModManager.IsEnabled = false;
-            tutorialanimator.MoveTo(this.Width / 2, 200);
-            tutorialanimator.SetExpression("normal");
-            tutorialanimator.DestroyTextbox(curtextbox);
-            curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "This where you can configure stuff");
-
-            await tutorialanimator.WaitForClickOnImageAsync();
-            tutorialanimator.SetExpression("thinking");
-            tutorialanimator.DestroyTextbox(curtextbox);
-            curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "You can suggest stuff with our form");
-
-            await tutorialanimator.WaitForClickOnImageAsync();
-            tutorialanimator.SetExpression("thinking");
-            tutorialanimator.DestroyTextbox(curtextbox);
-            curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "it helps us out alot");
-
-            await tutorialanimator.WaitForClickOnImageAsync();
-            tutorialanimator.SetExpression("thinking");
-            tutorialanimator.DestroyTextbox(curtextbox);
-            curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Maybe you want to downgrade your game");
-
-            await tutorialanimator.WaitForClickOnImageAsync();
-            tutorialanimator.DestroyTextbox(curtextbox);
-            curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Look no further than the verisons we offer");
-
-            await tutorialanimator.WaitForClickOnImageAsync();
-            tutorialanimator.DestroyTextbox(curtextbox);
-            tutorialanimator.SetExpression("happy");
-            curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "LOAD GMLOADER FILES");
-
-            await tutorialanimator.WaitForClickOnImageAsync();
-            tutorialanimator.DestroyTextbox(curtextbox);
-            curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "wanna hear the best part?");
-
-            await tutorialanimator.WaitForClickOnImageAsync();
-            tutorialanimator.SetExpression("happy2");
-            tutorialanimator.DestroyTextbox(curtextbox);
-            curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "if you load an xdelta file you can stack multiple GMLoader mods ontop of eachother");
-
-            await tutorialanimator.WaitForClickOnImageAsync();
-            tutorialanimator.DestroyTextbox(curtextbox);
-            curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "mainly because it doesn't check hash(if modded or not)");
-
-            await tutorialanimator.WaitForClickOnImageAsync();
-            tutorialanimator.DestroyTextbox(curtextbox);
-            curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "you can turn your files into GMLoader to easily stack em");
-
-            await tutorialanimator.WaitForClickOnImageAsync();
-            tutorialanimator.SetExpression("thinking");
-            tutorialanimator.DestroyTextbox(curtextbox);
-            curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Use the Custom Assets folder to customise some of your stuff(yet to be added more)");
-
-            await tutorialanimator.WaitForClickOnImageAsync();
-            tutorialanimator.DestroyTextbox(curtextbox);
-            curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Clean PO. files if a mod is jammed and won't launch, just make sure to verify integrity of game files on steam afterwards, okay?");
-
-            await tutorialanimator.WaitForClickOnImageAsync();
-            tutorialanimator.SetExpression("happy2");
-            tutorialanimator.DestroyTextbox(curtextbox);
-            curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "You can even toggle my cute little face on your discord with RPC settings");
-
-            await tutorialanimator.WaitForClickOnImageAsync();
-            tutorialanimator.SetExpression("happy");
-            tutorialanimator.DestroyTextbox(curtextbox);
-            curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "and much more is to come, I will try to cater pookie");
-
-            await tutorialanimator.WaitForClickOnImageAsync();
-            tutorialanimator.MoveTo(this.Width / 6, 250);
-            ModManager.IsEnabled = true;
-            Settings.IsEnabled = false;
-            ModManager.IsSelected = true;
-
-            tutorialanimator.SetExpression("thinking");
-            tutorialanimator.DestroyTextbox(curtextbox);
-            curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "And that's about all the wacky things you can do here, really! Not so wacky now, huh?");
-
-            await tutorialanimator.WaitForClickOnImageAsync();
-            tutorialanimator.DestroyTextbox(curtextbox);
-            curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "Stating this again, but if you want me to improve on this tool, then make sure to spell it out for me on feedback, because believe it or not, I can in fact read.");
-
-            await tutorialanimator.WaitForClickOnImageAsync();
-            tutorialanimator.DestroyTextbox(curtextbox);
-            curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "I won't take too much of your time, so how about you embark on your own journey!");
-
-            await tutorialanimator.WaitForClickOnImageAsync();
-            tutorialanimator.SetExpression("happy2");
-            tutorialanimator.DestroyTextbox(curtextbox);
-            curtextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, "I am still saying right here by your side, probably toiling away for you for the rest of eternity. YAY!!");
-
-            PLUSSavesystem.write_ini("Tutorial", "Finished", "true");
-            tutorialanimator.DestroyTextbox(curtextbox);
-            await DanceAsync(tutorialanimator, 3, 60);
-
-            TutorialState();
-        }
-
-        private PLUSRonnieAnimate introanimator;
-        private PLUSRonnieAnimate launchanimator;
+        };
         public PLUSRonnieAnimate tutorialanimator;
+        public PLUSRonnieAnimate introanimator;
+        private PLUSRonnieAnimate launchanimator;
         private PLUSRonnieAnimate replayanimator;
+        private PLUSRonnieAnimate settinganimator;
         public string version;
         public static string PizzaTowerVersion = "1.1.280";
+        private Dictionary<string, string> defaultBrushHexes = new Dictionary<string, string>();
         // Separated from Global.config so that order is updated when datagrid is modified
         public List<string> exes;
         private FileSystemWatcher ModsWatcher;
@@ -852,8 +111,26 @@ namespace PizzaOven
         private FlowDocument defaultFlow = new FlowDocument();
         private string defaultText = "No mod is currently selected. Pressing launch will start a vanilla Pizza Tower. \n\nyou can also go the PLUS' Settings to play on the older verisons that PLUS provides (if you wish you can even put your own downgrade patch in Downgrades folder.)\n\n" +
             "Start downloading and using mods in the Browse Mods tab on top. Only one mod can be selected at a time.";
+        private string _currentFilter;
 
+        public string[] transparentboxes = {
+            "Logger",
+            "ModDescription",
+            "ModGrid"
+        };
 
+        public string CurrentFilter
+        {
+            get => _currentFilter;
+            set
+            {
+                if (_currentFilter == value)
+                    return;
+
+                _currentFilter = value;
+                UpdatePLUSfilter(_currentFilter);
+            }
+        }
 
         public MainWindow()
         {
@@ -861,10 +138,51 @@ namespace PizzaOven
             // Get Version Number
             var PizzaOvenVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             version = PizzaOvenVersion.Substring(0, PizzaOvenVersion.LastIndexOf('.'));
+
+            var GMLoaderMergePath = $@"{Global.assemblyLocation}{Global.s}GMLoaderMergeTemp";
+            if (Directory.Exists(GMLoaderMergePath))
+                Directory.Delete(GMLoaderMergePath, true);
+
+            foreach (var (sectionName, items) in credits)
+            {
+                var sectionText = new TextBlock
+                {
+                    Text = sectionName,
+                    FontSize = 18,
+                    FontWeight = FontWeights.Bold,
+                    Margin = new Thickness(0, 10, 0, 5)
+                };
+                sectionText.SetResourceReference(TextBlock.ForegroundProperty, "TextBrush");
+
+                CreditsPanel.Children.Add(sectionText);
+
+                foreach (var item in items)
+                {
+                    var nameText = new TextBlock
+                    {
+                        Text = item.Name,
+                        FontSize = 14
+                    };
+                    nameText.SetResourceReference(TextBlock.ForegroundProperty, "TextBrush");
+
+                    var smallText = new TextBlock
+                    {
+                        Text = item.SmallText,
+                        FontSize = 12,
+                        Opacity = 0.7,
+                        Margin = new Thickness(0, 0, 0, 5)
+                    };
+                    smallText.SetResourceReference(TextBlock.ForegroundProperty, "TextBrush");
+
+                    CreditsPanel.Children.Add(nameText);
+                    CreditsPanel.Children.Add(smallText);
+                }
+            }
+            CurrentFilter = "";
+            ApplyTransparentBoxes(true);
             Global.ronnietutorial = PLUSSavesystem.read_ini("Tutorial", "Finished", "false") != "true";
             try
             {
-
                 if (PLUSSavesystem.read_ini("Init", "AssetsVer", "-1") != PizzaOvenVersion)
                 {
                     string appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaOvenPLUS", "CustomAssets");
@@ -963,8 +281,13 @@ namespace PizzaOven
 
             if (Global.config.ModList == null)
                 Global.config.ModList = new();
+
             Global.ModList = Global.config.ModList;
 
+            for (int i = 0; i < Global.config.ModList.Count; i++)
+            {
+                Global.ModList[i].GMLoader = PLUSModType($@"{Global.assemblyLocation}{Global.s}Mods{Global.s}{Global.config.ModList[i].name}") == "GMLOADER";
+            }
 
             Directory.CreateDirectory($@"{Global.assemblyLocation}{Global.s}Mods");
 
@@ -1018,37 +341,38 @@ namespace PizzaOven
 
             if (Global.ronnietutorial)
             {
-                RunTutorial();
+                PLUSTutorial.RunTutorial(this);
             }
             else
             {
                 //hi to the people looking at the code!!! this how we check if you still have it lol
-                RonnieVariables.KeptMod = File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaTower_GM2", "RonnieTutorial.ini"));
-                RonnieVariables.ModDeleted = TutorialModPath() == "";
-                if (Directory.Exists(TutorialModPath()))
+                TutorialButton.Visibility = Visibility.Visible;
+                PLUSTutorial.RonnieVariables.KeptMod = File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaTower_GM2", "RonnieTutorial.ini"));
+                PLUSTutorial.RonnieVariables.ModDeleted = PLUSTutorial.TutorialModPath() == "";
+                if (Directory.Exists(PLUSTutorial.TutorialModPath()))
                 {
-                    Directory.Delete(TutorialModPath(), true);
+                    Directory.Delete(PLUSTutorial.TutorialModPath(), true);
                 }
-                introanimator = new PLUSRonnieAnimate();
-                introanimator.Initialize(this, this.Width / 2, 250, 1.5);
+                if (!PLUSTutorial.RonnieVariables.ModDeleted || PLUSTutorial.RonnieVariables.KeptMod)
+                {
+                    introanimator = new PLUSRonnieAnimate();
+                    introanimator.Initialize(this, this.Width / 2, 250, 1.5);
 
-                this.SizeChanged += (s, e) =>
-                {
-                    try
+                    this.SizeChanged += (s, e) =>
                     {
-                        if (introanimator != null && introanimator._overlayCanvas != null)
+                        try
                         {
-                            introanimator._overlayCanvas.Width = this.ActualWidth;
-                            introanimator._overlayCanvas.Height = this.ActualHeight;
+                            if (introanimator != null && introanimator._overlayCanvas != null)
+                            {
+                                introanimator._overlayCanvas.Width = this.ActualWidth;
+                                introanimator._overlayCanvas.Height = this.ActualHeight;
+                            }
                         }
-                    }
-                    catch { }
-                };
-                if (!RonnieVariables.ModDeleted || RonnieVariables.KeptMod)
-                {
-                    RunIntro();
+                        catch { }
+                    };
+                    PLUSTutorial.RunIntro(this);
                 }
-                else
+                else if (introanimator != null)
                 {
                     introanimator.Destroy();
                 }
@@ -1135,9 +459,6 @@ namespace PizzaOven
                 }
             }
 
-
-
-
             foreach (var mod in Directory.GetDirectories(currentModDirectory))
             {
                 if (Global.ModList.ToList().Where(x => x.name == Path.GetFileName(mod)).Count() == 0)
@@ -1145,6 +466,7 @@ namespace PizzaOven
                     Mod m = new Mod();
                     m.name = Path.GetFileName(mod);
                     m.enabled = false;
+
                     Thread.Sleep(1000);
                     if (File.Exists($"{mod}{Global.s}mod.json"))
                     {
@@ -1155,10 +477,13 @@ namespace PizzaOven
                     }
                     else
                         m.preview = new Uri("pack://application:,,,/PizzaOven;component/Assets/PizzaOvenLogo.png");
+                    m.GMLoader = PLUSModType(mod) == "GMLOADER";
+
                     App.Current.Dispatcher.Invoke((Action)delegate
                     {
                         Global.ModList.Add(m);
                     });
+
                     if (!Global.ronnietutorial)
                         Global.logger.WriteLine($"Added {Path.GetFileName(mod)}", LoggerType.Info);
                 }
@@ -1216,7 +541,7 @@ namespace PizzaOven
 
         private async void Setup_Click(object sender, RoutedEventArgs e)
         {
-            if (Global.ronnietutorial && !RonnieVariables.SetupAllow)
+            if (Global.ronnietutorial && !PLUSTutorial.RonnieVariables.SetupAllow)
             {
                 Global.logger.WriteLine("Not yet...", LoggerType.Tutorial);
                 return;
@@ -1230,19 +555,19 @@ namespace PizzaOven
                         LaunchButton.IsEnabled = true;
                     });
                     if (Global.ronnietutorial)
-                        RonnieVariables.SetupSucessful = 1;
+                        PLUSTutorial.RonnieVariables.SetupSucessful = 1;
 
                 }
                 else if (Global.ronnietutorial)
                 {
-                    RonnieVariables.SetupSucessful = 0;
+                    PLUSTutorial.RonnieVariables.SetupSucessful = 0;
                 }
             });
         }
         private async void Launch_Click(object sender, RoutedEventArgs e)
         {
             // Build Mod Loadout
-            if (Global.ronnietutorial && !RonnieVariables.LauncherAllow)
+            if (Global.ronnietutorial && !PLUSTutorial.RonnieVariables.LauncherAllow)
             {
                 Global.logger.WriteLine("Not yet...", LoggerType.Tutorial);
                 return;
@@ -1259,6 +584,10 @@ namespace PizzaOven
             {
                 Global.logger.WriteLine("Select the Ronnie Mod", LoggerType.Tutorial);
                 return;
+            }
+            if (!Global.ronnietutorial)
+            {
+                Settings.IsEnabled = false;
             }
             if (Global.config.ModsFolder != null)
             {
@@ -1292,12 +621,13 @@ namespace PizzaOven
                     ModGridSearchButton.IsEnabled = true;
                     if (!Global.ronnietutorial)
                     {
+                        Settings.IsEnabled = true;
                         launchanimator.GlideTo(this.ActualWidth, this.ActualHeight - 200, 20);
                         launchanimator.SetExpression("sad");
                     }
                     else
                     {
-                        RonnieVariables.FailedPatch = true;
+                        PLUSTutorial.RonnieVariables.FailedPatch = true;
                         if (File.Exists($"{Global.config.ModsFolder}{Global.s}data.win.po"))
                         {
                             File.Delete($"{Global.config.ModsFolder}{Global.s}data.win.po");
@@ -1319,13 +649,70 @@ namespace PizzaOven
                 ClearButton.IsEnabled = true;
                 UpdateButton.IsEnabled = true;
                 ModGridSearchButton.IsEnabled = true;
+                if (!Global.ronnietutorial)
+                {
+                    Settings.IsEnabled = true;
+                }
             }
             else
             {
                 Global.logger.WriteLine("Please click Setup before starting!", LoggerType.Warning);
                 return;
             }
+            List<string> GMLoaderMods = new List<string>();
 
+            for (int i = 0; i < Global.ModList.Count; i++)
+            {
+                if (Global.ModList[i].GMLoader_enabled)
+                {
+                    string modName = Global.ModList[i].name;
+
+                    GMLoaderMods.Add($@"{Global.assemblyLocation}{Global.s}Mods{Global.s}{modName}");
+
+                    Global.ModList[i].GMLoader_enabled = false;
+                    Refresh();
+                }
+            }
+
+            if (GMLoaderMods.Count > 0)
+            {
+                var runningGMLoaders = Process.GetProcessesByName("GMLoader");
+                foreach (var proc in runningGMLoaders)
+                {
+                    try
+                    {
+                        proc.Kill();
+                        proc.WaitForExit();
+                    }
+                    catch
+                    {
+
+                    }
+                };
+                Global.logger.WriteLine($"[GMLoader] GMLoader Mods Selected", LoggerType.Info);
+                var GMLoaderMergePath = $@"{Global.assemblyLocation}{Global.s}GMLoaderMergeTemp";
+                if (Directory.Exists(GMLoaderMergePath))
+                    Directory.Delete(GMLoaderMergePath, true);
+                await ModLoader.GMLoader_MergeMods(GMLoaderMods.ToArray(), GMLoaderMergePath);
+                ConfigButton.IsEnabled = false;
+                LaunchButton.IsEnabled = false;
+                ClearButton.IsEnabled = false;
+                UpdateButton.IsEnabled = false;
+                ModGridSearchButton.IsEnabled = false;
+                await DoGMLoader(GMLoaderMergePath);
+                if (Directory.Exists(GMLoaderMergePath))
+                    Directory.Delete(GMLoaderMergePath, true);
+                ModGrid.IsEnabled = true;
+                ConfigButton.IsEnabled = true;
+                LaunchButton.IsEnabled = true;
+                ClearButton.IsEnabled = true;
+                UpdateButton.IsEnabled = true;
+                ModGridSearchButton.IsEnabled = true;
+            }
+            if (!Global.ronnietutorial)
+            {
+                Settings.IsEnabled = true;
+            }
             // Launch game
             if (Global.config.Launcher != null && File.Exists(Global.config.Launcher))
             {
@@ -1344,43 +731,41 @@ namespace PizzaOven
                         modtype = "Normal";
                     }
 
-                    if (modtype == "GMLOADER")
+
+                    Global.logger.WriteLine($"Launching {path}", LoggerType.Info);
+                    var ps_extra = "";
+
+
+                    if (PLUSSavesystem.read_ini("Launch", "Debug", "true") == "true" && !Global.ronnietutorial)
                     {
-                        Global.logger.WriteLine($"GMLoader will launch {path}", LoggerType.Info);
+                        ps_extra = "-debug";
+                    }
+
+
+                    if (PLUSSavesystem.read_ini("Launch", "Steam", "false") == "true")
+                    {
+                        ProcessStartInfo psi = new ProcessStartInfo
+                        {
+                            FileName = "steam://rungameid/2231450",
+                            UseShellExecute = true
+                        };
+
+                        Process.Start(psi);
                     }
                     else
                     {
-                        Global.logger.WriteLine($"Launching {path}", LoggerType.Info);
-                        var ps_extra = "";
-
-                        if (PLUSSavesystem.read_ini("Launch", "Debug", "true") == "true" && !Global.ronnietutorial)
+                        var ps = new ProcessStartInfo(path)
                         {
-                            ps_extra = "-debug";
-                        }
-
-                        if (PLUSSavesystem.read_ini("Launch", "Steam", "false") == "true")
-                        {
-                            ProcessStartInfo psi = new ProcessStartInfo
-                            {
-                                FileName = "steam://rungameid/2231450",
-                                UseShellExecute = true
-                            };
-
-                            Process.Start(psi);
-                        }
-                        else
-                        {
-                            var ps = new ProcessStartInfo(path)
-                            {
-                                WorkingDirectory = Path.GetDirectoryName(path),
-                                Arguments = ps_extra,
-                                UseShellExecute = true,
-                                Verb = "open"
-                            };
-                            Process.Start(ps);
-                        }
-
+                            WorkingDirectory = Path.GetDirectoryName(path),
+                            Arguments = ps_extra,
+                            UseShellExecute = true,
+                            Verb = "open"
+                        };
+                        Process.Start(ps);
                     }
+
+
+
                 }
                 catch (Exception ex)
                 {
@@ -1479,6 +864,10 @@ namespace PizzaOven
             PLUSrefresh();
             ModGrid.Items.Refresh();
         }
+        private async Task<bool> DoGMLoader(string path)
+        {
+            return await Task.Run(() => ModLoader.BuildGMLoader(path));
+        }
         private async Task<bool> Build(string path, string downgradename)
         {
             return await Task.Run(async () =>
@@ -1547,7 +936,7 @@ namespace PizzaOven
                 if (mods.Count == 1)
                 {
                     if (isGMLOADER)
-                        return ModLoader.BuildGMLoader($@"{Global.assemblyLocation}{Global.s}Mods{Global.s}{mods[0].name}");
+                        return true;
                     else if (isAFOM)
                         return ModLoader.BuildAFOM($@"{Global.assemblyLocation}{Global.s}Mods{Global.s}{mods[0].name}");
                     else
@@ -1942,7 +1331,7 @@ namespace PizzaOven
 
         private void Download_Click(object sender, RoutedEventArgs e)
         {
-            if (Global.ronnietutorial && !RonnieVariables.AllowDownloadMod)
+            if (Global.ronnietutorial && !PLUSTutorial.RonnieVariables.AllowDownloadMod)
             {
                 return;
             }
@@ -2306,10 +1695,98 @@ namespace PizzaOven
             RefreshFilter();
             selected = true;
         }
+        private void ApplyTransparentBoxes(bool init = false)
+        {
+            var transparencysettings = new Dictionary<string, double>();
+
+            foreach (var key in transparentboxes)
+            {
+                string value = PLUSSavesystem.read_ini("Themes", $"Transparency_{key}", "100");
+                var slider = (Slider)this.FindName($"Transparency_{key}");
+
+                if (double.TryParse(value, out double parsed))
+                {
+                    transparencysettings[key] = parsed;
+                }
+                else
+                {
+                    PLUSSavesystem.write_ini("Themes", key, "100");
+                    transparencysettings[key] = 100;
+                }
+                if (init)
+                {
+                    slider.Value = transparencysettings[key];
+                }
+                transparencysettings[key] = transparencysettings[key] / 100.0;
+            }
+
+            if (init)
+                return;
+
+            var currentBorderBrush = (Brush)FindResource("InnerBrush") as SolidColorBrush;
+            var currentBackground = (Brush)FindResource("InnerBrush") as SolidColorBrush;
+
+            var newBorderBrush = currentBorderBrush?.Clone();
+            var newBackground = currentBackground?.Clone();
+
+            newBorderBrush.Opacity = 0.75;
+            newBackground.Opacity = 0.75;
+
+            ModBrowserBorder.BorderBrush = newBorderBrush;
+            ModBrowserBorder.Background = newBackground;
+
+            currentBorderBrush = DescriptionWindow.BorderBrush as SolidColorBrush;
+            currentBackground = DescriptionWindow.Background as SolidColorBrush;
+
+            newBorderBrush = currentBorderBrush?.Clone();
+            newBackground = currentBackground?.Clone();
+
+            newBorderBrush.Opacity = 1 * transparencysettings["ModDescription"];
+            newBackground.Opacity = 1 * transparencysettings["ModDescription"];
+
+            DescriptionWindow.BorderBrush = newBorderBrush;
+            DescriptionWindow.Background = newBackground;
+
+            currentBorderBrush = ConsoleWindow.BorderBrush as SolidColorBrush;
+            currentBackground = ConsoleWindow.Background as SolidColorBrush;
+
+            newBorderBrush = currentBorderBrush?.Clone();
+            newBackground = currentBackground?.Clone();
+
+            newBorderBrush.Opacity = 1 * transparencysettings["Logger"];
+            newBackground.Opacity = 1 * transparencysettings["Logger"];
+
+            ConsoleWindow.BorderBrush = newBorderBrush;
+            ConsoleWindow.Background = newBackground;
+
+            currentBorderBrush = (Brush)Application.Current.FindResource("InnerBrush") as SolidColorBrush;
+            currentBackground = (Brush)Application.Current.FindResource("InnerBrush") as SolidColorBrush;
+
+            newBorderBrush = currentBorderBrush?.Clone();
+            newBackground = currentBackground?.Clone();
+
+            newBorderBrush.Opacity = 0.75 * transparencysettings["ModGrid"];
+            newBackground.Opacity = 0.75 * transparencysettings["ModGrid"];
+
+            ModGrid_Border.BorderBrush = newBorderBrush;
+            ModGrid_Border.Background = newBackground;
+        }
+        public void Transparent_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (sender is Slider slider)
+            {
+                string name = slider.Name;
+                string value = slider.Value.ToString();
+
+                PLUSSavesystem.write_ini("Themes", name, value);
+                ApplyTransparentBoxes();
+            }
+        }
         private void OnBrowserTabSelected(object sender, RoutedEventArgs e)
         {
             if (!selected)
                 InitializeBrowser();
+            ApplyTransparentBoxes();
         }
 
         private static int page = 1;
@@ -2342,6 +1819,7 @@ namespace PizzaOven
                 PLUSrefresh();
                 modManagerRefreshed = true;
             }
+            ApplyTransparentBoxes();
         }
 
         private void OnModManagerUnselected(object sender, RoutedEventArgs e)
@@ -2351,17 +1829,16 @@ namespace PizzaOven
 
         private void PLUSrefresh()
         {
-
+            ApplyTransparentBoxes();
             string DowngradePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Downgrades");
+            string ThemesPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Themes");
             if (Directory.Exists(DowngradePath))
             {
                 string[] files = Directory.GetFiles(DowngradePath);
 
                 var DowngradeSave = DowngradeCombo.SelectedItem as string;
                 if (string.IsNullOrEmpty(DowngradeSave))
-                {
                     DowngradeSave = null;
-                }
                 DowngradeCombo.Items.Clear();
 
                 for (int i = 0; i < files.Length; i++)
@@ -2371,9 +1848,7 @@ namespace PizzaOven
                     string nameWithoutExt = Path.GetFileNameWithoutExtension(fileName);
 
                     if (fileName.ToLower().Contains("xdelta"))
-                    {
                         DowngradeCombo.Items.Add(nameWithoutExt);
-                    }
                 }
                 DowngradeCombo.Items.Add(PizzaTowerVersion);
                 if (string.IsNullOrEmpty(DowngradeCombo.SelectedItem as string))
@@ -2393,7 +1868,46 @@ namespace PizzaOven
                             DowngradeCombo.SelectedItem = match;
                     }
                 }
+            }
+            if (Directory.Exists(ThemesPath))
+            {
+                string[] files = Directory.GetFiles(ThemesPath);
 
+                var ThemeSave = ThemePresetsCombo.SelectedItem as string;
+
+                if (string.IsNullOrEmpty(ThemeSave))
+                    ThemeSave = null;
+
+                ThemePresetsCombo.Items.Clear();
+
+                for (int i = 0; i < files.Length; i++)
+                {
+                    string fileName = Path.GetFileName(files[i]);
+
+                    string nameWithoutExt = Path.GetFileNameWithoutExtension(fileName);
+
+                    if (fileName.ToLower().Contains("potheme"))
+                    {
+                        ThemePresetsCombo.Items.Add(nameWithoutExt);
+                    }
+                }
+                if (string.IsNullOrEmpty(ThemePresetsCombo.SelectedItem as string))
+                {
+                    bool hasThemeSaved = false;
+                    if (!string.IsNullOrEmpty(ThemeSave))
+                        hasThemeSaved = ThemePresetsCombo.Items.Cast<object>().Any(i => string.Equals(i?.ToString(), ThemeSave, StringComparison.OrdinalIgnoreCase));
+
+                    if (ThemeSave == null || !hasThemeSaved)
+                    {
+                        ThemePresetsCombo.SelectedIndex = 0;
+                    }
+                    else
+                    {
+                        var match = ThemePresetsCombo.Items.Cast<object>().FirstOrDefault(i => string.Equals(i?.ToString(), ThemeSave, StringComparison.OrdinalIgnoreCase));
+                        if (match != null)
+                            ThemePresetsCombo.SelectedItem = match;
+                    }
+                }
             }
             var ModFolderSave = ModFolderCombo.SelectedItem as string;
             if (string.IsNullOrEmpty(ModFolderSave))
@@ -2436,7 +1950,7 @@ namespace PizzaOven
 
             if (string.IsNullOrEmpty(DowngradeDownloadCombo.SelectedItem as string))
             {
-                DowngradeDownloadCombo.SelectedIndex = 0;   
+                DowngradeDownloadCombo.SelectedIndex = 0;
             }
 
             // Refresh the ModGrid UI so changes are visible immediately
@@ -2451,6 +1965,70 @@ namespace PizzaOven
                 });
             }
             catch { }
+
+            string bgImagePath = null;
+
+            if (Directory.Exists(Global.customassetsfolder))
+            {
+                bgImagePath = Directory.GetFiles(Global.customassetsfolder)
+                    .FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).Equals("background", StringComparison.OrdinalIgnoreCase) && themeimageExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrEmpty(bgImagePath) && File.Exists(bgImagePath))
+            {
+                try
+                {
+                    byte[] imageData = File.ReadAllBytes(bgImagePath);
+
+                    BitmapImage LoadBitmapFromBytes(byte[] data)
+                    {
+                        var bitmap = new BitmapImage();
+                        using (var ms = new MemoryStream(data))
+                        {
+                            bitmap.BeginInit();
+                            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                            bitmap.StreamSource = ms;
+                            bitmap.EndInit();
+                            bitmap.Freeze();
+                        }
+                        return bitmap;
+                    }
+
+                    var bitmap = LoadBitmapFromBytes(imageData);
+                    MainGrid.Background = new ImageBrush(bitmap)
+                    {
+                        Stretch = Stretch.UniformToFill
+                    };
+                    ModBrowserGrid.Background = new ImageBrush(bitmap)
+                    {
+                        Stretch = Stretch.UniformToFill
+                    };
+                    SettingsGrid.Background = new ImageBrush(bitmap)
+                    {
+                        Stretch = Stretch.UniformToFill
+                    };
+                    PatchNotesGrid.Background = new ImageBrush(bitmap)
+                    {
+                        Stretch = Stretch.UniformToFill
+                    };
+
+                }
+                catch
+                {
+                    MainGrid.Background = (Brush)FindResource("PrimaryBrush");
+                    ModBrowserGrid.Background = (Brush)FindResource("PrimaryBrush");
+                    SettingsGrid.Background = (Brush)FindResource("PrimaryBrush");
+                    PatchNotesGrid.Background = (Brush)FindResource("PrimaryBrush");
+                }
+            }
+            else
+            {
+                MainGrid.Background = (Brush)FindResource("PrimaryBrush");
+                ModBrowserGrid.Background = (Brush)FindResource("PrimaryBrush");
+                SettingsGrid.Background = (Brush)FindResource("PrimaryBrush");
+                PatchNotesGrid.Background = (Brush)FindResource("PrimaryBrush");
+            }
+
         }
         private async void RefreshFilter()
         {
@@ -2752,6 +2330,7 @@ namespace PizzaOven
             string[] foldersToWatch = new string[]
             {
                 Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Downgrades"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaOvenPLUS", "CustomAssets")
             };
 
             foreach (var folder in foldersToWatch)
@@ -2788,6 +2367,10 @@ namespace PizzaOven
 
         private string PLUSModType(string path)
         {
+            if (!File.Exists(path))
+            {
+                return "Normal";
+            }
             var exts = Directory.EnumerateFiles(
                     path,
                     "*.*",
@@ -2815,10 +2398,7 @@ namespace PizzaOven
 
             string[] GMLoaderFolder = { "audio", "code", "lib", "config", "csx", "room", "shader", "texture", "xdelta" };
 
-            bool potentialGMLoader = Directory
-                .EnumerateDirectories(path, "*", SearchOption.AllDirectories)
-                .Any(d => GMLoaderFolder
-                    .Contains(Path.GetFileName(d), StringComparer.OrdinalIgnoreCase));
+            bool potentialGMLoader = Directory.EnumerateDirectories(path, "*", SearchOption.AllDirectories).Any(d => GMLoaderFolder.Contains(Path.GetFileName(d), StringComparer.OrdinalIgnoreCase));
 
             bool xdeltainfolder = false;
 
@@ -2826,15 +2406,10 @@ namespace PizzaOven
             {
                 var xdeltaFolders = Directory.EnumerateDirectories(path, "xdelta", SearchOption.AllDirectories);
 
-                xdeltainfolder = xdeltaFolders.Any(xdeltaFolder =>
-                    Directory.EnumerateFileSystemEntries(xdeltaFolder)
-                             .Any(entry => Path.GetFileName(entry)
-                                 .Equals("xdelta", StringComparison.OrdinalIgnoreCase))
-                );
+                xdeltainfolder = xdeltaFolders.Any(xdeltaFolder => Directory.EnumerateFileSystemEntries(xdeltaFolder).Any(entry => Path.GetFileName(entry).Equals("xdelta", StringComparison.OrdinalIgnoreCase)));
             }
 
-
-            ModJSON modjson;
+            Metadata metadata;
 
             var jsonPath = $"{path}{Global.s}mod.json";
 
@@ -2843,23 +2418,23 @@ namespace PizzaOven
                 try
                 {
                     string json = File.ReadAllText(jsonPath);
-                    modjson = JsonSerializer.Deserialize<ModJSON>(json) ?? new ModJSON();
+                    metadata = JsonSerializer.Deserialize<Metadata>(json) ?? new Metadata();
                 }
                 catch
                 {
-                    modjson = new ModJSON();
+                    metadata = new Metadata();
                 }
             }
             else
             {
-                modjson = new ModJSON();
+                metadata = new Metadata();
             }
 
-            if (modjson.cat == "GMLoader")
+            if (metadata.cat == "GMLoader")
             {
                 return "GMLOADER";
             }
-            else if (modjson.cat == "CYOP/AFOM")
+            else if (metadata.cat == "CYOP/AFOM")
             {
                 return "AFOM";
             }
@@ -2902,10 +2477,9 @@ namespace PizzaOven
                 }
             }
         }
-
-        private void UpdatePLUSfilter(object sender, TextChangedEventArgs e)
+        private void UpdatePLUSfilter(string filter)
         {
-            string filter = (PLUS_SearchBar?.Text ?? string.Empty).Trim();
+            filter = (filter ?? string.Empty).Trim();
 
             var settingsContent = Settings?.Content as DependencyObject;
             if (settingsContent == null)
@@ -2919,21 +2493,7 @@ namespace PizzaOven
 
             foreach (var panel in stackPanels)
             {
-                if (PLUS_SearchBar != null)
-                {
-                    bool containsSearch =
-                        panel == (DependencyObject)PLUS_SearchBar ||
-                        FindVisualChildren<DependencyObject>(panel).Any(c => c == (DependencyObject)PLUS_SearchBar) ||
-                        FindLogicalChildren<DependencyObject>(panel).Any(c => c == (DependencyObject)PLUS_SearchBar);
-
-                    if (containsSearch)
-                    {
-                        panel.Visibility = Visibility.Visible;
-                        continue;
-                    }
-                }
-
-                string searchable = panel.Tag?.ToString() ?? panel.Name ?? string.Empty;
+                string searchable = panel.Tag?.ToString() ?? string.Empty;
 
                 if (string.IsNullOrWhiteSpace(searchable))
                 {
@@ -2953,24 +2513,99 @@ namespace PizzaOven
 
                 if (string.IsNullOrWhiteSpace(searchable))
                 {
-                    var tb = FindVisualChildren<TextBlock>(panel).FirstOrDefault();
-                    if (tb != null)
-                        searchable = tb.Text ?? string.Empty;
+                    continue;
                 }
 
-                if (string.IsNullOrEmpty(searchable))
-                    continue;
-
-                bool match = string.IsNullOrEmpty(filter) ||
-                             searchable.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0;
-
+                
+                bool match = string.Equals(searchable.Trim(),filter?.Trim(),StringComparison.OrdinalIgnoreCase);
                 panel.Visibility = match ? Visibility.Visible : Visibility.Collapsed;
             }
+            TutorialButton.Visibility = Visibility.Visible; 
+            SettingOptions.Visibility = string.IsNullOrEmpty(filter) ? Visibility.Visible : Visibility.Collapsed;
 
             if (Global.ronnietutorial)
+            {
                 TutorialPanel.Visibility = Visibility.Collapsed;
+                TutorialButton.Visibility = Visibility.Collapsed;   
+            }
         }
+        private void FilterButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn)
+            {
+                CurrentFilter = btn.Content?.ToString();
+            }
+        }
+        private void FilterButton_HoverOn(object sender, RoutedEventArgs e)
+        {
+            if (introanimator != null)
+                introanimator.Destroy();
+            if (launchanimator != null)
+                launchanimator.Destroy();
+            if (replayanimator != null)
+                replayanimator.Destroy();
+            if (Global.ronnietutorial && PLUSTutorial.RonnieVariables.RonnieExplainSettings != 1)
+            {
+                if (Global.ronnietutorial && PLUSTutorial.RonnieVariables.RonnieExplainSettings == 0)
+                {
+                    PLUSTutorial.RonnieVariables.RonnieExplainSettings = 1;
+                }
+                return;
+            }
+            settinganimator = new PLUSRonnieAnimate();
+            settinganimator.Initialize(this, 0, this.Height - 300, 1);
+            settinganimator.SetExpression("thinking");
+            if (sender is Button btn)
+            {
+                var messages = new Dictionary<string, string>
+                {
+                    ["Tutorial"] = "You can use this to replay my tutorial",
+                    ["Links"] = "Wanna suggest something? there's a form in there where you can suggest features, maybe join our discord or check out other social links",
+                    ["App Settings"] = "Settings mainly to do with the application such as display on discord so people can see my cute little face on it or startup on opening your device",
+                    ["Launch Settings"] = "Settings mainly to do with the launch like applying downgrades or customising what happens on launch",
+                    ["Mod Settings"] = "Settings mainly to do with mods such as PO. Files, Adding folder to categorise your mods or saving current Pizza Tower folder as mod",
+                    ["App Customization"] = "Settings mainly to do with the looks of the app or the sounds of the app",
+                    ["GMLoader"] = "Settings to mainly convert your xdelta mods into GMLoader mods(recommended for mods that have smaller additions)",
+                    ["Credits"] = "Contributions to PizzaOven+ and the original PizzaOven too"
+                };
 
+                if (btn.Content?.ToString() is string key && messages.TryGetValue(key, out var message))
+                {
+                    if (Global.ronnietutorial && tutorialanimator != null)
+                    {
+                        PLUSTutorial.RonnieVariables.publictextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, message);
+                        if (settinganimator != null)
+                        {
+                            settinganimator.Destroy();
+                        }
+                    }
+                    else 
+                    {
+                        settinganimator.MakeTextbox(settinganimator.GetX() + 110, settinganimator.GetY() + 25, message);
+                        if (key == "Tutorial")
+                        {
+                            settinganimator.SetExpression("happy");
+                        }
+                    }
+                }
+            }
+        }
+        private void FilterButton_HoverOff(object sender, RoutedEventArgs e)
+        {
+            if (Global.ronnietutorial && tutorialanimator != null)
+            {
+                tutorialanimator.DestroyTextbox(PLUSTutorial.RonnieVariables.publictextbox);
+            }
+            if (settinganimator != null)
+            { 
+                settinganimator.Destroy();
+            }
+
+        }
+        private void FilterButtonBack_Click(object sender, RoutedEventArgs e)
+        {
+            CurrentFilter = "";
+        }
         private void CleanPO_click(object sender, RoutedEventArgs e)
         {
             var path = Global.config.ModsFolder;
@@ -2995,37 +2630,34 @@ namespace PizzaOven
             {
                 if (saves[i, 0] == ModFolderCombo.SelectedItem as string)
                 {
-                    PLUSSavesystem.delete_ini("Folder", saves[i, 0]);
+                    PLUSSavesystem.delete_ini_value("Folder", saves[i, 0]);
                 }
             }
             ModFolderCombo.SelectedItem = "All";
         }
-        private void OpenSuggestForm_Click(object sender, RoutedEventArgs e)
+        private void OpenLink_Click(object sender, RoutedEventArgs e)
         {
-            Process.Start(new ProcessStartInfo
+            if (sender is Button btn)
             {
-                FileName = "https://docs.google.com/forms/d/e/1FAIpQLScI-8L6-ATpE6_ip3gzESXAWi4B_0pwHiHI5g83fb3SlLTM_A/viewform?usp=dialog",
-                UseShellExecute = true
-            });
-        }
+                string url = btn.Name switch
+                {
+                    "OpenSuggestForm" => "https://docs.google.com/forms/d/e/1FAIpQLScI-8L6-ATpE6_ip3gzESXAWi4B_0pwHiHI5g83fb3SlLTM_A/viewform?usp=dialog",
+                    "OpenEmail" => "https://mail.google.com/mail/u/0/#inbox?compose=GTvVlcSGKZhCvzvPvWzHvQZTnWMgDSzDHWTFDjnfWdjQscBHkRtBhmJPRKjjJbkNqlGRbtHlWzDWW",
+                    "OpenTwitterX" => "https://x.com/SurfyCrescent97",
+                    "OpenDiscord" => "https://discord.gg/snv7CrRQzx",
+                    _ => null
+                };
 
-        private void OpenEmail_Click(object sender, RoutedEventArgs e)
-        {
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "https://mail.google.com/mail/u/0/#inbox?compose=GTvVlcSGKZhCvzvPvWzHvQZTnWMgDSzDHWTFDjnfWdjQscBHkRtBhmJPRKjjJbkNqlGRbtHlWzDWW",
-                UseShellExecute = true
-            });
+                if (!string.IsNullOrEmpty(url))
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = url,
+                        UseShellExecute = true
+                    });
+                }
+            }
         }
-        private void OpenTwitterX_Click(object sender, RoutedEventArgs e)
-        {
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "https://x.com/SurfyCrescent97",
-                UseShellExecute = true
-            });
-        }
-
         private void AssetsFolder_Click(object sender, RoutedEventArgs e)
         {
             Process process = Process.Start("explorer.exe", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaOvenPLUS", "CustomAssets"));
@@ -3033,9 +2665,9 @@ namespace PizzaOven
 
         private void RestoreMissingAssets_Click(object sender, RoutedEventArgs e)
         {
-            string appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaOvenPLUS", "CustomAssets");
+            string assetPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaOvenPLUS", "CustomAssets");
 
-            Directory.CreateDirectory(appDataPath);
+            Directory.CreateDirectory(assetPath);
 
             Assembly assembly = Assembly.GetExecutingAssembly();
 
@@ -3059,7 +2691,7 @@ namespace PizzaOven
                         relativePath[(lastSeparator + 1)..];
                 }
 
-                string outputPath = Path.Combine(appDataPath, relativePath);
+                string outputPath = Path.Combine(assetPath, relativePath);
                 Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
 
                 if (File.Exists(outputPath))
@@ -3108,109 +2740,148 @@ namespace PizzaOven
             RestoreMissingAssets_Click(sender, e);
             PLUSMUSIC.InitializeAsync();
         }
-        private void InitPOLanguage(bool enabled)
+        private void HandlePLUStoggle(string section, string key, bool defaultValue, string toggleName)
         {
-            POLanguage.Content = enabled ? "Do not Apply to Language Files?" : "Do Apply to Language Files?";
-
-            if (!enabled)
-            {
-                var ptfolder = $"{Global.config.ModsFolder}";
-                var langPath = Path.Combine(ptfolder, "lang");
-                var extensions = new[] { ".po", ".custompo", ".downgradepo" };
-
-                if (Directory.Exists(langPath))
-                {
-                    foreach (var file in Directory.GetFiles(langPath, "*.*", SearchOption.AllDirectories)
-                                                  .Where(f => extensions.Contains(Path.GetExtension(f))))
-                    {
-                        File.Delete(file);
-                    }
-                }
-            }
+            bool enabled = PLUSSavesystem.toggle_ini_bool(section, key, defaultValue);
+            InitPLUSToggle(toggleName, enabled);
         }
         private void POLanguage_Click(object sender, RoutedEventArgs e)
         {
-            bool enabled = PLUSSavesystem.read_ini("Files", "POLanguage", "true") != "true";
-            PLUSSavesystem.write_ini("Files", "POLanguage", enabled.ToString().ToLowerInvariant());
-            InitPOLanguage(enabled);
+            HandlePLUStoggle("Audio", "Mute", false, "POLanguage");
         }
-        private void InitMute(bool enabled)
+        private void StartupToggle_Click(object sender, RoutedEventArgs e)
         {
-            PLUSMUSIC.MuteEnabled = enabled;
-            PLUSMUSIC.ApplyCurrentVolume();
-            MuteButton.Content = enabled ? "Disable Mute?" : "Enable Mute?";
+            RegistryConfig.ToggleStartup();
+            InitPLUSToggle("Startup", RegistryConfig.GetStartupStatus() == "Enabled");
         }
         private void Mute_Click(object sender, RoutedEventArgs e)
         {
-            bool enabled = PLUSSavesystem.toggle_ini_bool("Audio", "Mute", false);
-            InitMute(enabled);
-        }
-
-        private void InitUnfocusedMute(bool enabled)
-        {
-            PLUSMUSIC.unfocusedMuteEnabled = enabled;
-            PLUSMUSIC.ApplyCurrentVolume();
-            UnfocusedMuteButton.Content = enabled ? "Disable Unfocused Mute?" : "Enable Unfocused Mute?";
+            HandlePLUStoggle("Audio", "Mute", false, "Mute");
         }
         private void UnfocusedMute_Click(object sender, RoutedEventArgs e)
         {
-            bool enabled = PLUSSavesystem.toggle_ini_bool("Audio", "UnfocusedMute", true);
-            InitUnfocusedMute(enabled);
-        }
-
-        private void InitRPC(bool enabled)
-        {
-            RPCtoggle.Content = enabled ? "Disable RPC?" : "Enable RPC?";
-            if (enabled)
-                PLUSRPC.DiscordPresenceService.Initialize();
-            else
-                PLUSRPC.DiscordPresenceService.Shutdown();
+            HandlePLUStoggle("Audio", "UnfocusedMute", true, "UnfocusedMute");
         }
         private void RPCtoggle_Click(object sender, RoutedEventArgs e)
         {
-            bool enabled = PLUSSavesystem.toggle_ini_bool("Discord", "RPC", true);
-            InitRPC(enabled);
-        }
-
-        private void InitDebug(bool enabled)
-        {
-            DebugToggle.Content = enabled ? "Disable Debug?" : "Enable Debug?";
+            HandlePLUStoggle("Discord", "RPC", true, "RPC");
         }
         private void DebugToggle_Click(object sender, RoutedEventArgs e)
         {
-            bool enabled = PLUSSavesystem.toggle_ini_bool("Launch", "Debug", true);
-            InitDebug(enabled);
-        }
-        private void InitSteamLaunch(bool enabled)
-        {
-            SteamLaunchToggle.Content = enabled ? "Don't use Steam?" : "Use Steam?";
+            HandlePLUStoggle("Launch", "Debug", true, "Debug");
         }
         private void SteamLaunch_Click(object sender, RoutedEventArgs e)
         {
-            bool enabled = PLUSSavesystem.toggle_ini_bool("Launch", "Steam", true);
-            InitSteamLaunch(enabled);
-        }
-
-
-        private void InitModUpdater(bool enabled)
-        {
-            MODUPDATERtoggle.Content = enabled ? "Disable Check for Mod Updates?" : "Enable Check for Mod Updates?";
+            HandlePLUStoggle("Launch", "Steam", true, "SteamLaunch");
         }
         private void MODUPDATERtoggle_Click(object sender, RoutedEventArgs e)
         {
-            bool enabled = PLUSSavesystem.toggle_ini_bool("LowEnd", "ModUpdate", true);
-            InitModUpdater(enabled);
+            HandlePLUStoggle("LowEnd", "ModUpdate", true, "ModUpdater");
         }
+        public void InitPLUSToggle(string name, bool enabled)
+        {
+            Button? button = null;
+            string? OnText = "";
+            string? OffText = "";
 
+            switch (name)
+            {
+                case "Mute":
+                    PLUSMUSIC.MuteEnabled = enabled;
+                    PLUSMUSIC.ApplyCurrentVolume();
+                    button = MuteButton;
+                    OnText = "Disable Mute? [IT'S ON]";
+                    OffText = "Enable Mute? [IT'S OFF]";
+                    break;
+                case "UnfocusedMute":
+                    PLUSMUSIC.unfocusedMuteEnabled = enabled;
+                    PLUSMUSIC.ApplyCurrentVolume();
+                    button = UnfocusedMuteButton;
+                    OnText = "Disable Unfocused Mute? [IT'S ON]";
+                    OffText = "Enable Unfocused Mute? [IT'S OFF]";
+                    break;
+                case "RPC":
+                    try
+                    {
+                        if (enabled)
+                            PLUSRPC.DiscordPresenceService.Initialize();
+                        else
+                            PLUSRPC.DiscordPresenceService.Shutdown();
+                    }
+                    catch { }
+                    button = RPCtoggle;
+                    OnText = "Enable RPC? [IT'S ON]";
+                    OffText = "Disable RPC? [IT'S OFF]";
+                    break;
+                case "Debug":
+                    button = DebugToggle;
+                    OnText = "Enable Debug? [IT'S ON]";
+                    OffText = "Disable Debug? [IT'S OFF]";
+                    break;
+                case "SteamLaunch":
+                    button = SteamLaunchToggle;
+                    OnText = "Don't use Steam? [IT'S ON]";
+                    OffText = "Use Steam? [IT'S OFF]";
+                    break;
+                case "ModUpdater":
+                    button = MODUPDATERtoggle;
+                    OnText = "Disable Check for Mod Updates? [IT'S ON]";
+                    OffText = "Enable Check for Mod Updates? [IT'S OFF]";
+                    break;
+                case "POLanguage":
+                    if (!enabled)
+                    {
+                        var ptfolder = $"{Global.config.ModsFolder}";
+                        var langPath = Path.Combine(ptfolder, "lang");
+                        var extensions = new[] { ".po", ".custompo", ".downgradepo" };
+
+                        if (Directory.Exists(langPath))
+                        {
+                            foreach (var file in Directory.GetFiles(langPath, "*.*", SearchOption.AllDirectories)
+                                                          .Where(f => extensions.Contains(Path.GetExtension(f))))
+                            {
+                                File.Delete(file);
+                            }
+                        }
+                    }
+                    button = POLanguage;
+                    OnText = "Do not Apply to Language Files? [IT'S ON]";
+                    OffText = "Do Apply to Language Files? [IT'S OFF]";
+                    break;
+                case "Startup":
+                    button = StartupToggle;
+                    OnText = "Do not open on Startup? [IT'S ON]";
+                    OffText = "Do open on Startup? [IT'S OFF]";
+                    break;
+            }
+            if (button != null && OnText != null && OffText != null)
+            {
+                button.Content = enabled ? OnText : OffText;
+            }
+        }
         private void InitializeToggles()
         {
-            InitMute(PLUSSavesystem.read_ini("Audio", "Mute", "false") == "true");
-            InitUnfocusedMute(PLUSSavesystem.read_ini("Audio", "UnfocusedMute", "true") == "true");
-            InitRPC(PLUSSavesystem.read_ini("Discord", "RPC", "true") == "true");
-            InitDebug(PLUSSavesystem.read_ini("Launch", "Debug", "true") == "true");
-            InitSteamLaunch(PLUSSavesystem.read_ini("Launch", "Steam", "false") == "true");
-            InitModUpdater(PLUSSavesystem.read_ini("LowEnd", "ModUpdate", "true") == "true");
-            InitPOLanguage(PLUSSavesystem.read_ini("Files", "POLanguage", "true") == "true");
+            InitPLUSToggle("Mute", PLUSSavesystem.read_ini("Audio", "Mute", "false") == "true");
+            InitPLUSToggle("UnfocusedMute", PLUSSavesystem.read_ini("Audio", "UnfocusedMute", "true") == "true");
+            InitPLUSToggle("RPC", PLUSSavesystem.read_ini("Discord", "RPC", "true") == "true");
+            InitPLUSToggle("Debug", PLUSSavesystem.read_ini("Launch", "Debug", "true") == "true");
+            InitPLUSToggle("SteamLaunch", PLUSSavesystem.read_ini("Launch", "Steam", "false") == "true");
+            InitPLUSToggle("ModUpdater", PLUSSavesystem.read_ini("LowEnd", "ModUpdate", "true") == "true");
+            InitPLUSToggle("POLanguage", PLUSSavesystem.read_ini("Files", "POLanguage", "true") == "true");
+            InitPLUSToggle("Startup", RegistryConfig.GetStartupStatus() == "Enabled");
+
+            string[] brushNames = { "Primary", "Secondary", "Inner", "Loading", "Text" };
+
+            foreach (var name in brushNames)
+            {
+                string key = name;
+
+                if (!defaultBrushHexes.ContainsKey(key))
+                {
+                    Themes_Defaults(name, PLUSThemes.Get_BrushColorAsHex($"{name}Brush"));
+                }
+                Theme_Update(name, true);
+            }
         }
 
         private void SoundVolume_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -3460,6 +3131,7 @@ namespace PizzaOven
                 return;
             }
             PLUSSavesystem.write_ini("Tutorial", "BrokenModSkip", "false");
+            PLUSSavesystem.write_ini("Tutorial", "SettingsSection", "false");
             MessageBoxResult result = MessageBox.Show("Do you want to replay the tutorial?", "Confirm Replay", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (result == MessageBoxResult.Yes)
             {
@@ -3472,41 +3144,41 @@ namespace PizzaOven
 
                 replayanimator.GlideTo(this.Width / 6, 250, 40);
 
-                await WaitUntil(() => replayanimator.GetY() >= 250);
+                await PLUSWait.WaitUntil(() => replayanimator.GetY() >= 250);
                 var curtextbox = replayanimator.MakeTextbox(replayanimator.GetX() + 110, replayanimator.GetY() + 25, "TAKE IT FROM THE TOP");
-                await WaitSeconds(5);
-                TutorialState("false");
+                await PLUSWait.WaitSeconds(5);
+                PLUSTutorial.TutorialState("false");
             }
             else
             {
-                PLUSSavesystem.write_ini("Tutorial", "Replay", "false");
-                PLUSSavesystem.write_ini("Tutorial", "ForcedReplay", "true");
-                PLUSSavesystem.write_ini("Tutorial", "Finished", "false");
-                RonnieVariables.DeclineReplay += 1;
+                PLUSTutorial.RonnieVariables.DeclineReplay += 1;
                 replayanimator = new PLUSRonnieAnimate();
                 replayanimator.Initialize(this, this.Width / 6, -100, 1.5);
                 var curtextbox = replayanimator.MakeTextbox(replayanimator.GetX() + 110, replayanimator.GetY() + 25, "");
                 replayanimator.DestroyTextbox(curtextbox);
                 replayanimator.GlideTo(this.Width / 6, 250, 40);
                 replayanimator.SetExpression("sad");
-                await WaitUntil(() => replayanimator.GetY() >= 250);
-                if (RonnieVariables.DeclineReplay == 3)
+                await PLUSWait.WaitUntil(() => replayanimator.GetY() >= 250);
+                if (PLUSTutorial.RonnieVariables.DeclineReplay == 3)
                 {
                     replayanimator.DestroyTextbox(curtextbox);
                     curtextbox = replayanimator.MakeTextbox(replayanimator.GetX() + 110, replayanimator.GetY() + 25, "Stop it! or else");
-                    await WaitSeconds(3);
+                    await PLUSWait.WaitSeconds(3);
                     replayanimator.DestroyTextbox(curtextbox);
                 }
-                else if (RonnieVariables.DeclineReplay > 3)
+                else if (PLUSTutorial.RonnieVariables.DeclineReplay > 3)
                 {
+                    PLUSSavesystem.write_ini("Tutorial", "Replay", "false");
+                    PLUSSavesystem.write_ini("Tutorial", "ForcedReplay", "true");
+                    PLUSSavesystem.write_ini("Tutorial", "Finished", "false");
                     replayanimator.DestroyTextbox(curtextbox);
                     curtextbox = replayanimator.MakeTextbox(replayanimator.GetX() + 110, replayanimator.GetY() + 25, "You asked for this");
-                    await WaitSeconds(3);
+                    await PLUSWait.WaitSeconds(3);
                     replayanimator.DestroyTextbox(curtextbox);
-                    TutorialState("false");
+                    PLUSTutorial.TutorialState("false");
                 }
                 replayanimator.GlideTo(this.Width / 6, -250, 40);
-                await WaitUntil(() => replayanimator.GetY() <= -250);
+                await PLUSWait.WaitUntil(() => replayanimator.GetY() <= -250);
                 replayanimator.Destroy();
                 replayanimator = null;
             }
@@ -3591,15 +3263,15 @@ namespace PizzaOven
             Directory.CreateDirectory(versionsDir);
             Directory.CreateDirectory(tempDir);
 
-            string steamUser = GetSteamUsername();
+            string steamUser = PLUSDepotDownloader.GetSteamUsername();
             foreach (var v in ptVersions)
             {
-                if (v.version != selectedVersion) 
+                if (v.version != selectedVersion)
                     continue;
 
                 if (v.type == "depot")
-                { 
-                    bool success = await DownloadDowngradeAsync("2231450","2231451",v.manifestID,steamUser,tempDir,ogWinFile,v.version);
+                {
+                    bool success = await PLUSDepotDownloader.DownloadDowngradeAsync("2231450", "2231451", v.manifestID, steamUser, tempDir, ogWinFile, v.version);
 
                     if (!success)
                     {
@@ -3632,101 +3304,666 @@ namespace PizzaOven
             catch { }
         }
 
-        private static string GetSteamUsername()
+        public void SavePTFolderMod_Click(object sender, RoutedEventArgs e)
         {
-            using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Valve\Steam");
-            if (key?.GetValue("AutoLoginUser") is string value && !string.IsNullOrEmpty(value))
-                return value;
-            return "";
-        }
-
-        public static void CreatePatch(string sourceFile, string targetFile, string patchFile, string xdelta)
-        {
-            var startInfo = new ProcessStartInfo
+            Dictionary<string, bool> includedmodfiles = new Dictionary<string, bool>()
             {
-                FileName = xdelta,
-                Arguments = $@"-e -s ""{sourceFile}"" ""{targetFile}"" ""{patchFile}""",
-                WorkingDirectory = Path.GetDirectoryName(xdelta),
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                WindowStyle = ProcessWindowStyle.Hidden
+                { "Data.win", true },
+                { "Language Files", false },
+                { "Banks", false },
+                { "DLLs", false },
+                { "Credits", false }
+            };
+            Window win = new Window
+            {
+                Title = "Create Mod",
+                Width = 320,
+                Height = 360,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                Background = (Brush)Application.Current.Resources["PrimaryBrush"]
             };
 
-            using var process = new Process { StartInfo = startInfo };
-            process.Start();
-            process.WaitForExit();
-        }
-
-        private static async Task<bool> DownloadDowngradeAsync(string appID, string depotID, string manifestID, string username, string outputDir, string ogWinFile, string version)
-        {
-            string depotDownloaderPath = $@"{Global.assemblyLocation}{Global.s}Dependencies{Global.s}DepotDownloader{Global.s}DepotDownloader.exe";
-            if (!File.Exists(depotDownloaderPath))
+            StackPanel panel = new StackPanel
             {
-                System.Windows.Forms.MessageBox.Show($"{depotDownloaderPath} not found.", "Error", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
-                return false;
+                Margin = new Thickness(10)
+            };
+
+            TextBox nameBox = new TextBox
+            {
+                Height = 30,
+                Margin = new Thickness(0, 0, 0, 10),
+                Background = (Brush)Application.Current.Resources["PrimaryBrush"],
+                Foreground = (Brush)Application.Current.Resources["TextBrush"],
+                BorderBrush = (Brush)Application.Current.Resources["TextBrush"],
+                CaretBrush = (Brush)Application.Current.Resources["TextBrush"],
+                Text = "Enter Mod Name..."
+            };
+
+            panel.Children.Add(nameBox);
+
+            void AddOption(string key, bool isEnabled)
+            {
+                CheckBox cb = new CheckBox
+                {
+                    Content = key,
+                    IsChecked = includedmodfiles.ContainsKey(key) && includedmodfiles[key],
+                    IsEnabled = isEnabled,
+                    Foreground = (Brush)Application.Current.Resources["TextBrush"],
+                    Margin = new Thickness(0, 5, 0, 5)
+                };
+
+                cb.Checked += (s, ev) => includedmodfiles[key] = true;
+                cb.Unchecked += (s, ev) => includedmodfiles[key] = false;
+
+                panel.Children.Add(cb);
             }
 
-            string args = $@"-app {appID} -depot {depotID} -manifest {manifestID} -remember-password -username ""{username}"" -dir ""{outputDir}""";
+            AddOption("Data.win", false);
+            AddOption("Language Files", true);
+            AddOption("Banks", true);
+            AddOption("DLLs", true);
+            AddOption("Credits", true);
 
-            var startInfo = new ProcessStartInfo
+            TextBlock errorText = new TextBlock
             {
-                FileName = depotDownloaderPath,
-                Arguments = args,
-                WorkingDirectory = Path.GetDirectoryName(depotDownloaderPath),
-                UseShellExecute = true,
-                CreateNoWindow = false,
-                WindowStyle = ProcessWindowStyle.Normal
+                Foreground = Brushes.Red,
+                Margin = new Thickness(0, 10, 0, 0)
             };
 
+            panel.Children.Add(errorText);
+
+            Button ok = new Button
+            {
+                Content = "OK",
+                Height = 30,
+                Margin = new Thickness(0, 10, 0, 0),
+                Background = (Brush)Application.Current.Resources["PrimaryBrush"],
+                Foreground = (Brush)Application.Current.Resources["TextBrush"],
+                BorderBrush = (Brush)Application.Current.Resources["TextBrush"]
+            };
+
+            ok.Click += (s, ev) =>
+            {
+                string modName = nameBox.Text.Trim();
+
+                if (string.IsNullOrWhiteSpace(modName) || modName == "Enter Mod Name...")
+                {
+                    errorText.Text = "Mod name is required.";
+                    return;
+                }
+
+                string path = System.IO.Path.Combine($"{Global.assemblyLocation}{Global.s}Mods", modName);
+
+                if (System.IO.Directory.Exists(path))
+                {
+                    errorText.Text = "Mod folder already exists.";
+                    return;
+                }
+
+                Directory.CreateDirectory(path);
+                win.Close();
+                if (includedmodfiles["Data.win"])
+                {
+                    File.Copy(
+                        $"{Global.config.ModsFolder}{Global.s}data.win",
+                        $"{path}{Global.s}data.win",
+                        true
+                    );
+                }
+
+                if (includedmodfiles["Language Files"])
+                {
+                    string langSource = $"{Global.config.ModsFolder}{Global.s}lang";
+                    string langDest = $"{path}{Global.s}lang";
+
+                    if (Directory.Exists(langSource))
+                    {
+                        Directory.CreateDirectory(langDest);
+
+                        foreach (var file in Directory.GetFiles(langSource, "*.*", SearchOption.AllDirectories))
+                        {
+                            var destFile = file.Replace(langSource, langDest);
+                            Directory.CreateDirectory(Path.GetDirectoryName(destFile)!);
+                            File.Copy(file, destFile, true);
+                        }
+                    }
+                }
+
+                if (includedmodfiles["Banks"])
+                {
+                    string banksSource = $"{Global.config.ModsFolder}{Global.s}sound{Global.s}Desktop";
+                    string banksDest = $"{path}{Global.s}sound{Global.s}Desktop";
+
+                    if (Directory.Exists(banksSource))
+                    {
+                        Directory.CreateDirectory(banksDest);
+
+                        foreach (var file in Directory.GetFiles(banksSource, "*.*", SearchOption.AllDirectories))
+                        {
+                            var destFile = file.Replace(banksSource, banksDest);
+                            Directory.CreateDirectory(Path.GetDirectoryName(destFile)!);
+                            File.Copy(file, destFile, true);
+                        }
+                    }
+                }
+
+                if (includedmodfiles["DLLs"])
+                {
+                    string dllSource = $"{Global.config.ModsFolder}";
+
+                    if (Directory.Exists(dllSource))
+                    {
+                        foreach (var file in Directory.GetFiles(dllSource, "*.dll", SearchOption.TopDirectoryOnly))
+                        {
+                            var fileName = Path.GetFileName(file);
+                            File.Copy(file, $"{path}{Global.s}{fileName}", true);
+                        }
+                    }
+                }
+
+                if (includedmodfiles["Credits"])
+                {
+                    string creditsSourceDir = $"{Global.config.ModsFolder}";
+
+                    if (Directory.Exists(creditsSourceDir))
+                    {
+                        foreach (var file in Directory.GetFiles(creditsSourceDir, "*credits*.txt", SearchOption.AllDirectories))
+                        {
+                            var relativePath = file.Replace(creditsSourceDir, "");
+                            var destFile = $"{path}{Global.s}{relativePath}";
+
+                            Directory.CreateDirectory(Path.GetDirectoryName(destFile)!);
+                            File.Copy(file, destFile, true);
+                        }
+                    }
+                }
+            };
+
+            panel.Children.Add(ok);
+
+            win.Content = panel;
+            win.ShowDialog();
+        }
+        public System.Windows.Media.Color? Themes_GrabColor(string initialHex = "#FFFFFFFF")
+        {
+            System.Windows.Forms.ColorDialog colorDialog = new System.Windows.Forms.ColorDialog();
+
+            colorDialog.Color = System.Drawing.ColorTranslator.FromHtml(initialHex);
+
+            if (colorDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                System.Drawing.Color drawingColor = colorDialog.Color;
+
+                System.Windows.Media.Color wpfColor = System.Windows.Media.Color.FromArgb(drawingColor.A, drawingColor.R, drawingColor.G, drawingColor.B);
+
+                return wpfColor;
+            }
+            else
+            {
+                return null;
+            }
+        }
+        public void Theme_Update(string brushname, bool skippicker = false)
+        {
+            if (skippicker)
+            {
+                var skippedcolor = PLUSSavesystem.read_ini("Themes", brushname, "");
+                if (skippedcolor != "" && PLUSThemes.validhex(skippedcolor))
+                    PLUSThemes.Set_BrushColor($"{brushname}Brush", skippedcolor);
+                return;
+            }
+            var color = Themes_GrabColor(PLUSSavesystem.read_ini("Themes", brushname, "#FFFFFFFF")) ?? System.Windows.Media.Colors.Transparent;
+            if (color != System.Windows.Media.Colors.Transparent)
+            {
+                var rgbcolor = PLUSThemes.color_as_rgb(color);
+                var stringcolor = PLUSThemes.rgb_to_hex(rgbcolor.r, rgbcolor.g, rgbcolor.b);
+                PLUSSavesystem.write_ini("Themes", brushname, stringcolor);
+                PLUSThemes.Set_BrushColor($"{brushname}Brush", stringcolor);
+            }
+        }
+        public void Themes_Defaults(string brushName, string hex)
+        {
+            if (string.IsNullOrWhiteSpace(brushName) || string.IsNullOrWhiteSpace(hex))
+                return;
+
+            defaultBrushHexes[brushName] = hex;
+        }
+        public void Themes_Reset(string brushname)
+        {
+            PLUSSavesystem.write_ini("Themes", brushname, "");
+            PLUSSavesystem.delete_ini_value("Themes", brushname);
+            PLUSThemes.Set_BrushColor($"{brushname}Brush", defaultBrushHexes[brushname]);
+        }
+        public void Theme_Click(object sender, RoutedEventArgs e)
+        {
+            var name = (sender as FrameworkElement)?.Name;
+            if (string.IsNullOrEmpty(name))
+                return;
+
+            var key = name.Replace("Themes", "").Replace("Reset", "");
+
+            Theme_Update(key);
+        }
+        public void ThemeReset_Click(object sender, RoutedEventArgs e)
+        {
+            var name = (sender as FrameworkElement)?.Name;
+            if (string.IsNullOrEmpty(name)) 
+                return;
+
+            var key = name.Replace("Themes", "").Replace("Reset", "");
+
+            Themes_Reset(key);
+        }
+        public void AddPatchNotes(string version, string[] topNotes, string[] notes, string[] catnotes, bool warnupdate, string timeago)
+        {
+            var localVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+
+            var versionText = new TextBlock
+            {
+                Text = version,
+                FontSize = 24,
+                FontWeight = FontWeights.Bold,
+                Margin = new Thickness(0, 10, 0, 5),
+                Foreground = (Brush)FindResource("TextBrush")
+            };
+
+            var titlerowPanel = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Margin = new Thickness(0, 2, 0, 2)
+            };
+
+            var timeagolabel = new Label
+            {
+                FontSize = 15,
+                Background = new SolidColorBrush(Color.FromRgb(60, 64, 68)),
+                Padding = new Thickness(5, 2, 5, 2),
+                Margin = new Thickness(5, 2, 5, 2),
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Foreground = Brushes.White
+            };
+            var timeagolabelcontentBinding = new Binding
+            {
+                Source = timeago,
+                Mode = BindingMode.OneWay
+            };
+            timeagolabel.SetBinding(Label.ContentProperty, timeagolabelcontentBinding);
+
+            titlerowPanel.Children.Add(versionText);
+            titlerowPanel.Children.Add(timeagolabel);
+
+            if (warnupdate)
+            {
+                var warnlabel = new Label
+                {
+                    FontSize = 15,
+                    Background = new SolidColorBrush(Color.FromRgb(60, 64, 68)),
+                    Padding = new Thickness(5, 2, 5, 2),
+                    Margin = new Thickness(5, 2, 5, 2),
+                    VerticalAlignment = VerticalAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    Foreground = Brushes.Red
+                };
+                var warncontentBinding = new Binding
+                {
+                    Source = $"v{localVersion.Substring(0, localVersion.LastIndexOf('.'))} is OUTDATED",
+                    Mode = BindingMode.OneWay
+                };
+                warnlabel.SetBinding(Label.ContentProperty, warncontentBinding);
+                titlerowPanel.Children.Add(warnlabel);
+            }
+
+            PatchNotesPanel.Children.Add(titlerowPanel);
+
+            if (topNotes != null)
+            {
+                foreach (var topNote in topNotes)
+                {
+                    if (string.IsNullOrWhiteSpace(topNote))
+                        continue;
+
+                    var topNoteText = new TextBlock
+                    {
+                        Text = topNote,
+                        FontSize = 15,
+                        FontStyle = FontStyles.Italic,
+                        Margin = new Thickness(5, 0, 0, 6),
+                        Foreground = (Brush)FindResource("TextBrush")
+                    };
+
+
+                    PatchNotesPanel.Children.Add(topNoteText);
+                }
+            }
+            if (notes != null)
+            {
+                for (int i = 0; i < notes.Length; i++)
+                {
+                    var noteText = new TextBlock
+                    {
+                        Text = "• " + notes[i],
+                        FontSize = 14,
+                        Margin = new Thickness(10, 2, 0, 2),
+                        Foreground = (Brush)FindResource("TextBrush")
+                    };
+
+                    var catLabel = new Label
+                    {
+                        FontSize = 15,
+                        Background = new SolidColorBrush(Color.FromRgb(60, 64, 68)),
+                        Padding = new Thickness(5, 2, 5, 2),
+                        Margin = new Thickness(5, 2, 5, 2),
+                        VerticalAlignment = VerticalAlignment.Center,
+                        HorizontalAlignment = HorizontalAlignment.Left
+                    };
+
+                    var contentBinding = new Binding
+                    {
+                        Source = catnotes[i],
+                        Mode = BindingMode.OneWay
+                    };
+                    catLabel.SetBinding(Label.ContentProperty, contentBinding);
+
+                    try
+                    {
+                        var converter = new CategoryColorConverter();
+
+                        string category = catnotes[i];
+                        var brush = (SolidColorBrush)converter.Convert(category, typeof(SolidColorBrush), null, System.Globalization.CultureInfo.InvariantCulture);
+
+                        catLabel.Foreground = brush;
+                    }
+                    catch
+                    {
+                        catLabel.Foreground = Brushes.White;
+                    }
+
+                    var rowPanel = new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        Margin = new Thickness(0, 2, 0, 2)
+                    };
+
+                    rowPanel.Children.Add(noteText);
+                    rowPanel.Children.Add(catLabel);
+
+                    PatchNotesPanel.Children.Add(rowPanel);
+                }
+            }
+        }
+        public async void CreatePatchNotes()
+        {
+            try
+            { 
+                PatchNotesPanel.Children.Clear();
+                string url = "https://api.gamebanana.com/Core/Item/Data?itemtype=Tool&itemid=21866&fields=Updates().bSubmissionHasUpdates(),Updates().aGetLatestUpdates()&return_keys=1";
+
+                using var client = new HttpClient();
+                string jsonResponse = await client.GetStringAsync(url);
+
+                using var doc = JsonDocument.Parse(jsonResponse);
+                var root = doc.RootElement;
+
+                if (!root.TryGetProperty("Updates().aGetLatestUpdates()", out var updatesArray))
+                    return;
+
+                var latest = updatesArray[0];
+
+                string versionTitle = latest.GetProperty("_sTitle").GetString() ?? "";
+
+
+                long ts = latest.GetProperty("_tsDateAdded").GetInt64();
+
+                DateTimeOffset target = DateTimeOffset.FromUnixTimeSeconds(ts);
+                TimeSpan diff = DateTimeOffset.UtcNow - target;
+
+
+                var timeago = StringConverters.FormatTimeAgo(diff);
+
+                var changelog = latest.GetProperty("_aChangeLog");
+                string[] notes = new string[changelog.GetArrayLength()];
+                string[] catnotes = new string[changelog.GetArrayLength()];
+                int i = 0;
+                foreach (var entry in changelog.EnumerateArray())
+                {
+                    string text = entry.GetProperty("text").GetString() ?? "";
+                    string cat = entry.GetProperty("cat").GetString() ?? "";
+                    catnotes[i] = cat;
+                    notes[i++] = text;
+                }
+
+                string versionNumber = latest.GetProperty("_sVersion").GetString() ?? "";
+                bool warnupdate = false;
+                var localVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+                Match onlineVersionMatch = Regex.Match(versionTitle, @"(?<version>([0-9]+\.?)+)[^a-zA-Z]");
+                string onlineVersion = null;
+
+                if (onlineVersionMatch.Success)
+                {
+                    onlineVersion = onlineVersionMatch.Value;
+                    warnupdate = AutoUpdater.UpdateAvailable(onlineVersion, localVersion);
+                }
+
+
+                string[] topNotes = versionNumber switch
+                {
+                    "1.0.4" => new string[] { "Autoupdater should work from 1.0.3" },
+                    "1.0.5" => new string[] { "Patch Notes Tab Introduction" },
+                    _ => new string[] { "" }
+                };
+
+                AddPatchNotes(versionTitle, topNotes, notes, catnotes, warnupdate, timeago);
+            }
+            catch
+            {
+                AddPatchNotes("Failed to load", new string[] { "" }, new string[] { "Maybe Check your internet", "Maybe Gamebanana Servers are down"}, new string[] { "Addition", "Addition" }, false, "Failed to load");
+            }
+        }
+        private void OnPatchNotesSelected(object sender, RoutedEventArgs e)
+        {
+            CreatePatchNotes();
+        }
+
+        public async void CheckLauncherUpdates_Click(object sender, RoutedEventArgs e)
+        {
+            var cts = new CancellationTokenSource();
+            AutoUpdater.CheckForPizzaOvenUpdate(cts);
+        }
+
+        public void ThemesSave_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Title = "Save Theme",
+                Filter = "PO Theme (*.potheme)|*.potheme",
+                DefaultExt = ".potheme",
+                AddExtension = true
+            };
+
+            bool? result = dialog.ShowDialog();
+
+            if (result == true)
+            {
+                ThemesSaveFile(dialog.FileName);
+            }
+
+        }
+        public void ThemesSaveFile(string themeFilePath)
+        {
+            var theme = new Dictionary<string, string>();
+
+            theme["saveversion"] = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            foreach (var brush in themebrushes)
+            {
+                theme[brush] = PLUSSavesystem.read_ini("Themes", brush, defaultBrushHexes[brush]);
+            }
+
+            theme["background"] = "";
+
+            if (Directory.Exists(Global.customassetsfolder))
+            {
+                var bgImagePath = Directory.GetFiles(Global.customassetsfolder)
+                    .FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).Equals("background", StringComparison.OrdinalIgnoreCase) && themeimageExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase));
+                if (!string.IsNullOrEmpty(bgImagePath) && File.Exists(bgImagePath))
+                {
+                    theme["background"] = $"{Path.GetExtension(bgImagePath).TrimStart('.')};{PLUSThemes.Base64_SaveFile(bgImagePath)}";
+                }
+            }
+
+            foreach (var transparent in transparentboxes)
+            {
+                var slider = (Slider)this.FindName($"Transparency_{transparent}");
+                if (slider != null)
+                    theme[$"Transparency_{transparent}"] = ((int)slider.Value).ToString();
+            }
+
+            string json = JsonSerializer.Serialize(theme, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+            File.WriteAllText(themeFilePath, json);
+        }
+        public void ThemesLoad_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "Load Theme",
+                Filter = "PO Theme (*.potheme)|*.potheme",
+                DefaultExt = ".potheme",
+                Multiselect = false
+            };
+
+            bool? result = dialog.ShowDialog();
+
+            if (result == true)
+            {
+                ThemesFileLoad(dialog.FileName);
+            }
+        }
+        public void ThemesFileLoad(string themeFilePath)
+        {
+            string json = System.IO.File.ReadAllText(themeFilePath);
             try
             {
-                using var process = new Process { StartInfo = startInfo };
-                process.Start();
-                await process.WaitForExitAsync();
+                var theme = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
 
-                if (process.ExitCode != 0)
+                if (theme != null)
                 {
-                    System.Windows.Forms.MessageBox.Show($"Could not download depot {manifestID}", "Error", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
-                    return false;
+                    try
+                    {
+                        foreach (var brush in themebrushes)
+                        {
+                            if (theme.ContainsKey(brush))
+                            {
+                                string value = theme[brush];
+                                PLUSSavesystem.write_ini("Themes", brush, value);
+                                Theme_Update(brush, true);
+                            }
+                        }
+                        if (Directory.Exists(Global.customassetsfolder))
+                        {
+                            var bgImagePath = Directory.GetFiles(Global.customassetsfolder)
+                                .FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).Equals("background", StringComparison.OrdinalIgnoreCase) && themeimageExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase));
+                            if (!string.IsNullOrEmpty(bgImagePath) && File.Exists(bgImagePath))
+                            {
+                                System.IO.File.Delete(bgImagePath);
+                            }
+                        }
+
+                        if (theme.ContainsKey("background"))
+                        {
+                            string[] backgroundata = theme["background"].Split(";");
+                            if (backgroundata.Length == 2)
+                            {
+                                if (PLUSThemes.IsBase64String(backgroundata[1]))
+                                {
+                                    PLUSThemes.Base64_LoadFile(backgroundata[1], System.IO.Path.Combine(Global.customassetsfolder, $"background.{backgroundata[0]}"));
+                                }
+                            }
+                        }
+                        foreach (var transparent in transparentboxes)
+                        {
+                            if (theme.ContainsKey($"Transparency_{transparent}"))
+                            {
+                                PLUSSavesystem.write_ini("Themes", $"Transparency_{transparent}", theme[$"Transparency_{transparent}"]);
+                            }
+                            else
+                            {
+                                PLUSSavesystem.write_ini("Themes", $"Transparency_{transparent}", "100");
+                            }
+                            ApplyTransparentBoxes(true);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Malformed Themes File: {ex}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
                 }
-
-                string tempSource = Path.Combine(outputDir, "source.win");
-                string tempTarget = Path.Combine(outputDir, "data.win");
-                string patchFile = Path.Combine(Global.assemblyLocation, "Downgrades", $"{version}.xdelta");
-                string xdeltaPath = Path.Combine(Global.assemblyLocation, "Dependencies", "xdelta.exe");
-
-                File.Copy(ogWinFile, tempSource, true);
-
-                if (File.Exists(tempTarget))
-                {
-                    CreatePatch(tempSource, tempTarget, patchFile, xdeltaPath);
-                    File.Delete(tempTarget);
-                }
-                else Console.WriteLine($"Warning: {tempTarget} not found.");
-
-                try
-                {
-                    string tempDepotDir = $@"{outputDir}.DepotDownloader{Global.s}";
-                    if (Directory.Exists(tempDepotDir))
-                        Directory.Delete(tempDepotDir, true);
-                }
-                catch { }
-
-                return true;
             }
-            catch (Exception ex)
+            catch { }
+        }
+        public void ThemesResetAll_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var brush in themebrushes)
             {
-                System.Windows.Forms.MessageBox.Show($"Error running DepotDownloader:\n{ex.Message}", "Error", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
-                return false;
+                Themes_Reset(brush);
+            }
+            if (Directory.Exists(Global.customassetsfolder))
+            {
+                var bgImagePath = Directory.GetFiles(Global.customassetsfolder)
+                    .FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).Equals("background", StringComparison.OrdinalIgnoreCase) && themeimageExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase));
+                if (!string.IsNullOrEmpty(bgImagePath) && File.Exists(bgImagePath))
+                {
+                    System.IO.File.Delete(bgImagePath);
+                }
+            }
+            foreach (var transparent in transparentboxes)
+            {
+                PLUSSavesystem.write_ini("Themes", $"Transparency_{transparent}", "100");
+                ApplyTransparentBoxes(true);
             }
         }
-        public void TutorialState(string finished = "true")
+        public void ThemePresetsApply_Click(object sender, RoutedEventArgs e)
         {
-            PLUSSavesystem.write_ini("Tutorial", "Finished", finished);
-            PLUSSavesystem.write_ini("Tutorial", "BrokenModSkip", "false");
-            string exePath = $"{AppDomain.CurrentDomain.BaseDirectory}{Global.s}{AppDomain.CurrentDomain.FriendlyName}";
-            Process.Start(exePath);
-            Application.Current.Shutdown();
+            var theme = ThemePresetsCombo.SelectedItem as string;
+            var filepath = $"{Global.assemblyLocation}{Global.s}Themes{Global.s}{theme}.potheme";
+            if (File.Exists(filepath))
+            {
+                ThemesFileLoad(filepath);
+            }
+        }
+        public void ThemesBackgroundUpload_Click(object sender, RoutedEventArgs e)
+        {
+            string filterExtensions = string.Join(";", themeimageExtensions.Select(ext => $"*{ext}"));
+            string filter = $"Image Files ({filterExtensions})|{filterExtensions}";
+
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "Select Background",
+                Filter = filter,
+                DefaultExt = themeimageExtensions[0], 
+                Multiselect = false 
+            };
+
+            bool? result = dialog.ShowDialog();
+
+            if (result == true)
+            {
+                System.IO.File.Copy(dialog.FileName, System.IO.Path.Combine(Global.customassetsfolder, $"background{Path.GetExtension(dialog.FileName)}"), true);   
+            }
+        }
+        public void ThemesBackgroundReset_Click(object sender, RoutedEventArgs e)
+        {
+            if (Directory.Exists(Global.customassetsfolder))
+            {
+                var bgImagePath = Directory.GetFiles(Global.customassetsfolder)
+                    .FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).Equals("background", StringComparison.OrdinalIgnoreCase) && themeimageExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase));
+                if (!string.IsNullOrEmpty(bgImagePath) && File.Exists(bgImagePath))
+                {
+                    System.IO.File.Delete(bgImagePath);
+                }
+            }
         }
     }
 }

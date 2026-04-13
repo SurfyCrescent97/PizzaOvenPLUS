@@ -8,13 +8,16 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography.Xml;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Automation;
+using System.Windows.Controls;
 using System.Windows.Markup;
+using System.Windows.Media;
 
 
 namespace PizzaOven
@@ -38,7 +41,7 @@ namespace PizzaOven
                     catch (Exception e)
                     {
                         if (e is System.UnauthorizedAccessException)
-                            Global.logger.WriteLine($"Access denied when trying to delete {file}. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven in administrator mode", LoggerType.Error);
+                            Global.logger.WriteLine($"Access denied when trying to delete {file}. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven+ in administrator mode", LoggerType.Error);
                         else
                             throw;
                         return false;
@@ -56,7 +59,7 @@ namespace PizzaOven
                         catch (Exception e)
                         {
                             if (e is System.UnauthorizedAccessException)
-                                Global.logger.WriteLine($"Access denied when trying to delete {file}. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven in administrator mode", LoggerType.Error);
+                                Global.logger.WriteLine($"Access denied when trying to delete {file}. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven+ in administrator mode", LoggerType.Error);
                             else
                                 throw;
                             return false;
@@ -70,7 +73,7 @@ namespace PizzaOven
                     catch (Exception e)
                     {
                         if (e is System.UnauthorizedAccessException)
-                            Global.logger.WriteLine($"Access denied when trying to delete {directory}. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven in administrator mode", LoggerType.Error);
+                            Global.logger.WriteLine($"Access denied when trying to delete {directory}. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven+ in administrator mode", LoggerType.Error);
                         else
                             throw;
                         return false;
@@ -283,7 +286,24 @@ namespace PizzaOven
 
             List<string> copiedFiles = new List<string>();
             Dictionary<string, string> movedFiles = new Dictionary<string, string>();
+
             string tempRoot = Path.Combine(destinationFolder, "__gmloader_backup__");
+            if (Directory.Exists(tempRoot))
+            {
+                string parentDir = Directory.GetParent(tempRoot)!.FullName;
+
+                foreach (var entry in Directory.EnumerateFileSystemEntries(tempRoot))
+                {
+                    string destPath = Path.Combine(parentDir, Path.GetFileName(entry));
+
+                    if (Directory.Exists(entry))
+                        Directory.Move(entry, destPath);
+                    else
+                        File.Move(entry, destPath, true);
+                }
+
+                Directory.Delete(tempRoot, true);
+            }
 
             try
             {
@@ -384,11 +404,11 @@ namespace PizzaOven
                 ProcessStartInfo startInfo = new ProcessStartInfo
                 {
                     FileName = gmLoaderExe,
-                    WorkingDirectory = Path.GetDirectoryName(gmLoaderExe)!,
-                    UseShellExecute = false,
+                    WorkingDirectory = Path.GetDirectoryName(gmLoaderExe),
+                    UseShellExecute = false,  
+                    CreateNoWindow = true,
                     RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    CreateNoWindow = true
+                    RedirectStandardError = true
                 };
 
                 using (Process process = new Process())
@@ -397,7 +417,9 @@ namespace PizzaOven
 
                     process.OutputDataReceived += (sender, args) =>
                     {
-                        if (!string.IsNullOrEmpty(args.Data))
+                        if (args.Data == "Press any key to close...")
+                            process.Kill();
+                        else if (!string.IsNullOrEmpty(args.Data))
                             Global.logger.WriteLine($"[GMLoader] {args.Data}", LoggerType.Info);
                     };
 
@@ -406,6 +428,8 @@ namespace PizzaOven
                         if (!string.IsNullOrEmpty(args.Data))
                             Global.logger.WriteLine($"[GMLoader ERROR] {args.Data}", LoggerType.Error);
                     };
+
+
 
                     process.Start();
                     process.BeginOutputReadLine();
@@ -438,7 +462,7 @@ namespace PizzaOven
             if (!File.Exists(xdelta))
             {
 
-                Global.logger.WriteLine($"{xdelta} is not found. Please try redownloading Pizza Oven", LoggerType.Error);
+                Global.logger.WriteLine($"{xdelta} is not found. Please try redownloading Pizza Oven+", LoggerType.Error);
                 return false;
             }
 
@@ -506,7 +530,7 @@ namespace PizzaOven
                         {
                             if (gotAccessDeniedError)
                             {
-                                Global.logger.WriteLine($"{Path.GetFileName(modFile)} got an access denied error while patch a file. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven in administrator mode", LoggerType.Error);
+                                Global.logger.WriteLine($"{Path.GetFileName(modFile)} got an access denied error while patch a file. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven+ in administrator mode", LoggerType.Error);
                             }
                             else
                             {
@@ -640,7 +664,7 @@ namespace PizzaOven
                 catch (Exception e)
                 {
                     if (e is System.UnauthorizedAccessException)
-                        Global.logger.WriteLine($"Access denied when trying to apply {Path.GetFileName(modFile)}. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven in administrator mode", LoggerType.Error);
+                        Global.logger.WriteLine($"Access denied when trying to apply {Path.GetFileName(modFile)}. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven+ in administrator mode", LoggerType.Error);
                     else
                         throw;
                 }
@@ -835,7 +859,7 @@ namespace PizzaOven
                 catch (Exception e)
                 {
                     if (e is System.UnauthorizedAccessException)
-                        Global.logger.WriteLine($"Access denied when trying to apply {Path.GetFileName(modFile)}. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven in administrator mode", LoggerType.Error);
+                        Global.logger.WriteLine($"Access denied when trying to apply {Path.GetFileName(modFile)}. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven+ in administrator mode", LoggerType.Error);
                     else
                         throw;
                 }
@@ -938,7 +962,7 @@ namespace PizzaOven
                     catch (Exception e)
                     {
                         if (e is System.UnauthorizedAccessException)
-                            Global.logger.WriteLine($"Access denied when trying to restore {Path.GetFileName(file)}. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven in administrator mode", LoggerType.Error);
+                            Global.logger.WriteLine($"Access denied when trying to restore {Path.GetFileName(file)}. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven+ in administrator mode", LoggerType.Error);
                         else
                             throw;
                     }
@@ -952,7 +976,7 @@ namespace PizzaOven
                     catch (Exception e)
                     {
                         if (e is System.UnauthorizedAccessException)
-                            Global.logger.WriteLine($"Access denied when trying to restore {Path.GetFileName(file)}. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven in administrator mode", LoggerType.Error);
+                            Global.logger.WriteLine($"Access denied when trying to restore {Path.GetFileName(file)}. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven+ in administrator mode", LoggerType.Error);
                         else
                             throw;
                     }
@@ -968,7 +992,7 @@ namespace PizzaOven
                     catch (Exception e)
                     {
                         if (e is System.UnauthorizedAccessException)
-                            Global.logger.WriteLine($"Access denied when trying to restore {Path.GetFileName(file)}. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven in administrator mode", LoggerType.Error);
+                            Global.logger.WriteLine($"Access denied when trying to restore {Path.GetFileName(file)}. Try reinstalling Pizza Tower to a folder you have access to or running Pizza Oven+ in administrator mode", LoggerType.Error);
                         else
                             throw;
                     }
@@ -1058,7 +1082,140 @@ namespace PizzaOven
             version = null;
         }
 
-       
+        public static async Task GMLoader_MergeMods(string[] modpaths, string mergePath)
+        {
+            Directory.CreateDirectory(mergePath);
+            string[] GMLoaderFolder = { "audio", "code", "lib", "config", "csx", "room", "shader", "texture", "xdelta" };
+
+            for (int i = 0; i < modpaths.Length; i++)
+            {
+                string modPath = modpaths[i];
+                string foundPath = null;
+
+                foreach (var folder in GMLoaderFolder)
+                {
+                    if (Directory.Exists(Path.Combine(modPath, folder)))
+                    {
+                        foundPath = modPath;
+                        break;
+                    }
+                }
+
+                if (foundPath == null)
+                {
+                    var subdirs = Directory.GetDirectories(modPath, "*", SearchOption.AllDirectories);
+                    foreach (var subdir in subdirs)
+                    {
+                        foreach (var folder in GMLoaderFolder)
+                        {
+                            if (Directory.Exists(Path.Combine(subdir, folder)))
+                            {
+                                foundPath = subdir;
+                                break;
+                            }
+                        }
+                        if (foundPath != null)
+                            break;
+                    }
+                }
+
+                modpaths[i] = foundPath;
+            }
+
+            modpaths = modpaths.Where(path => path != null).ToArray();
+
+            Dictionary<string, List<string>> fileMap = new Dictionary<string, List<string>>();
+
+            for (int i = 0; i < modpaths.Length; i++)
+            {
+                string modRoot = modpaths[i];
+
+                var allFiles = Directory.GetFiles(modRoot, "*.*", SearchOption.AllDirectories);
+
+                foreach (var file in allFiles)
+                {
+                    string relativePath = Path.GetRelativePath(modRoot, file);
+
+                    if (!fileMap.ContainsKey(relativePath))
+                        fileMap[relativePath] = new List<string>();
+
+                    fileMap[relativePath].Add(file);
+                }
+            }
+
+            foreach (var kvp in fileMap)
+            {
+                string relativePath = kvp.Key;
+                List<string> paths = kvp.Value;
+
+                string chosenPath;
+
+                if (paths.Count > 1)
+                {
+                    chosenPath = AskConflictResolution(relativePath, paths);
+                }
+                else
+                {
+                    chosenPath = paths[0];
+                }
+
+                string destinationFile = Path.Combine(mergePath, relativePath);
+                Directory.CreateDirectory(Path.GetDirectoryName(destinationFile));
+                File.Copy(chosenPath, destinationFile, overwrite: true);
+            }
+        }
+
+        public static string AskConflictResolution(string fileName, List<string> modPaths)
+        {
+            string selected = null;
+
+            Window win = new Window
+            {
+                Title = "Conflict Detected",
+                Width = 400,
+                Height = 150,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                Background = new SolidColorBrush(PLUSThemes.Get_BrushColor("PrimaryBrush"))
+            };
+
+            StackPanel panel = new StackPanel { Margin = new Thickness(10) };
+
+            panel.Children.Add(new TextBlock
+            {
+                Text = $"Select mod to use for:\n{fileName}",
+                Margin = new Thickness(0, 0, 0, 10),
+                Foreground = Brushes.White
+            });
+
+            ComboBox combo = new ComboBox
+            {
+                ItemsSource = modPaths,
+                SelectedIndex = 0,
+                Background = new SolidColorBrush(PLUSThemes.Get_BrushColor("SecondaryBrush"))
+            };
+            panel.Children.Add(combo);
+
+
+            System.Windows.Controls.Button ok = new System.Windows.Controls.Button
+            {
+                Content = "OK",
+                Width = 80,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Margin = new Thickness(0, 10, 0, 0)
+            };
+            ok.Click += (s, e) =>
+            {
+                selected = combo.SelectedItem as string;
+                win.Close();
+            };
+            panel.Children.Add(ok);
+
+            win.Content = panel;
+            win.ShowDialog();
+
+            return selected;
+        }
+
 
         private static IEnumerable<string> EnumerateLines(TextReader reader)
         {

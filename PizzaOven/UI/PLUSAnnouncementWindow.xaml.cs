@@ -17,6 +17,26 @@ namespace PizzaOven
     
     public partial class PLUSAnnouncementWindow : Window
     {
+        public class PLUSAnnouncement
+        {
+            public DateTime date { get; set; }
+            public bool enabled { get; set; }
+            public string message { get; set; }
+            public string expression { get; set; }
+            public bool shake { get; set; }
+            public string url { get; set; }
+        }
+        public static async Task<PLUSAnnouncement> GetLatestAnnouncement()
+        {
+            string url = "https://raw.githubusercontent.com/SurfyCrescent97/PizzaOvenPLUS/main/announcements.json";
+
+            using HttpClient client = new HttpClient();
+            string json = await client.GetStringAsync(url);
+
+            var announcement = JsonSerializer.Deserialize<PLUSAnnouncement>(json);
+
+            return announcement;
+        }
         public double MeasureTextboxHeightWithTextBlock(string text, double boxWidth = 373, double fontSize = 21, double sidePadding = 35, double topHeight = 19, double bottomHeight = 19, double middleSliceHeight = 5)
         { 
             var textBlock = new TextBlock

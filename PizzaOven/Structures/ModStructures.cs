@@ -11,27 +11,10 @@ namespace PizzaOven
     public class Mod : INotifyPropertyChanged
     {
         public string name { get; set; }
-
         public bool enabled { get; set; }
-
         public Uri preview { get; set; }
-
-        private bool _gmlLoader;
         [JsonIgnore]
-        public bool GMLoader
-        {
-            get => _gmlLoader;
-            set
-            {
-                if (_gmlLoader != value)
-                {
-                    _gmlLoader = value;
-                    OnPropertyChanged(nameof(GMLoader));
-                    OnPropertyChanged(nameof(GMLoaderVisibility));
-                }
-            }
-        }
-
+        public bool GMLoader { get; set; }
         private bool _gmlLoaderEnabled = false;
         [JsonIgnore]
         public bool GMLoader_enabled

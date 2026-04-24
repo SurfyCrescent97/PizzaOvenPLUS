@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:PizzaOven" WindowStartupLocation="CenterScreen"
         mc:Ignorable="d" Background="{DynamicResource PrimaryBrush}" ResizeMode="NoResize"
         Title="Download" SizeToContent="Height" Width="375">
-    <Grid>
+    <Grid x:Name="DownloadGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="0.5*"/>
             <RowDefinition Height="2*"/>

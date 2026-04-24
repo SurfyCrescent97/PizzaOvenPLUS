@@ -160,10 +160,12 @@ namespace PizzaOven
 
             using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(runKeyPath))
             {
-                if (key == null) return "Unknown";
+                if (key == null) 
+                    return "Unknown";
 
                 var value = key.GetValue(itemName) as byte[];
-                if (value == null || value.Length == 0) return "Unknown";
+                if (value == null || value.Length == 0) 
+                    return "Unknown";
 
                 if (value[0] == 2) 
                     return "Enabled";

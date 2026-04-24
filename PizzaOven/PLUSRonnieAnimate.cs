@@ -15,6 +15,7 @@ namespace PizzaOven
 {
     public class PLUSRonnieAnimate
     {
+        public static List<PLUSRonnieAnimate> Instances = new List<PLUSRonnieAnimate>();
         public Canvas _overlayCanvas;
         private Window _window;
         private Image _image;
@@ -23,16 +24,43 @@ namespace PizzaOven
         private double _speed;
         private DispatcherTimer _timer;
         private DispatcherTimer _shakeTimer;
-        private double _shakeMagnitude;
-        private DateTime _shakeEndTime;
-        private double _baseX;
-        private double _baseY;
-        private Random _random = new Random();
+        public double GlideX { get => _targetX; set => _targetX = value; }
+        public double GlideY { get => _targetY; set => _targetY = value; }
         public Dictionary<int, Canvas> _textboxes = new Dictionary<int, Canvas>();
         private int _nextTextboxId = 1;
+        private bool _registered;
+        public Action StepEvent;
+        public PLUSRonnieAnimate()
+        {
+            EnsureRegistered();
+        }
+        public static void StepAll()
+        {
+            foreach (var r in GetActive())
+            {
+                r.StepEvent?.Invoke();
+                CleanupInactive();
+            }
+        }
+        public static List<PLUSRonnieAnimate> GetActive(PLUSRonnieAnimate[] ?ignore = null)
+        {
+            return Instances.Where(r => r != null && r._image != null && r._overlayCanvas != null && (ignore == null || !ignore.Contains(r))).ToList();
+        }
+        private void EnsureRegistered()
+        {
+            if (_registered) 
+                return;
 
-
-
+            Instances.Add(this);
+            _registered = true;
+        }
+        public static void CleanupInactive()
+        {
+            Instances.RemoveAll(r =>
+            {
+                return r == null;
+            });
+        }
         public void Initialize(Window window, double startX, double startY, double scale = 1)
         {
             if (window == null)
@@ -191,6 +219,15 @@ namespace PizzaOven
             shakeTimer.Start();
         }
 
+        public async Task RunThenDestroy(Func<Task> method)
+        {
+            if (method != null)
+            {
+                await method();
+            }
+
+            Destroy();
+        }
         public int GetX()
         {
             if (_image == null)
@@ -315,10 +352,6 @@ namespace PizzaOven
             if (finishedTask == tcs.Task)
                 onClickAction?.Invoke();
         }
-
-
-
-
         private Image CreateImageTextBox(string relativePath, double width)
         {
             return new Image
@@ -329,7 +362,6 @@ namespace PizzaOven
                 Stretch = Stretch.None
             };
         }
-
         public static double MeasureTextBlockHeight(string text, double boxWidth = 373, double sidePadding = 35, double fontSize = 21, double topHeight = 19, double bottomHeight = 19)
         {
             var tb = new TextBlock
@@ -353,8 +385,6 @@ namespace PizzaOven
 
             return totalHeight;
         }
-
-
         public int MakeTextbox(double x, double y, string text)
         {
             if (_overlayCanvas == null)
@@ -450,7 +480,6 @@ namespace PizzaOven
                 }
             }
         }
-
         public static async Task WaitForMouseUpAsync()
         {
             while (Mouse.LeftButton == MouseButtonState.Pressed)
@@ -490,6 +519,20 @@ namespace PizzaOven
             await tcs.Task;
 
             _window.PreviewMouseLeftButtonDown -= MouseDownHandler;
+        }
+        public void SetVisible(bool? visible = null)
+        {
+            if (_image == null)
+                return;
+
+            if (visible.HasValue)
+            {
+                _image.Visibility = visible.Value ? Visibility.Visible : Visibility.Collapsed;
+            }
+            else
+            {
+                _image.Visibility = _image.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+            }
         }
     }
 }

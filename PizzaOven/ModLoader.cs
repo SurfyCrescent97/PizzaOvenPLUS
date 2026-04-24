@@ -93,33 +93,30 @@ namespace PizzaOven
                 }
             return true;
         }
-		
-		
-		public static bool Downgrade(string path)
+
+
+        public static bool Downgrade(string path)
         {
-			var failed = true;
-			Global.logger.WriteLine($"Attempting to patch {Path.GetFileName(path)} with data.win...", LoggerType.Info);
-			try
+            var failed = true;
+            Global.logger.WriteLine($"Attempting to patch {Path.GetFileName(path)} with data.win...", LoggerType.Info);
+            try
             {
-				var xdelta = $"{Global.assemblyLocation}{Global.s}Dependencies{Global.s}xdelta.exe";
-				var source = $"{Global.config.ModsFolder}{Global.s}data.win";
-				var downgradefile = path;
-				File.Copy(source, $"{source}.downgradepo", true);
-				if (!File.Exists($"{source}.po"))
-					File.Copy(source, $"{source}.po", true);
-				Patch(source,downgradefile,$"{source}.temp",xdelta);
-				File.Move($"{source}.temp", source, true);				
-			}
-			catch (Exception e)
+                var xdelta = $"{Global.assemblyLocation}{Global.s}Dependencies{Global.s}xdelta.exe";
+                var source = $"{Global.config.ModsFolder}{Global.s}data.win";
+                var downgradefile = path;
+                File.Copy(source, $"{source}.downgradepo", true);
+                if (!File.Exists($"{source}.po"))
+                    File.Copy(source, $"{source}.po", true);
+                Patch(source, downgradefile, $"{source}.temp", xdelta);
+                File.Move($"{source}.temp", source, true);
+            }
+            catch (Exception e)
             {
-				failed = false;
-				
-			}
-			return failed;
-		}
+                failed = false;
 
-      
-
+            }
+            return failed;
+        }
         private static string AFOMfilepath()
         {
             var modsfolder = $@"{Global.assemblyLocation}{Global.s}Mods";
@@ -177,8 +174,7 @@ namespace PizzaOven
 
                 if (sourceDir == "")
                     return false;
-                string towersPath = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaTower_GM2", "towers");
+                string towersPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaTower_GM2", "towers");
 
                 if (!Directory.Exists(towersPath))
                     return false;
@@ -195,11 +191,11 @@ namespace PizzaOven
                 }
                 else
                 {
-                    var index = 0;
+                    var counter = 2;
                     while (Directory.Exists(destDir))
                     {
-                        index++;
-                        destDir = Path.Combine(towersPath, $"{baseName} ({index})");
+                        ++counter;
+                        destDir = Path.Combine(towersPath, $"{baseName} ({counter})");
                     }
                 }
 

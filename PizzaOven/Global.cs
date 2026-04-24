@@ -12,8 +12,9 @@ namespace PizzaOven
 {
     public static class Global
     {
-		public static string language = "english";
-        public static string customassetsfolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaOvenPLUS", "CustomAssets");
+        public static string language = "english";
+        public static string appdata = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        public static string customassetsfolder = Path.Combine(appdata, "PizzaOvenPLUS", "CustomAssets");
         public static bool ronnietutorial = true;
 		public static string focused;
         public static Config config;

@@ -1,10 +1,21 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Text.Json;
+using Microsoft.Win32;
 
 namespace PizzaOven
 {
+    public class PTversion
+    {
+        public string manifestID { get; set; }
+        public string version { get; set; }
+        public string type { get; set; }
+    }
+
     public class PLUSDepotDownloader
     {
         public static string GetSteamUsername()
@@ -14,7 +25,82 @@ namespace PizzaOven
                 return value;
             return "";
         }
+        public static async Task DowngradeDownload(MainWindow mainWindow)
+        {
+            string ogWinFile = "";
+            var ogWinFileDialog = new OpenFileDialog();
+            ogWinFileDialog.Filter = "Source (*.win)|*.win";
 
+
+            if (ogWinFileDialog.ShowDialog() == true)
+            {
+                ogWinFile = ogWinFileDialog.FileName;
+            }
+            else
+            {
+                MessageBox.Show("No file selected.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            if (string.IsNullOrEmpty(ogWinFile))
+            {
+                System.Windows.Forms.MessageBox.Show("Please select a .win file first.", "Error", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                return;
+            }
+
+            var ptVersions = JsonSerializer.Deserialize<List<PTversion>>(File.ReadAllText($@"Dependencies{Global.s}ptversions.json"));
+
+            string selectedVersion = mainWindow.DowngradeDownloadCombo.SelectedItem as string;
+            if (string.IsNullOrEmpty(selectedVersion))
+            {
+                System.Windows.Forms.MessageBox.Show("Please select a version.", "Error", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                return;
+            }
+
+            string versionsDir = Path.Combine(Global.assemblyLocation, "Downgrades");
+            string tempDir = Path.Combine(versionsDir, "temp");
+            Directory.CreateDirectory(versionsDir);
+            Directory.CreateDirectory(tempDir);
+
+            string steamUser = PLUSDepotDownloader.GetSteamUsername();
+            foreach (var v in ptVersions)
+            {
+                if (v.version != selectedVersion)
+                    continue;
+
+                if (v.type == "depot")
+                {
+                    bool success = await DownloadDowngradeAsync("2231450", "2231451", v.manifestID, steamUser, tempDir, ogWinFile, v.version);
+
+                    if (!success)
+                    {
+                        Console.WriteLine($"Failed to process version {v.version}");
+                        continue;
+                    }
+
+                    try
+                    {
+                        string sourceFile = Path.Combine(tempDir, "data.win");
+                        string destFile = Path.Combine(versionsDir, $"{v.version}.win");
+                        if (File.Exists(sourceFile))
+                            File.Move(sourceFile, destFile, true);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error moving file for version {v.version}: {ex.Message}");
+                    }
+
+                    Console.WriteLine($"Version {v.version} processed successfully.");
+                    break;
+                }
+            }
+
+            try
+            {
+                if (Directory.Exists(tempDir))
+                    Directory.Delete(tempDir, true);
+            }
+            catch { }
+        }
         public static void CreatePatch(string sourceFile, string targetFile, string patchFile, string xdelta)
         {
             var startInfo = new ProcessStartInfo

@@ -46,13 +46,6 @@ namespace PizzaOven
     /// 
     public partial class MainWindow : Window
     {
-        public class PTversion
-        {
-            public string manifestID { get; set; }
-            public string version { get; set; }
-            public string type { get; set; }
-        }
-
         public static readonly string[] themebrushes = { "Primary", "Secondary", "Inner", "Loading", "Text" };
         public static readonly string[] themeimageExtensions = { ".png", ".jpg", ".jpeg", ".bmp" };
 
@@ -97,9 +90,10 @@ namespace PizzaOven
         };
         public PLUSRonnieAnimate tutorialanimator;
         public PLUSRonnieAnimate introanimator;
-        private PLUSRonnieAnimate launchanimator;
-        private PLUSRonnieAnimate replayanimator;
-        private PLUSRonnieAnimate settinganimator;
+        public PLUSRonnieAnimate launchanimator;
+        public PLUSRonnieAnimate replayanimator;
+        public PLUSRonnieAnimate settinganimator;
+        public PLUSRonnieAnimate gmloaderanimator;
         public string version;
         public static string PizzaTowerVersion = "1.1.280";
         private Dictionary<string, string> defaultBrushHexes = new Dictionary<string, string>();
@@ -131,7 +125,38 @@ namespace PizzaOven
                 UpdatePLUSfilter(_currentFilter);
             }
         }
+        public enum VersionCompareResult
+        {
+            Older = -1,
+            Current = 0,
+            Newer = 1
+        }
+        private static int[] NormalizeVersion(string version)
+        {
+            return version.Split('.').Select(s => int.TryParse(s, out int n) ? n : 0).ToArray();
+        }
+        public static VersionCompareResult PLUSCompareVersion(string currentver, string comparever)
+        {
 
+            int[] v1 = NormalizeVersion(currentver);
+            int[] v2 = NormalizeVersion(comparever);
+
+            int length = Math.Max(v1.Length, v2.Length);
+
+            for (int i = 0; i < length; i++)
+            {
+                int a = i < v1.Length ? v1[i] : 0;
+                int b = i < v2.Length ? v2[i] : 0;
+
+                if (a > b)
+                    return VersionCompareResult.Newer;
+
+                if (a < b)
+                    return VersionCompareResult.Older;
+            }
+
+            return VersionCompareResult.Current;
+        }
         public MainWindow()
         {
             InitializeComponent();
@@ -142,6 +167,18 @@ namespace PizzaOven
             var GMLoaderMergePath = $@"{Global.assemblyLocation}{Global.s}GMLoaderMergeTemp";
             if (Directory.Exists(GMLoaderMergePath))
                 Directory.Delete(GMLoaderMergePath, true);
+
+            DispatcherTimer appLoop = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(16)
+            };
+
+            appLoop.Tick += (s, e) =>
+            {
+                PLUSRonnieAnimate.StepAll();
+            };
+
+            appLoop.Start();
 
             foreach (var (sectionName, items) in credits)
             {
@@ -226,17 +263,66 @@ namespace PizzaOven
                         resourceStream.CopyTo(fileStream);
                         PLUSMUSIC.InitializeAsync();
                     }
+                    var versionResults = new Dictionary<string, VersionCompareResult>();
+
+                    string localVer = PLUSSavesystem.read_ini("Init", "AssetsVer", "0.0.0.0");
+
+                    if (localVer != "0.0.0.0")
+                    {
+                        versionResults["MusicUpdate"] = PLUSCompareVersion(localVer, "1.0.6.0");
+
+                        if (versionResults["MusicUpdate"] != VersionCompareResult.Newer)
+                        {
+                            Directory.CreateDirectory($@"{Global.customassetsfolder}{Global.s}Music{Global.s}Default");
+                            if (File.Exists($@"{Global.customassetsfolder}{Global.s}BGMusic_Start.mp3"))
+                            {
+                                File.Copy($@"{Global.customassetsfolder}{Global.s}BGMusic_Start.mp3", $@"{Global.customassetsfolder}{Global.s}Music{Global.s}Default{Global.s}BGMusic_Start.mp3", true);
+                            }
+                            else if (File.Exists($@"{Global.customassetsfolder}{Global.s}BGMusic_Start.mp3"))
+                            {
+                                File.Delete($"{Global.customassetsfolder}Music{Global.s}Default{Global.s}BGMusic_Start.mp3");
+                            }
+                            if (File.Exists($@"{Global.customassetsfolder}{Global.s}BGMusic_Loop.mp3"))
+                            {
+                                File.Copy($@"{Global.customassetsfolder}{Global.s}BGMusic_Loop.mp3", $@"{Global.customassetsfolder}{Global.s}Music{Global.s}Default{Global.s}BGMusic_Loop.mp3", true);
+                            }
+                            else if (File.Exists($@"{Global.customassetsfolder}{Global.s}BGMusic_Loop.mp3"))
+                            {
+                                File.Delete($@"{Global.customassetsfolder}Music{Global.s}Default{Global.s}BGMusic_Loop.mp3");
+                            }
+                        }
+                    }
                     PLUSSavesystem.write_ini("Init", "AssetsVer", PizzaOvenVersion);
                 }
-                PLUSMUSIC.InitializeAsync();
-                InitializeToggles();
-
-                SoundVolume.Value = double.TryParse(PLUSSavesystem.read_ini("Audio", "SoundVolume", "100"), out double value) ? value : 100;
-                PLUSMUSIC.ApplyCurrentVolume();
             }
             catch
             {
             }
+            PLUSMUSIC.InitializeAsync();
+            InitializeToggles();
+
+
+            SoundVolume.Value = double.TryParse(PLUSSavesystem.read_ini("Audio", "SoundVolume", "100"), out double value) ? value : 100;
+            PLUSMUSIC.ApplyCurrentVolume();
+
+            PLUSSavesystem.StartWatcher();
+
+            PLUSSavesystem.IniEdited += () =>
+            {
+                string newFolder = PLUSSavesystem.read_ini("Audio", "MusicFolder", "Default");
+
+                if (newFolder == PLUSMUSIC.musicfolder)
+                    return;
+
+                if (PLUSMUSIC.musicfolder != newFolder)
+                {
+                    PLUSMUSIC.musicfolder = newFolder;
+
+                    PLUSMUSIC.InitializeAsync();
+                    PLUSMUSIC.ApplyCurrentVolume();
+                }
+            };
+
             Global.logger = new Logger(ConsoleWindow);
             Global.config = new();
 
@@ -336,7 +422,11 @@ namespace PizzaOven
             }
 
             var announcementWindow = new PLUSAnnouncementWindow();
-            announcementWindow.ShowDialog();
+            if (!announcementWindow.IsClosed)
+            {
+                announcementWindow.ShowDialog();
+            }
+
             ModDownloader.RemoteInstallPairPolling();
 
             if (Global.ronnietutorial)
@@ -347,7 +437,7 @@ namespace PizzaOven
             {
                 //hi to the people looking at the code!!! this how we check if you still have it lol
                 TutorialButton.Visibility = Visibility.Visible;
-                PLUSTutorial.RonnieVariables.KeptMod = File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaTower_GM2", "RonnieTutorial.ini"));
+                PLUSTutorial.RonnieVariables.KeptMod = File.Exists($@"{Global.appdata}{Global.s}PizzaTower_GM2{Global.s}RonnieTutorial.ini");
                 PLUSTutorial.RonnieVariables.ModDeleted = PLUSTutorial.TutorialModPath() == "";
                 if (Directory.Exists(PLUSTutorial.TutorialModPath()))
                 {
@@ -624,6 +714,16 @@ namespace PizzaOven
                         Settings.IsEnabled = true;
                         launchanimator.GlideTo(this.ActualWidth, this.ActualHeight - 200, 20);
                         launchanimator.SetExpression("sad");
+                        launchanimator.RunThenDestroy(async () =>
+                        {
+                            await PLUSWait.WaitUntil(() =>
+                            {
+                                double dx = Math.Abs(launchanimator.GetX() - launchanimator.GlideX);
+                                double dy = Math.Abs(launchanimator.GetY() - launchanimator.GlideY);
+
+                                return dx < 1 && dy < 1;
+                            });
+                        });
                     }
                     else
                     {
@@ -641,6 +741,7 @@ namespace PizzaOven
                     {
                         launchanimator.GlideTo(this.ActualWidth, this.ActualHeight - 200, 20);
                         launchanimator.SetExpression("happy");
+                        launchanimator.RunThenDestroy(async () => { await PLUSWait.WaitUntil(() => launchanimator.GlideX == launchanimator.GetX() && launchanimator.GlideY == launchanimator.GetY()); });
                     }
                 }
                 ModGrid.IsEnabled = true;
@@ -872,10 +973,6 @@ namespace PizzaOven
         {
             return await Task.Run(async () =>
             {
-                if (!ModLoader.Restart())
-                    return false;
-                string patchPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Downgrades", downgradename + ".xdelta");
-
                 var mods = Global.config.ModList.Where(x => x.enabled).ToList();
                 string modType = "";
                 try
@@ -890,6 +987,16 @@ namespace PizzaOven
 
                 bool isAFOM = string.Equals(modTypeNormalized, "AFOM", StringComparison.OrdinalIgnoreCase);
                 bool isGMLOADER = string.Equals(modTypeNormalized, "GMLOADER", StringComparison.OrdinalIgnoreCase);
+                bool ShouldRestart = (mods.Where(x => x.GMLoader_enabled).ToList().Count == 0 || (!isGMLOADER && mods.Count == 1));
+
+                if (ShouldRestart)
+                {
+                    if (!ModLoader.Restart())
+                        return false;
+                }
+                
+                string patchPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Downgrades", downgradename + ".xdelta");
+
                 var prenoisepatch = new List<string>
                 {
                     "1.0.311",
@@ -1771,17 +1878,6 @@ namespace PizzaOven
             ModGrid_Border.BorderBrush = newBorderBrush;
             ModGrid_Border.Background = newBackground;
         }
-        public void Transparent_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            if (sender is Slider slider)
-            {
-                string name = slider.Name;
-                string value = slider.Value.ToString();
-
-                PLUSSavesystem.write_ini("Themes", name, value);
-                ApplyTransparentBoxes();
-            }
-        }
         private void OnBrowserTabSelected(object sender, RoutedEventArgs e)
         {
             if (!selected)
@@ -2363,11 +2459,9 @@ namespace PizzaOven
         {
             Dispatcher.BeginInvoke((Action)(() => PLUSrefresh()));
         }
-
-
         private string PLUSModType(string path)
         {
-            if (!File.Exists(path))
+            if (!Directory.Exists(path))
             {
                 return "Normal";
             }
@@ -2452,6 +2546,211 @@ namespace PizzaOven
             }
             return "Normal";
         }
+
+        #region Themes
+        public System.Windows.Media.Color? Themes_GrabColor(string initialHex = "#FFFFFFFF")
+        {
+            System.Windows.Forms.ColorDialog colorDialog = new System.Windows.Forms.ColorDialog();
+
+            colorDialog.Color = System.Drawing.ColorTranslator.FromHtml(initialHex);
+
+            if (colorDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                System.Drawing.Color drawingColor = colorDialog.Color;
+
+                System.Windows.Media.Color wpfColor = System.Windows.Media.Color.FromArgb(drawingColor.A, drawingColor.R, drawingColor.G, drawingColor.B);
+
+                return wpfColor;
+            }
+            else
+            {
+                return null;
+            }
+        }
+        public void Theme_Update(string brushname, bool skippicker = false)
+        {
+            if (skippicker)
+            {
+                var skippedcolor = PLUSSavesystem.read_ini("Themes", brushname, "");
+                if (skippedcolor != "" && PLUSThemes.validhex(skippedcolor))
+                    PLUSThemes.Set_BrushColor($"{brushname}Brush", skippedcolor);
+                return;
+            }
+            var color = Themes_GrabColor(PLUSSavesystem.read_ini("Themes", brushname, "#FFFFFFFF")) ?? System.Windows.Media.Colors.Transparent;
+            if (color != System.Windows.Media.Colors.Transparent)
+            {
+                var rgbcolor = PLUSThemes.color_as_rgb(color);
+                var stringcolor = PLUSThemes.rgb_to_hex(rgbcolor.r, rgbcolor.g, rgbcolor.b);
+                PLUSSavesystem.write_ini("Themes", brushname, stringcolor);
+                PLUSThemes.Set_BrushColor($"{brushname}Brush", stringcolor);
+            }
+        }
+        public void Themes_Defaults(string brushName, string hex)
+        {
+            if (string.IsNullOrWhiteSpace(brushName) || string.IsNullOrWhiteSpace(hex))
+                return;
+
+            defaultBrushHexes[brushName] = hex;
+        }
+        public void Themes_Reset(string brushname)
+        {
+            PLUSSavesystem.write_ini("Themes", brushname, "");
+            PLUSSavesystem.delete_ini_value("Themes", brushname);
+            PLUSThemes.Set_BrushColor($"{brushname}Brush", defaultBrushHexes[brushname]);
+        }
+        public void ThemesSaveFile(string themeFilePath)
+        {
+            var theme = new Dictionary<string, string>();
+
+            theme["saveversion"] = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            foreach (var brush in themebrushes)
+            {
+                theme[brush] = PLUSSavesystem.read_ini("Themes", brush, defaultBrushHexes[brush]);
+            }
+
+            theme["background"] = "";
+
+            if (Directory.Exists(Global.customassetsfolder))
+            {
+                var bgImagePath = Directory.GetFiles(Global.customassetsfolder)
+                    .FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).Equals("background", StringComparison.OrdinalIgnoreCase) && themeimageExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase));
+                if (!string.IsNullOrEmpty(bgImagePath) && File.Exists(bgImagePath))
+                {
+                    theme["background"] = $"{Path.GetExtension(bgImagePath).TrimStart('.')};{PLUSThemes.Base64_SaveFile(bgImagePath)}";
+                }
+            }
+
+            foreach (var transparent in transparentboxes)
+            {
+                var slider = (Slider)this.FindName($"Transparency_{transparent}");
+                if (slider != null)
+                    theme[$"Transparency_{transparent}"] = ((int)slider.Value).ToString();
+            }
+
+            string json = JsonSerializer.Serialize(theme, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+            File.WriteAllText(themeFilePath, json);
+        }
+        public void ThemesFileLoad(string themeFilePath)
+        {
+            string json = System.IO.File.ReadAllText(themeFilePath);
+            try
+            {
+                var theme = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+
+                if (theme != null)
+                {
+                    try
+                    {
+                        foreach (var brush in themebrushes)
+                        {
+                            if (theme.ContainsKey(brush))
+                            {
+                                string value = theme[brush];
+                                PLUSSavesystem.write_ini("Themes", brush, value);
+                                Theme_Update(brush, true);
+                            }
+                        }
+                        if (Directory.Exists(Global.customassetsfolder))
+                        {
+                            var bgImagePath = Directory.GetFiles(Global.customassetsfolder)
+                                .FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).Equals("background", StringComparison.OrdinalIgnoreCase) && themeimageExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase));
+                            if (!string.IsNullOrEmpty(bgImagePath) && File.Exists(bgImagePath))
+                            {
+                                System.IO.File.Delete(bgImagePath);
+                            }
+                        }
+
+                        if (theme.ContainsKey("background"))
+                        {
+                            string[] backgroundata = theme["background"].Split(";");
+                            if (backgroundata.Length == 2)
+                            {
+                                if (PLUSThemes.IsBase64String(backgroundata[1]))
+                                {
+                                    PLUSThemes.Base64_LoadFile(backgroundata[1], System.IO.Path.Combine(Global.customassetsfolder, $"background.{backgroundata[0]}"));
+                                }
+                            }
+                        }
+                        foreach (var transparent in transparentboxes)
+                        {
+                            if (theme.ContainsKey($"Transparency_{transparent}"))
+                            {
+                                PLUSSavesystem.write_ini("Themes", $"Transparency_{transparent}", theme[$"Transparency_{transparent}"]);
+                            }
+                            else
+                            {
+                                PLUSSavesystem.write_ini("Themes", $"Transparency_{transparent}", "100");
+                            }
+                            ApplyTransparentBoxes(true);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Malformed Themes File: {ex}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+            }
+            catch { }
+        }
+        #endregion
+        #region PLUSsettings
+        private void FilterButton_HoverOn(object sender, RoutedEventArgs e)
+        {
+            if (introanimator != null)
+                introanimator.Destroy();
+            if (launchanimator != null)
+                launchanimator.Destroy();
+            if (replayanimator != null)
+                replayanimator.Destroy();
+            if (Global.ronnietutorial && PLUSTutorial.RonnieVariables.RonnieExplainSettings != 1)
+            {
+                if (Global.ronnietutorial && PLUSTutorial.RonnieVariables.RonnieExplainSettings == 0)
+                {
+                    PLUSTutorial.RonnieVariables.RonnieExplainSettings = 1;
+                }
+                return;
+            }
+            settinganimator = new PLUSRonnieAnimate();
+            settinganimator.Initialize(this, 0, this.Height - 300, 1);
+            settinganimator.SetExpression("thinking");
+            if (sender is Button btn)
+            {
+                var messages = new Dictionary<string, string>
+                {
+                    ["Tutorial"] = "You can use this to replay my tutorial",
+                    ["Links"] = "Wanna suggest something? there's a form in there where you can suggest features, maybe join our discord or check out other social links",
+                    ["App Settings"] = "Settings mainly to do with the application such as display on discord so people can see my cute little face on it or startup on opening your device",
+                    ["Launch Settings"] = "Settings mainly to do with the launch like applying downgrades or customising what happens on launch",
+                    ["Mod Settings"] = "Settings mainly to do with mods such as PO. Files, Adding folder to categorise your mods or saving current Pizza Tower folder as mod",
+                    ["App Customization"] = "Settings mainly to do with the looks of the app or the sounds of the app",
+                    ["GMLoader"] = "Settings to mainly convert your xdelta mods into GMLoader mods(recommended for mods that have smaller additions)",
+                    ["Credits"] = "Contributions to PizzaOven+ and the original PizzaOven too"
+                };
+
+                if (btn.Content?.ToString() is string key && messages.TryGetValue(key, out var message))
+                {
+                    if (Global.ronnietutorial && tutorialanimator != null)
+                    {
+                        PLUSTutorial.RonnieVariables.publictextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, message);
+                        if (settinganimator != null)
+                        {
+                            settinganimator.Destroy();
+                        }
+                    }
+                    else
+                    {
+                        settinganimator.MakeTextbox(settinganimator.GetX() + 110, settinganimator.GetY() + 25, message);
+                        if (key == "Tutorial")
+                        {
+                            settinganimator.SetExpression("happy");
+                        }
+                    }
+                }
+            }
+        }
         private static IEnumerable<T> FindVisualChildren<T>(DependencyObject depObj) where T : DependencyObject
         {
             if (depObj == null) yield break;
@@ -2516,267 +2815,23 @@ namespace PizzaOven
                     continue;
                 }
 
-                
-                bool match = string.Equals(searchable.Trim(),filter?.Trim(),StringComparison.OrdinalIgnoreCase);
+
+                bool match = string.Equals(searchable.Trim(), filter?.Trim(), StringComparison.OrdinalIgnoreCase);
                 panel.Visibility = match ? Visibility.Visible : Visibility.Collapsed;
             }
-            TutorialButton.Visibility = Visibility.Visible; 
+            TutorialButton.Visibility = Visibility.Visible;
             SettingOptions.Visibility = string.IsNullOrEmpty(filter) ? Visibility.Visible : Visibility.Collapsed;
 
             if (Global.ronnietutorial)
             {
                 TutorialPanel.Visibility = Visibility.Collapsed;
-                TutorialButton.Visibility = Visibility.Collapsed;   
+                TutorialButton.Visibility = Visibility.Collapsed;
             }
-        }
-        private void FilterButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button btn)
-            {
-                CurrentFilter = btn.Content?.ToString();
-            }
-        }
-        private void FilterButton_HoverOn(object sender, RoutedEventArgs e)
-        {
-            if (introanimator != null)
-                introanimator.Destroy();
-            if (launchanimator != null)
-                launchanimator.Destroy();
-            if (replayanimator != null)
-                replayanimator.Destroy();
-            if (Global.ronnietutorial && PLUSTutorial.RonnieVariables.RonnieExplainSettings != 1)
-            {
-                if (Global.ronnietutorial && PLUSTutorial.RonnieVariables.RonnieExplainSettings == 0)
-                {
-                    PLUSTutorial.RonnieVariables.RonnieExplainSettings = 1;
-                }
-                return;
-            }
-            settinganimator = new PLUSRonnieAnimate();
-            settinganimator.Initialize(this, 0, this.Height - 300, 1);
-            settinganimator.SetExpression("thinking");
-            if (sender is Button btn)
-            {
-                var messages = new Dictionary<string, string>
-                {
-                    ["Tutorial"] = "You can use this to replay my tutorial",
-                    ["Links"] = "Wanna suggest something? there's a form in there where you can suggest features, maybe join our discord or check out other social links",
-                    ["App Settings"] = "Settings mainly to do with the application such as display on discord so people can see my cute little face on it or startup on opening your device",
-                    ["Launch Settings"] = "Settings mainly to do with the launch like applying downgrades or customising what happens on launch",
-                    ["Mod Settings"] = "Settings mainly to do with mods such as PO. Files, Adding folder to categorise your mods or saving current Pizza Tower folder as mod",
-                    ["App Customization"] = "Settings mainly to do with the looks of the app or the sounds of the app",
-                    ["GMLoader"] = "Settings to mainly convert your xdelta mods into GMLoader mods(recommended for mods that have smaller additions)",
-                    ["Credits"] = "Contributions to PizzaOven+ and the original PizzaOven too"
-                };
-
-                if (btn.Content?.ToString() is string key && messages.TryGetValue(key, out var message))
-                {
-                    if (Global.ronnietutorial && tutorialanimator != null)
-                    {
-                        PLUSTutorial.RonnieVariables.publictextbox = tutorialanimator.MakeTextbox(tutorialanimator.GetX() + 110, tutorialanimator.GetY() + 25, message);
-                        if (settinganimator != null)
-                        {
-                            settinganimator.Destroy();
-                        }
-                    }
-                    else 
-                    {
-                        settinganimator.MakeTextbox(settinganimator.GetX() + 110, settinganimator.GetY() + 25, message);
-                        if (key == "Tutorial")
-                        {
-                            settinganimator.SetExpression("happy");
-                        }
-                    }
-                }
-            }
-        }
-        private void FilterButton_HoverOff(object sender, RoutedEventArgs e)
-        {
-            if (Global.ronnietutorial && tutorialanimator != null)
-            {
-                tutorialanimator.DestroyTextbox(PLUSTutorial.RonnieVariables.publictextbox);
-            }
-            if (settinganimator != null)
-            { 
-                settinganimator.Destroy();
-            }
-
-        }
-        private void FilterButtonBack_Click(object sender, RoutedEventArgs e)
-        {
-            CurrentFilter = "";
-        }
-        private void CleanPO_click(object sender, RoutedEventArgs e)
-        {
-            var path = Global.config.ModsFolder;
-            ModLoader.RestoreDirectory(Global.config.ModsFolder);
-        }
-
-        private void DeleteModFolder_Click(object sender, RoutedEventArgs e)
-        {
-            if (ModFolderCombo.SelectedItem as string == "All")
-            {
-                MessageBoxResult allresult = MessageBox.Show("Do you want to delete ALL folders?", "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Question);
-                if (allresult == MessageBoxResult.No)
-                    return;
-                PLUSSavesystem.delete_ini_section("Folder");
-                return;
-            }
-            MessageBoxResult result = MessageBox.Show("Do you want to delete this folder?", "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Question);
-            if (result == MessageBoxResult.No)
-                return;
-            var saves = PLUSSavesystem.read_ini_section("Folder");
-            for (int i = 0; i < saves.GetLength(0); i++)
-            {
-                if (saves[i, 0] == ModFolderCombo.SelectedItem as string)
-                {
-                    PLUSSavesystem.delete_ini_value("Folder", saves[i, 0]);
-                }
-            }
-            ModFolderCombo.SelectedItem = "All";
-        }
-        private void OpenLink_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button btn)
-            {
-                string url = btn.Name switch
-                {
-                    "OpenSuggestForm" => "https://docs.google.com/forms/d/e/1FAIpQLScI-8L6-ATpE6_ip3gzESXAWi4B_0pwHiHI5g83fb3SlLTM_A/viewform?usp=dialog",
-                    "OpenEmail" => "https://mail.google.com/mail/u/0/#inbox?compose=GTvVlcSGKZhCvzvPvWzHvQZTnWMgDSzDHWTFDjnfWdjQscBHkRtBhmJPRKjjJbkNqlGRbtHlWzDWW",
-                    "OpenTwitterX" => "https://x.com/SurfyCrescent97",
-                    "OpenDiscord" => "https://discord.gg/snv7CrRQzx",
-                    _ => null
-                };
-
-                if (!string.IsNullOrEmpty(url))
-                {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = url,
-                        UseShellExecute = true
-                    });
-                }
-            }
-        }
-        private void AssetsFolder_Click(object sender, RoutedEventArgs e)
-        {
-            Process process = Process.Start("explorer.exe", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaOvenPLUS", "CustomAssets"));
-        }
-
-        private void RestoreMissingAssets_Click(object sender, RoutedEventArgs e)
-        {
-            string assetPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaOvenPLUS", "CustomAssets");
-
-            Directory.CreateDirectory(assetPath);
-
-            Assembly assembly = Assembly.GetExecutingAssembly();
-
-            string assetPrefix = "PizzaOven.CustomAssets.";
-
-            var resources = assembly
-                .GetManifestResourceNames()
-                .Where(r => r.StartsWith(assetPrefix));
-
-            foreach (string resourceName in resources)
-            {
-                string relativePath = resourceName
-                    .Substring(assetPrefix.Length)
-                    .Replace('.', Path.DirectorySeparatorChar);
-
-                int lastSeparator = relativePath.LastIndexOf(Path.DirectorySeparatorChar);
-                if (lastSeparator != -1)
-                {
-                    relativePath =
-                        relativePath[..lastSeparator] + "." +
-                        relativePath[(lastSeparator + 1)..];
-                }
-
-                string outputPath = Path.Combine(assetPath, relativePath);
-                Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
-
-                if (File.Exists(outputPath))
-                    continue;
-
-                using Stream resourceStream =
-                    assembly.GetManifestResourceStream(resourceName)!;
-
-                using FileStream fileStream =
-                    new FileStream(outputPath, FileMode.Create, FileAccess.Write);
-
-                resourceStream.CopyTo(fileStream);
-                PLUSMUSIC.InitializeAsync();
-            }
-        }
-
-        private void RestoreALLAssets_Click(object sender, RoutedEventArgs e)
-        {
-            string folderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaOvenPLUS", "CustomAssets");
-            if (Directory.Exists(folderPath))
-            {
-                foreach (string file in Directory.GetFiles(folderPath, "*", SearchOption.AllDirectories))
-                {
-                    try
-                    {
-                        File.Delete(file);
-                    }
-                    catch
-                    {
-                    }
-                }
-                foreach (string dir in Directory.GetDirectories(folderPath, "*", SearchOption.AllDirectories))
-                {
-                    try
-                    {
-                        if (Directory.GetFiles(dir).Length == 0 && Directory.GetDirectories(dir).Length == 0)
-                            Directory.Delete(dir);
-                    }
-                    catch
-                    {
-                    }
-                }
-            }
-
-            Directory.CreateDirectory(folderPath);
-            RestoreMissingAssets_Click(sender, e);
-            PLUSMUSIC.InitializeAsync();
         }
         private void HandlePLUStoggle(string section, string key, bool defaultValue, string toggleName)
         {
             bool enabled = PLUSSavesystem.toggle_ini_bool(section, key, defaultValue);
             InitPLUSToggle(toggleName, enabled);
-        }
-        private void POLanguage_Click(object sender, RoutedEventArgs e)
-        {
-            HandlePLUStoggle("Audio", "Mute", false, "POLanguage");
-        }
-        private void StartupToggle_Click(object sender, RoutedEventArgs e)
-        {
-            RegistryConfig.ToggleStartup();
-            InitPLUSToggle("Startup", RegistryConfig.GetStartupStatus() == "Enabled");
-        }
-        private void Mute_Click(object sender, RoutedEventArgs e)
-        {
-            HandlePLUStoggle("Audio", "Mute", false, "Mute");
-        }
-        private void UnfocusedMute_Click(object sender, RoutedEventArgs e)
-        {
-            HandlePLUStoggle("Audio", "UnfocusedMute", true, "UnfocusedMute");
-        }
-        private void RPCtoggle_Click(object sender, RoutedEventArgs e)
-        {
-            HandlePLUStoggle("Discord", "RPC", true, "RPC");
-        }
-        private void DebugToggle_Click(object sender, RoutedEventArgs e)
-        {
-            HandlePLUStoggle("Launch", "Debug", true, "Debug");
-        }
-        private void SteamLaunch_Click(object sender, RoutedEventArgs e)
-        {
-            HandlePLUStoggle("Launch", "Steam", true, "SteamLaunch");
-        }
-        private void MODUPDATERtoggle_Click(object sender, RoutedEventArgs e)
-        {
-            HandlePLUStoggle("LowEnd", "ModUpdate", true, "ModUpdater");
         }
         public void InitPLUSToggle(string name, bool enabled)
         {
@@ -2861,18 +2916,16 @@ namespace PizzaOven
         }
         private void InitializeToggles()
         {
-            InitPLUSToggle("Mute", PLUSSavesystem.read_ini("Audio", "Mute", "false") == "true");
-            InitPLUSToggle("UnfocusedMute", PLUSSavesystem.read_ini("Audio", "UnfocusedMute", "true") == "true");
-            InitPLUSToggle("RPC", PLUSSavesystem.read_ini("Discord", "RPC", "true") == "true");
-            InitPLUSToggle("Debug", PLUSSavesystem.read_ini("Launch", "Debug", "true") == "true");
-            InitPLUSToggle("SteamLaunch", PLUSSavesystem.read_ini("Launch", "Steam", "false") == "true");
-            InitPLUSToggle("ModUpdater", PLUSSavesystem.read_ini("LowEnd", "ModUpdate", "true") == "true");
-            InitPLUSToggle("POLanguage", PLUSSavesystem.read_ini("Files", "POLanguage", "true") == "true");
+            InitPLUSToggle("Mute", PLUSSavesystem.read_ini_bool("Audio", "Mute", false));
+            InitPLUSToggle("UnfocusedMute", PLUSSavesystem.read_ini_bool("Audio", "UnfocusedMute", true));
+            InitPLUSToggle("RPC", PLUSSavesystem.read_ini_bool("Discord", "RPC", true));
+            InitPLUSToggle("Debug", PLUSSavesystem.read_ini_bool("Launch", "Debug", true));
+            InitPLUSToggle("SteamLaunch", PLUSSavesystem.read_ini_bool("Launch", "Steam", false));
+            InitPLUSToggle("ModUpdater", PLUSSavesystem.read_ini_bool("LowEnd", "ModUpdate", true));
+            InitPLUSToggle("POLanguage", PLUSSavesystem.read_ini_bool("Files", "POLanguage", true));
             InitPLUSToggle("Startup", RegistryConfig.GetStartupStatus() == "Enabled");
 
-            string[] brushNames = { "Primary", "Secondary", "Inner", "Loading", "Text" };
-
-            foreach (var name in brushNames)
+            foreach (var name in themebrushes)
             {
                 string key = name;
 
@@ -2883,14 +2936,127 @@ namespace PizzaOven
                 Theme_Update(name, true);
             }
         }
-
-        private void SoundVolume_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        #region Navigation
+        private void FilterButton_Click(object sender, RoutedEventArgs e)
         {
-            int volume = (int)SoundVolume.Value;
-            PLUSSavesystem.write_ini("Audio", "SoundVolume", volume.ToString());
-            PLUSMUSIC.ApplyCurrentVolume();
+            if (sender is Button btn)
+            {
+                CurrentFilter = btn.Content?.ToString();
+            }
         }
+        private void FilterButtonBack_Click(object sender, RoutedEventArgs e)
+        {
+            CurrentFilter = "";
+        }
+        private void FilterButton_HoverOff(object sender, RoutedEventArgs e)
+        {
+            if (Global.ronnietutorial && tutorialanimator != null)
+            {
+                tutorialanimator.DestroyTextbox(PLUSTutorial.RonnieVariables.publictextbox);
+            }
+            if (settinganimator != null)
+            {
+                settinganimator.Destroy();
+            }
+        }
+        #endregion
+        #region Tutorial
+        public async void ReplayTutorial_Click(object sender, RoutedEventArgs e)
+        {
+            await PLUSTutorial.ReplayTutorial(this);
+        }
+        #endregion
+        #region Links
+        private void OpenLink_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn)
+            {
+                string url = btn.Name switch
+                {
+                    "OpenSuggestForm" => "https://docs.google.com/forms/d/e/1FAIpQLScI-8L6-ATpE6_ip3gzESXAWi4B_0pwHiHI5g83fb3SlLTM_A/viewform?usp=dialog",
+                    "OpenEmail" => "https://mail.google.com/mail/u/0/#inbox?compose=GTvVlcSGKZhCvzvPvWzHvQZTnWMgDSzDHWTFDjnfWdjQscBHkRtBhmJPRKjjJbkNqlGRbtHlWzDWW",
+                    "OpenTwitterX" => "https://x.com/SurfyCrescent97",
+                    "OpenDiscord" => "https://discord.gg/snv7CrRQzx",
+                    _ => null
+                };
 
+                if (!string.IsNullOrEmpty(url))
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = url,
+                        UseShellExecute = true
+                    });
+                }
+            }
+        }
+        #endregion
+        #region App Settings
+        private void StartupToggle_Click(object sender, RoutedEventArgs e)
+        {
+            RegistryConfig.ToggleStartup();
+            InitPLUSToggle("Startup", RegistryConfig.GetStartupStatus() == "Enabled");
+        }
+        private void RPCtoggle_Click(object sender, RoutedEventArgs e)
+        {
+            HandlePLUStoggle("Discord", "RPC", true, "RPC");
+        }
+        private void MODUPDATERtoggle_Click(object sender, RoutedEventArgs e)
+        {
+            HandlePLUStoggle("LowEnd", "ModUpdate", true, "ModUpdater");
+        }
+        #endregion
+        #region Launch
+        public async void DowngradeDownload_Click(object sender, RoutedEventArgs e)
+        {
+            await PLUSDepotDownloader.DowngradeDownload(this);
+        }
+        public void OpenPTFolder_Click(object sender, RoutedEventArgs e)
+        {
+            Process process = Process.Start("explorer.exe", Global.config.ModsFolder);
+        }
+        public void ChooseNewPTFolder_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Pressing Setup will reset it to finding your default steam folder, launch without setup if need to");
+            string defaultPath = String.Empty;
+            OpenFileDialog dialog = new OpenFileDialog();
+            dialog.DefaultExt = ".exe";
+            dialog.Filter = $"Executable File (PizzaTower.exe)|PizzaTower.exe";
+            dialog.Title = $"Select PizzaTower.exe from your Steam Install folder";
+            dialog.Multiselect = false;
+            dialog.InitialDirectory = Global.assemblyLocation;
+            dialog.ShowDialog();
+            if (!String.IsNullOrEmpty(dialog.FileName)
+                && Path.GetFileName(dialog.FileName).Equals("PizzaTower.exe", StringComparison.InvariantCultureIgnoreCase))
+                defaultPath = dialog.FileName;
+            else if (!String.IsNullOrEmpty(dialog.FileName))
+            {
+                Global.logger.WriteLine($"PizzaTower.exe not found", LoggerType.Error);
+                return;
+            }
+            Global.config.ModsFolder = Path.GetDirectoryName(defaultPath);
+            Global.config.Launcher = defaultPath;
+            Global.UpdateConfig();
+        }
+        private void DebugToggle_Click(object sender, RoutedEventArgs e)
+        {
+            HandlePLUStoggle("Launch", "Debug", true, "Debug");
+        }
+        private void SteamLaunch_Click(object sender, RoutedEventArgs e)
+        {
+            HandlePLUStoggle("Launch", "Steam", true, "SteamLaunch");
+        }
+        #endregion
+        #region Mods
+        private void CleanPO_click(object sender, RoutedEventArgs e)
+        {
+            var path = Global.config.ModsFolder;
+            ModLoader.RestoreDirectory(Global.config.ModsFolder);
+        }
+        private void POLanguage_Click(object sender, RoutedEventArgs e)
+        {
+            HandlePLUStoggle("Audio", "Mute", false, "POLanguage");
+        }
         public void POOverwriteBackup_Click(object sender, RoutedEventArgs e)
         {
             var targetfile = $"{Global.config.ModsFolder}{Global.s}data.win.po";
@@ -2920,390 +3086,29 @@ namespace PizzaOven
                 }
             }
         }
-
-        public async void GMLoaderConvert_Click(object sender, RoutedEventArgs e)
+        private void DeleteModFolder_Click(object sender, RoutedEventArgs e)
         {
-            if (Global.ronnietutorial)
+            if (ModFolderCombo.SelectedItem as string == "All")
             {
-                return;
-            }
-            string GMLoaderFolder = $"{AppDomain.CurrentDomain.BaseDirectory}GMLoader";
-            string[] foldersToDelete = {
-            $"{GMLoaderFolder}{Global.s}Export",
-            $"{GMLoaderFolder}{Global.s}vanilla_export",
-            $"{GMLoaderFolder}{Global.s}modded_export",
-            $"{GMLoaderFolder}{Global.s}converted_output",
-            $"{GMLoaderFolder}{Global.s}GMLoader.txt"
-            };
-
-            var runningGMLoaders = Process.GetProcessesByName("GMLoader");
-            foreach (var proc in runningGMLoaders)
-            {
-                try
-                {
-                    proc.Kill();
-                    proc.WaitForExit();
-                }
-                catch
-                {
-
-                }
-            }
-
-            foreach (var folder in foldersToDelete)
-            {
-                if (Directory.Exists(folder))
-                {
-                    Directory.Delete(folder, recursive: true);
-                }
-            }
-            ModManager.IsSelected = true;
-            MessageBox.Show("Please select the base data.win file. After that, select the modded file, which can be either a .xdelta or a .win. Please do not close the tool while processing, as it may take a long time.", "GMLoader Convert", MessageBoxButton.OK, MessageBoxImage.Information);
-            var sourceDialog = new OpenFileDialog();
-            sourceDialog.Filter = "Source (*.win)|*.win";
-
-            string source = "";
-
-            if (sourceDialog.ShowDialog() == true)
-            {
-                source = sourceDialog.FileName;
-            }
-            else
-            {
-                MessageBox.Show("No file selected.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-
-            var moddedDialog = new OpenFileDialog();
-            moddedDialog.Filter = "Modded (*.xdelta;*.win)|*.xdelta;*.win";
-
-            string modded = "";
-
-            if (moddedDialog.ShowDialog() == true)
-            {
-                modded = moddedDialog.FileName;
-            }
-            else
-            {
-                MessageBox.Show("No file selected.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            File.Copy(source, $"{source}.GMLoader", true);
-            File.Copy(modded, $"{modded}.GMLoader", true);
-
-            File.Move($"{source}.GMLoader", $"{GMLoaderFolder}{Global.s}vanilla.win", true);
-            File.Move($"{modded}.GMLoader", $"{GMLoaderFolder}{Global.s}modded{Path.GetExtension(modded)}", true);
-            string newsource = $"{GMLoaderFolder}{Global.s}vanilla.win";
-            string newmodded = $"{GMLoaderFolder}{Global.s}modded{Path.GetExtension(modded)}";
-            var xdelta = $"{Global.assemblyLocation}{Global.s}Dependencies{Global.s}xdelta.exe";
-            if (File.Exists($"{GMLoaderFolder}{Global.s}modded.xdelta"))
-            {
-                try
-                {
-                    Global.logger.WriteLine("Attempting to Patch Modded to Source", LoggerType.Info);
-                    ModLoader.PathFixPatch(newsource, newmodded, $"{newmodded}.temp", xdelta);
-                    File.Move($"{newmodded}.temp", $"{GMLoaderFolder}{Global.s}modded.win", true);
-                    File.Delete($"{GMLoaderFolder}{Global.s}modded.xdelta");
-                }
-                catch
-                {
-                    File.Delete($"{newsource}");
-                    File.Delete($"{newmodded}");
-                    Global.logger.WriteLine("Failed to Patch Modded to Source", LoggerType.Error);
+                MessageBoxResult allresult = MessageBox.Show("Do you want to delete ALL folders?", "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (allresult == MessageBoxResult.No)
                     return;
-                }
-            }
-            Global.logger.WriteLine("Sucessfully Patch Modded to Source", LoggerType.Info);
-
-            string gmLoaderExe = Path.Combine(GMLoaderFolder, "GMLoader.exe");
-
-            ProcessStartInfo startInfo = new ProcessStartInfo
-            {
-                FileName = gmLoaderExe,
-                Arguments = "-convert",
-                WorkingDirectory = Path.GetDirectoryName(gmLoaderExe)!,
-                UseShellExecute = false,
-                RedirectStandardOutput = false,
-                RedirectStandardError = false,
-                CreateNoWindow = false
-            };
-
-            using (Process process = new Process())
-            {
-                process.StartInfo = startInfo;
-
-                process.Start();
-                string outputFolder = Path.Combine(GMLoaderFolder, "converted_output");
-
-                string[] GMLoaderFOLDERS = { "audio", "code", "lib", "csx", "room", "shader", "texture", "xdelta" };
-                bool anyExist = false;
-                bool noGMLoaderFolders = true;
-                bool emptydir = true;
-
-                while (true)
-                {
-                    if (process.HasExited)
-                        break;
-                    emptydir = false;
-                    string convertedOutput = Path.Combine(GMLoaderFolder, "converted_output");
-
-                    if (Directory.Exists(convertedOutput))
-                    {
-                        foreach (var folder in GMLoaderFOLDERS)
-                        {
-                            string path = Path.Combine(convertedOutput, folder);
-                            if (Directory.Exists(path))
-                            {
-                                noGMLoaderFolders = false;
-                            }
-                        }
-
-                        foreach (var subFolder in Directory.GetDirectories(convertedOutput))
-                        {
-                            var entries = Directory.EnumerateFileSystemEntries(subFolder).ToArray();
-
-                            if (entries.Length <= 0)
-                            {
-                                emptydir = true;
-                            }
-                        }
-                        if (!emptydir)
-                        {
-                            if (!noGMLoaderFolders)
-                            {
-                                Thread.Sleep(1000);
-                                anyExist = true;
-                                Thread.Sleep(1000);
-                                break;
-                            }
-                        }
-                    }
-
-
-
-                    if (anyExist)
-                        break;
-
-                    Thread.Sleep(1000);
-                }
-
-
-
-                if (!anyExist)
-                {
-                    MessageBox.Show("GMLoader exited before producing output. Please be patient if you closed it", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-                else
-                {
-                    process.Kill();
-                    string basePath = $"{Global.assemblyLocation}{Global.s}Mods{Global.s}{Path.GetFileName(modded)} - GMLoader";
-                    string finalPath = basePath;
-
-                    int i = 1;
-                    while (Directory.Exists(finalPath))
-                    {
-                        finalPath = $"{basePath} ({i++})";
-                    }
-
-                    Directory.Move(outputFolder, finalPath);
-                    foreach (var folder in foldersToDelete)
-                    {
-                        if (Directory.Exists(folder))
-                        {
-                            Directory.Delete(folder, recursive: true);
-                        }
-                    }
-                    if (File.Exists($"{newsource}"))
-                        File.Delete($"{newsource}");
-                    if (File.Exists($"{newmodded}"))
-                        File.Delete($"{newmodded}");
-                }
-
-            }
-        }
-        public async void ReplayTutorial_Click(object sender, RoutedEventArgs e)
-        {
-            if (replayanimator != null || Global.ronnietutorial)
-            {
+                PLUSSavesystem.delete_ini_section("Folder");
                 return;
             }
-            PLUSSavesystem.write_ini("Tutorial", "BrokenModSkip", "false");
-            PLUSSavesystem.write_ini("Tutorial", "SettingsSection", "false");
-            MessageBoxResult result = MessageBox.Show("Do you want to replay the tutorial?", "Confirm Replay", MessageBoxButton.YesNo, MessageBoxImage.Question);
-            if (result == MessageBoxResult.Yes)
-            {
-                PLUSSavesystem.write_ini("Tutorial", "Replay", "true");
-                PLUSSavesystem.write_ini("Tutorial", "ForcedReplay", "false");
-                PLUSSavesystem.write_ini("Tutorial", "Finished", "false");
-                replayanimator = new PLUSRonnieAnimate();
-                replayanimator.Initialize(this, this.Width / 6, -100, 1.5);
-                replayanimator.SetExpression("happy");
-
-                replayanimator.GlideTo(this.Width / 6, 250, 40);
-
-                await PLUSWait.WaitUntil(() => replayanimator.GetY() >= 250);
-                var curtextbox = replayanimator.MakeTextbox(replayanimator.GetX() + 110, replayanimator.GetY() + 25, "TAKE IT FROM THE TOP");
-                await PLUSWait.WaitSeconds(5);
-                PLUSTutorial.TutorialState("false");
-            }
-            else
-            {
-                PLUSTutorial.RonnieVariables.DeclineReplay += 1;
-                replayanimator = new PLUSRonnieAnimate();
-                replayanimator.Initialize(this, this.Width / 6, -100, 1.5);
-                var curtextbox = replayanimator.MakeTextbox(replayanimator.GetX() + 110, replayanimator.GetY() + 25, "");
-                replayanimator.DestroyTextbox(curtextbox);
-                replayanimator.GlideTo(this.Width / 6, 250, 40);
-                replayanimator.SetExpression("sad");
-                await PLUSWait.WaitUntil(() => replayanimator.GetY() >= 250);
-                if (PLUSTutorial.RonnieVariables.DeclineReplay == 3)
-                {
-                    replayanimator.DestroyTextbox(curtextbox);
-                    curtextbox = replayanimator.MakeTextbox(replayanimator.GetX() + 110, replayanimator.GetY() + 25, "Stop it! or else");
-                    await PLUSWait.WaitSeconds(3);
-                    replayanimator.DestroyTextbox(curtextbox);
-                }
-                else if (PLUSTutorial.RonnieVariables.DeclineReplay > 3)
-                {
-                    PLUSSavesystem.write_ini("Tutorial", "Replay", "false");
-                    PLUSSavesystem.write_ini("Tutorial", "ForcedReplay", "true");
-                    PLUSSavesystem.write_ini("Tutorial", "Finished", "false");
-                    replayanimator.DestroyTextbox(curtextbox);
-                    curtextbox = replayanimator.MakeTextbox(replayanimator.GetX() + 110, replayanimator.GetY() + 25, "You asked for this");
-                    await PLUSWait.WaitSeconds(3);
-                    replayanimator.DestroyTextbox(curtextbox);
-                    PLUSTutorial.TutorialState("false");
-                }
-                replayanimator.GlideTo(this.Width / 6, -250, 40);
-                await PLUSWait.WaitUntil(() => replayanimator.GetY() <= -250);
-                replayanimator.Destroy();
-                replayanimator = null;
-            }
-        }
-        public void OpenPTFolder_Click(object sender, RoutedEventArgs e)
-        {
-            Process process = Process.Start("explorer.exe", Global.config.ModsFolder);
-        }
-        public void ChooseNewPTFolder_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Pressing Setup will reset it to finding your default steam folder, launch without setup if need to");
-            string defaultPath = String.Empty;
-            OpenFileDialog dialog = new OpenFileDialog();
-            dialog.DefaultExt = ".exe";
-            dialog.Filter = $"Executable File (PizzaTower.exe)|PizzaTower.exe";
-            dialog.Title = $"Select PizzaTower.exe from your Steam Install folder";
-            dialog.Multiselect = false;
-            dialog.InitialDirectory = Global.assemblyLocation;
-            dialog.ShowDialog();
-            if (!String.IsNullOrEmpty(dialog.FileName)
-                && Path.GetFileName(dialog.FileName).Equals("PizzaTower.exe", StringComparison.InvariantCultureIgnoreCase))
-                defaultPath = dialog.FileName;
-            else if (!String.IsNullOrEmpty(dialog.FileName))
-            {
-                Global.logger.WriteLine($"PizzaTower.exe not found", LoggerType.Error);
+            MessageBoxResult result = MessageBox.Show("Do you want to delete this folder?", "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (result == MessageBoxResult.No)
                 return;
-            }
-            Global.config.ModsFolder = Path.GetDirectoryName(defaultPath);
-            Global.config.Launcher = defaultPath;
-            Global.UpdateConfig();
-        }
-        public void KillGMLoader_Click(object sender, RoutedEventArgs e)
-        {
-            var runningGMLoaders = Process.GetProcessesByName("GMLoader");
-            foreach (var proc in runningGMLoaders)
+            var saves = PLUSSavesystem.read_ini_section("Folder");
+            for (int i = 0; i < saves.GetLength(0); i++)
             {
-                try
+                if (saves[i, 0] == ModFolderCombo.SelectedItem as string)
                 {
-                    proc.Kill();
-                    proc.WaitForExit();
-                }
-                catch
-                {
-
+                    PLUSSavesystem.delete_ini_value("Folder", saves[i, 0]);
                 }
             }
+            ModFolderCombo.SelectedItem = "All";
         }
-
-        public async void DowngradeDownload_Click(object sender, RoutedEventArgs e)
-        {
-            string ogWinFile = "";
-            var ogWinFileDialog = new OpenFileDialog();
-            ogWinFileDialog.Filter = "Source (*.win)|*.win";
-
-
-            if (ogWinFileDialog.ShowDialog() == true)
-            {
-                ogWinFile = ogWinFileDialog.FileName;
-            }
-            else
-            {
-                MessageBox.Show("No file selected.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-            if (string.IsNullOrEmpty(ogWinFile))
-            {
-                System.Windows.Forms.MessageBox.Show("Please select a .win file first.", "Error", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
-                return;
-            }
-
-            var ptVersions = JsonSerializer.Deserialize<List<PTversion>>(File.ReadAllText($@"Dependencies{Global.s}ptversions.json"));
-
-            string selectedVersion = DowngradeDownloadCombo.SelectedItem as string;
-            if (string.IsNullOrEmpty(selectedVersion))
-            {
-                System.Windows.Forms.MessageBox.Show("Please select a version.", "Error", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
-                return;
-            }
-
-            string versionsDir = Path.Combine(Global.assemblyLocation, "Downgrades");
-            string tempDir = Path.Combine(versionsDir, "temp");
-            Directory.CreateDirectory(versionsDir);
-            Directory.CreateDirectory(tempDir);
-
-            string steamUser = PLUSDepotDownloader.GetSteamUsername();
-            foreach (var v in ptVersions)
-            {
-                if (v.version != selectedVersion)
-                    continue;
-
-                if (v.type == "depot")
-                {
-                    bool success = await PLUSDepotDownloader.DownloadDowngradeAsync("2231450", "2231451", v.manifestID, steamUser, tempDir, ogWinFile, v.version);
-
-                    if (!success)
-                    {
-                        Console.WriteLine($"Failed to process version {v.version}");
-                        continue;
-                    }
-
-                    try
-                    {
-                        string sourceFile = Path.Combine(tempDir, "data.win");
-                        string destFile = Path.Combine(versionsDir, $"{v.version}.win");
-                        if (File.Exists(sourceFile))
-                            File.Move(sourceFile, destFile, true);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Error moving file for version {v.version}: {ex.Message}");
-                    }
-
-                    Console.WriteLine($"Version {v.version} processed successfully.");
-                    break;
-                }
-            }
-
-            try
-            {
-                if (Directory.Exists(tempDir))
-                    Directory.Delete(tempDir, true);
-            }
-            catch { }
-        }
-
         public void SavePTFolderMod_Click(object sender, RoutedEventArgs e)
         {
             Dictionary<string, bool> includedmodfiles = new Dictionary<string, bool>()
@@ -3484,55 +3289,104 @@ namespace PizzaOven
             win.Content = panel;
             win.ShowDialog();
         }
-        public System.Windows.Media.Color? Themes_GrabColor(string initialHex = "#FFFFFFFF")
+        #endregion
+        #region Themes / Customization
+        public void ThemesSave_Click(object sender, RoutedEventArgs e)
         {
-            System.Windows.Forms.ColorDialog colorDialog = new System.Windows.Forms.ColorDialog();
-
-            colorDialog.Color = System.Drawing.ColorTranslator.FromHtml(initialHex);
-
-            if (colorDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            var dialog = new Microsoft.Win32.SaveFileDialog
             {
-                System.Drawing.Color drawingColor = colorDialog.Color;
+                Title = "Save Theme",
+                Filter = "PO Theme (*.potheme)|*.potheme",
+                DefaultExt = ".potheme",
+                AddExtension = true
+            };
 
-                System.Windows.Media.Color wpfColor = System.Windows.Media.Color.FromArgb(drawingColor.A, drawingColor.R, drawingColor.G, drawingColor.B);
+            bool? result = dialog.ShowDialog();
 
-                return wpfColor;
+            if (result == true)
+            {
+                ThemesSaveFile(dialog.FileName);
             }
-            else
+
+        }
+        public void ThemesLoad_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
             {
-                return null;
+                Title = "Load Theme",
+                Filter = "PO Theme (*.potheme)|*.potheme",
+                DefaultExt = ".potheme",
+                Multiselect = false
+            };
+
+            bool? result = dialog.ShowDialog();
+
+            if (result == true)
+            {
+                ThemesFileLoad(dialog.FileName);
             }
         }
-        public void Theme_Update(string brushname, bool skippicker = false)
+        public void ThemesResetAll_Click(object sender, RoutedEventArgs e)
         {
-            if (skippicker)
+            foreach (var brush in themebrushes)
             {
-                var skippedcolor = PLUSSavesystem.read_ini("Themes", brushname, "");
-                if (skippedcolor != "" && PLUSThemes.validhex(skippedcolor))
-                    PLUSThemes.Set_BrushColor($"{brushname}Brush", skippedcolor);
-                return;
+                Themes_Reset(brush);
             }
-            var color = Themes_GrabColor(PLUSSavesystem.read_ini("Themes", brushname, "#FFFFFFFF")) ?? System.Windows.Media.Colors.Transparent;
-            if (color != System.Windows.Media.Colors.Transparent)
+            if (Directory.Exists(Global.customassetsfolder))
             {
-                var rgbcolor = PLUSThemes.color_as_rgb(color);
-                var stringcolor = PLUSThemes.rgb_to_hex(rgbcolor.r, rgbcolor.g, rgbcolor.b);
-                PLUSSavesystem.write_ini("Themes", brushname, stringcolor);
-                PLUSThemes.Set_BrushColor($"{brushname}Brush", stringcolor);
+                var bgImagePath = Directory.GetFiles(Global.customassetsfolder)
+                    .FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).Equals("background", StringComparison.OrdinalIgnoreCase) && themeimageExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase));
+                if (!string.IsNullOrEmpty(bgImagePath) && File.Exists(bgImagePath))
+                {
+                    System.IO.File.Delete(bgImagePath);
+                }
+            }
+            foreach (var transparent in transparentboxes)
+            {
+                PLUSSavesystem.write_ini("Themes", $"Transparency_{transparent}", "100");
+                ApplyTransparentBoxes(true);
             }
         }
-        public void Themes_Defaults(string brushName, string hex)
+        public void ThemePresetsApply_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(brushName) || string.IsNullOrWhiteSpace(hex))
-                return;
+            var theme = ThemePresetsCombo.SelectedItem as string;
+            var filepath = $"{Global.assemblyLocation}{Global.s}Themes{Global.s}{theme}.potheme";
+            if (File.Exists(filepath))
+            {
+                ThemesFileLoad(filepath);
+            }
+        }
+        public void ThemesBackgroundUpload_Click(object sender, RoutedEventArgs e)
+        {
+            string filterExtensions = string.Join(";", themeimageExtensions.Select(ext => $"*{ext}"));
+            string filter = $"Image Files ({filterExtensions})|{filterExtensions}";
 
-            defaultBrushHexes[brushName] = hex;
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "Select Background",
+                Filter = filter,
+                DefaultExt = themeimageExtensions[0],
+                Multiselect = false
+            };
+
+            bool? result = dialog.ShowDialog();
+
+            if (result == true)
+            {
+                System.IO.File.Copy(dialog.FileName, System.IO.Path.Combine(Global.customassetsfolder, $"background{Path.GetExtension(dialog.FileName)}"), true);
+            }
         }
-        public void Themes_Reset(string brushname)
+        public void ThemesBackgroundReset_Click(object sender, RoutedEventArgs e)
         {
-            PLUSSavesystem.write_ini("Themes", brushname, "");
-            PLUSSavesystem.delete_ini_value("Themes", brushname);
-            PLUSThemes.Set_BrushColor($"{brushname}Brush", defaultBrushHexes[brushname]);
+            if (Directory.Exists(Global.customassetsfolder))
+            {
+                var bgImagePath = Directory.GetFiles(Global.customassetsfolder)
+                    .FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).Equals("background", StringComparison.OrdinalIgnoreCase) && themeimageExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase));
+                if (!string.IsNullOrEmpty(bgImagePath) && File.Exists(bgImagePath))
+                {
+                    System.IO.File.Delete(bgImagePath);
+                }
+            }
         }
         public void Theme_Click(object sender, RoutedEventArgs e)
         {
@@ -3547,12 +3401,348 @@ namespace PizzaOven
         public void ThemeReset_Click(object sender, RoutedEventArgs e)
         {
             var name = (sender as FrameworkElement)?.Name;
-            if (string.IsNullOrEmpty(name)) 
+            if (string.IsNullOrEmpty(name))
                 return;
 
             var key = name.Replace("Themes", "").Replace("Reset", "");
 
             Themes_Reset(key);
+        }
+        public void Transparent_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (sender is Slider slider)
+            {
+                string name = slider.Name;
+                string value = slider.Value.ToString();
+
+                PLUSSavesystem.write_ini("Themes", name, value);
+                ApplyTransparentBoxes();
+            }
+        }
+        private void AssetsFolder_Click(object sender, RoutedEventArgs e)
+        {
+            Process process = Process.Start("explorer.exe", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaOvenPLUS", "CustomAssets"));
+        }
+        private void RestoreMissingAssets_Click(object sender, RoutedEventArgs e)
+        {
+            string assetPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaOvenPLUS", "CustomAssets");
+
+            Directory.CreateDirectory(assetPath);
+
+            Assembly assembly = Assembly.GetExecutingAssembly();
+
+            string assetPrefix = "PizzaOven.CustomAssets.";
+
+            var resources = assembly
+                .GetManifestResourceNames()
+                .Where(r => r.StartsWith(assetPrefix));
+
+            foreach (string resourceName in resources)
+            {
+                string relativePath = resourceName
+                    .Substring(assetPrefix.Length)
+                    .Replace('.', Path.DirectorySeparatorChar);
+
+                int lastSeparator = relativePath.LastIndexOf(Path.DirectorySeparatorChar);
+                if (lastSeparator != -1)
+                {
+                    relativePath =
+                        relativePath[..lastSeparator] + "." +
+                        relativePath[(lastSeparator + 1)..];
+                }
+
+                string outputPath = Path.Combine(assetPath, relativePath);
+                Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
+
+                if (File.Exists(outputPath))
+                    continue;
+
+                using Stream resourceStream =
+                    assembly.GetManifestResourceStream(resourceName)!;
+
+                using FileStream fileStream =
+                    new FileStream(outputPath, FileMode.Create, FileAccess.Write);
+
+                resourceStream.CopyTo(fileStream);
+                PLUSMUSIC.InitializeAsync();
+            }
+        }
+        private void RestoreALLAssets_Click(object sender, RoutedEventArgs e)
+        {
+            string folderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaOvenPLUS", "CustomAssets");
+            if (Directory.Exists(folderPath))
+            {
+                foreach (string file in Directory.GetFiles(folderPath, "*", SearchOption.AllDirectories))
+                {
+                    try
+                    {
+                        File.Delete(file);
+                    }
+                    catch
+                    {
+                    }
+                }
+                foreach (string dir in Directory.GetDirectories(folderPath, "*", SearchOption.AllDirectories))
+                {
+                    try
+                    {
+                        if (Directory.GetFiles(dir).Length == 0 && Directory.GetDirectories(dir).Length == 0)
+                            Directory.Delete(dir);
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+
+            Directory.CreateDirectory(folderPath);
+            RestoreMissingAssets_Click(sender, e);
+            PLUSMUSIC.InitializeAsync();
+        }
+        private void SoundVolume_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            int volume = (int)SoundVolume.Value;
+            PLUSSavesystem.write_ini("Audio", "SoundVolume", volume.ToString());
+            PLUSMUSIC.ApplyCurrentVolume();
+        }
+        private void Mute_Click(object sender, RoutedEventArgs e)
+        {
+            HandlePLUStoggle("Audio", "Mute", false, "Mute");
+        }
+        private void UnfocusedMute_Click(object sender, RoutedEventArgs e)
+        {
+            HandlePLUStoggle("Audio", "UnfocusedMute", true, "UnfocusedMute");
+        }
+        #endregion 
+        #region GMLoader
+        public async void GMLoaderConvert_Click(object sender, RoutedEventArgs e)
+        {
+            if (Global.ronnietutorial)
+            {
+                return;
+            }
+            string GMLoaderFolder = $"{AppDomain.CurrentDomain.BaseDirectory}GMLoader";
+            string[] foldersToDelete = {
+            $"{GMLoaderFolder}{Global.s}Export",
+            $"{GMLoaderFolder}{Global.s}vanilla_export",
+            $"{GMLoaderFolder}{Global.s}modded_export",
+            $"{GMLoaderFolder}{Global.s}converted_output",
+            $"{GMLoaderFolder}{Global.s}GMLoader.txt"
+            };
+
+            var runningGMLoaders = Process.GetProcessesByName("GMLoader");
+            foreach (var proc in runningGMLoaders)
+            {
+                try
+                {
+                    proc.Kill();
+                    proc.WaitForExit();
+                }
+                catch
+                {
+
+                }
+            }
+
+            foreach (var folder in foldersToDelete)
+            {
+                if (Directory.Exists(folder))
+                {
+                    Directory.Delete(folder, recursive: true);
+                }
+            }
+            ModManager.IsSelected = true;
+            MessageBox.Show("Please select the base data.win file. After that, select the modded file, which can be either a .xdelta or a .win. Please do not close the tool while processing, as it may take a long time.", "GMLoader Convert", MessageBoxButton.OK, MessageBoxImage.Information);
+            var sourceDialog = new OpenFileDialog();
+            sourceDialog.Filter = "Source (*.win)|*.win";
+
+            string source = "";
+
+            if (sourceDialog.ShowDialog() == true)
+            {
+                source = sourceDialog.FileName;
+            }
+            else
+            {
+                MessageBox.Show("No file selected.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+
+            var moddedDialog = new OpenFileDialog();
+            moddedDialog.Filter = "Modded (*.xdelta;*.win)|*.xdelta;*.win";
+
+            string modded = "";
+
+            if (moddedDialog.ShowDialog() == true)
+            {
+                modded = moddedDialog.FileName;
+            }
+            else
+            {
+                MessageBox.Show("No file selected.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            File.Copy(source, $"{source}.GMLoader", true);
+            File.Copy(modded, $"{modded}.GMLoader", true);
+
+            File.Move($"{source}.GMLoader", $"{GMLoaderFolder}{Global.s}vanilla.win", true);
+            File.Move($"{modded}.GMLoader", $"{GMLoaderFolder}{Global.s}modded{Path.GetExtension(modded)}", true);
+            string newsource = $"{GMLoaderFolder}{Global.s}vanilla.win";
+            string newmodded = $"{GMLoaderFolder}{Global.s}modded{Path.GetExtension(modded)}";
+            var xdelta = $"{Global.assemblyLocation}{Global.s}Dependencies{Global.s}xdelta.exe";
+            if (File.Exists($"{GMLoaderFolder}{Global.s}modded.xdelta"))
+            {
+                try
+                {
+                    Global.logger.WriteLine("Attempting to Patch Modded to Source", LoggerType.Info);
+                    ModLoader.PathFixPatch(newsource, newmodded, $"{newmodded}.temp", xdelta);
+                    File.Move($"{newmodded}.temp", $"{GMLoaderFolder}{Global.s}modded.win", true);
+                    File.Delete($"{GMLoaderFolder}{Global.s}modded.xdelta");
+                }
+                catch
+                {
+                    File.Delete($"{newsource}");
+                    File.Delete($"{newmodded}");
+                    Global.logger.WriteLine("Failed to Patch Modded to Source", LoggerType.Error);
+                    return;
+                }
+            }
+            Global.logger.WriteLine("Sucessfully Patch Modded to Source", LoggerType.Info);
+
+            string gmLoaderExe = Path.Combine(GMLoaderFolder, "GMLoader.exe");
+
+            ProcessStartInfo startInfo = new ProcessStartInfo
+            {
+                FileName = gmLoaderExe,
+                Arguments = "-convert",
+                WorkingDirectory = Path.GetDirectoryName(gmLoaderExe)!,
+                UseShellExecute = false,
+                RedirectStandardOutput = false,
+                RedirectStandardError = false,
+                CreateNoWindow = false
+            };
+
+            using (Process process = new Process())
+            {
+                process.StartInfo = startInfo;
+
+                process.Start();
+                string outputFolder = Path.Combine(GMLoaderFolder, "converted_output");
+
+                string[] GMLoaderFOLDERS = { "audio", "code", "lib", "csx", "room", "shader", "texture", "xdelta" };
+                bool anyExist = false;
+                bool noGMLoaderFolders = true;
+                bool emptydir = true;
+
+                while (true)
+                {
+                    if (process.HasExited)
+                        break;
+                    emptydir = false;
+                    string convertedOutput = Path.Combine(GMLoaderFolder, "converted_output");
+
+                    if (Directory.Exists(convertedOutput))
+                    {
+                        foreach (var folder in GMLoaderFOLDERS)
+                        {
+                            string path = Path.Combine(convertedOutput, folder);
+                            if (Directory.Exists(path))
+                            {
+                                noGMLoaderFolders = false;
+                            }
+                        }
+
+                        foreach (var subFolder in Directory.GetDirectories(convertedOutput))
+                        {
+                            var entries = Directory.EnumerateFileSystemEntries(subFolder).ToArray();
+
+                            if (entries.Length <= 0)
+                            {
+                                emptydir = true;
+                            }
+                        }
+                        if (!emptydir)
+                        {
+                            if (!noGMLoaderFolders)
+                            {
+                                Thread.Sleep(1000);
+                                anyExist = true;
+                                Thread.Sleep(1000);
+                                break;
+                            }
+                        }
+                    }
+
+                    if (anyExist)
+                        break;
+
+                    Thread.Sleep(1000);
+                }
+
+
+
+                if (!anyExist)
+                {
+                    MessageBox.Show("GMLoader exited before producing output. Please be patient if you closed it", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+                else
+                {
+                    process.Kill();
+                    string basePath = $"{Global.assemblyLocation}{Global.s}Mods{Global.s}{Path.GetFileName(modded)} - GMLoader";
+                    string finalPath = basePath;
+
+                    int i = 1;
+                    while (Directory.Exists(finalPath))
+                    {
+                        finalPath = $"{basePath} ({i++})";
+                    }
+
+                    Directory.Move(outputFolder, finalPath);
+                    foreach (var folder in foldersToDelete)
+                    {
+                        if (Directory.Exists(folder))
+                        {
+                            Directory.Delete(folder, recursive: true);
+                        }
+                    }
+                    if (File.Exists($"{newsource}"))
+                        File.Delete($"{newsource}");
+                    if (File.Exists($"{newmodded}"))
+                        File.Delete($"{newmodded}");
+                }
+
+            }
+        }
+        public void KillGMLoader_Click(object sender, RoutedEventArgs e)
+        {
+            var runningGMLoaders = Process.GetProcessesByName("GMLoader");
+            foreach (var proc in runningGMLoaders)
+            {
+                try
+                {
+                    proc.Kill();
+                    proc.WaitForExit();
+                }
+                catch
+                {
+
+                }
+            }
+        }
+        #endregion
+        #endregion
+        #region PatchNotes
+        private void OnPatchNotesSelected(object sender, RoutedEventArgs e)
+        {
+            CreatePatchNotes();
+        }
+        public async void CheckLauncherUpdates_Click(object sender, RoutedEventArgs e)
+        {
+            var cts = new CancellationTokenSource();
+            AutoUpdater.CheckForPizzaOvenUpdate(cts);
         }
         public void AddPatchNotes(string version, string[] topNotes, string[] notes, string[] catnotes, bool warnupdate, string timeago)
         {
@@ -3695,7 +3885,7 @@ namespace PizzaOven
         public async void CreatePatchNotes()
         {
             try
-            { 
+            {
                 PatchNotesPanel.Children.Clear();
                 string url = "https://api.gamebanana.com/Core/Item/Data?itemtype=Tool&itemid=21866&fields=Updates().bSubmissionHasUpdates(),Updates().aGetLatestUpdates()&return_keys=1";
 
@@ -3750,6 +3940,7 @@ namespace PizzaOven
                 {
                     "1.0.4" => new string[] { "Autoupdater should work from 1.0.3" },
                     "1.0.5" => new string[] { "Patch Notes Tab Introduction" },
+                    "1.0.6" => new string[] { "Bug Fixes" },
                     _ => new string[] { "" }
                 };
 
@@ -3757,214 +3948,11 @@ namespace PizzaOven
             }
             catch
             {
-                AddPatchNotes("Failed to load", new string[] { "" }, new string[] { "Maybe Check your internet", "Maybe Gamebanana Servers are down"}, new string[] { "Addition", "Addition" }, false, "Failed to load");
+                AddPatchNotes("Failed to load", new string[] { "" }, new string[] { "Maybe Check your internet", "Maybe Gamebanana Servers are down" }, new string[] { "Addition", "Addition" }, false, "Failed to load");
             }
         }
-        private void OnPatchNotesSelected(object sender, RoutedEventArgs e)
-        {
-            CreatePatchNotes();
-        }
+        #endregion
 
-        public async void CheckLauncherUpdates_Click(object sender, RoutedEventArgs e)
-        {
-            var cts = new CancellationTokenSource();
-            AutoUpdater.CheckForPizzaOvenUpdate(cts);
-        }
-
-        public void ThemesSave_Click(object sender, RoutedEventArgs e)
-        {
-            var dialog = new Microsoft.Win32.SaveFileDialog
-            {
-                Title = "Save Theme",
-                Filter = "PO Theme (*.potheme)|*.potheme",
-                DefaultExt = ".potheme",
-                AddExtension = true
-            };
-
-            bool? result = dialog.ShowDialog();
-
-            if (result == true)
-            {
-                ThemesSaveFile(dialog.FileName);
-            }
-
-        }
-        public void ThemesSaveFile(string themeFilePath)
-        {
-            var theme = new Dictionary<string, string>();
-
-            theme["saveversion"] = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            foreach (var brush in themebrushes)
-            {
-                theme[brush] = PLUSSavesystem.read_ini("Themes", brush, defaultBrushHexes[brush]);
-            }
-
-            theme["background"] = "";
-
-            if (Directory.Exists(Global.customassetsfolder))
-            {
-                var bgImagePath = Directory.GetFiles(Global.customassetsfolder)
-                    .FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).Equals("background", StringComparison.OrdinalIgnoreCase) && themeimageExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase));
-                if (!string.IsNullOrEmpty(bgImagePath) && File.Exists(bgImagePath))
-                {
-                    theme["background"] = $"{Path.GetExtension(bgImagePath).TrimStart('.')};{PLUSThemes.Base64_SaveFile(bgImagePath)}";
-                }
-            }
-
-            foreach (var transparent in transparentboxes)
-            {
-                var slider = (Slider)this.FindName($"Transparency_{transparent}");
-                if (slider != null)
-                    theme[$"Transparency_{transparent}"] = ((int)slider.Value).ToString();
-            }
-
-            string json = JsonSerializer.Serialize(theme, new JsonSerializerOptions
-            {
-                WriteIndented = true
-            });
-            File.WriteAllText(themeFilePath, json);
-        }
-        public void ThemesLoad_Click(object sender, RoutedEventArgs e)
-        {
-            var dialog = new Microsoft.Win32.OpenFileDialog
-            {
-                Title = "Load Theme",
-                Filter = "PO Theme (*.potheme)|*.potheme",
-                DefaultExt = ".potheme",
-                Multiselect = false
-            };
-
-            bool? result = dialog.ShowDialog();
-
-            if (result == true)
-            {
-                ThemesFileLoad(dialog.FileName);
-            }
-        }
-        public void ThemesFileLoad(string themeFilePath)
-        {
-            string json = System.IO.File.ReadAllText(themeFilePath);
-            try
-            {
-                var theme = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
-
-                if (theme != null)
-                {
-                    try
-                    {
-                        foreach (var brush in themebrushes)
-                        {
-                            if (theme.ContainsKey(brush))
-                            {
-                                string value = theme[brush];
-                                PLUSSavesystem.write_ini("Themes", brush, value);
-                                Theme_Update(brush, true);
-                            }
-                        }
-                        if (Directory.Exists(Global.customassetsfolder))
-                        {
-                            var bgImagePath = Directory.GetFiles(Global.customassetsfolder)
-                                .FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).Equals("background", StringComparison.OrdinalIgnoreCase) && themeimageExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase));
-                            if (!string.IsNullOrEmpty(bgImagePath) && File.Exists(bgImagePath))
-                            {
-                                System.IO.File.Delete(bgImagePath);
-                            }
-                        }
-
-                        if (theme.ContainsKey("background"))
-                        {
-                            string[] backgroundata = theme["background"].Split(";");
-                            if (backgroundata.Length == 2)
-                            {
-                                if (PLUSThemes.IsBase64String(backgroundata[1]))
-                                {
-                                    PLUSThemes.Base64_LoadFile(backgroundata[1], System.IO.Path.Combine(Global.customassetsfolder, $"background.{backgroundata[0]}"));
-                                }
-                            }
-                        }
-                        foreach (var transparent in transparentboxes)
-                        {
-                            if (theme.ContainsKey($"Transparency_{transparent}"))
-                            {
-                                PLUSSavesystem.write_ini("Themes", $"Transparency_{transparent}", theme[$"Transparency_{transparent}"]);
-                            }
-                            else
-                            {
-                                PLUSSavesystem.write_ini("Themes", $"Transparency_{transparent}", "100");
-                            }
-                            ApplyTransparentBoxes(true);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"Malformed Themes File: {ex}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                }
-            }
-            catch { }
-        }
-        public void ThemesResetAll_Click(object sender, RoutedEventArgs e)
-        {
-            foreach (var brush in themebrushes)
-            {
-                Themes_Reset(brush);
-            }
-            if (Directory.Exists(Global.customassetsfolder))
-            {
-                var bgImagePath = Directory.GetFiles(Global.customassetsfolder)
-                    .FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).Equals("background", StringComparison.OrdinalIgnoreCase) && themeimageExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase));
-                if (!string.IsNullOrEmpty(bgImagePath) && File.Exists(bgImagePath))
-                {
-                    System.IO.File.Delete(bgImagePath);
-                }
-            }
-            foreach (var transparent in transparentboxes)
-            {
-                PLUSSavesystem.write_ini("Themes", $"Transparency_{transparent}", "100");
-                ApplyTransparentBoxes(true);
-            }
-        }
-        public void ThemePresetsApply_Click(object sender, RoutedEventArgs e)
-        {
-            var theme = ThemePresetsCombo.SelectedItem as string;
-            var filepath = $"{Global.assemblyLocation}{Global.s}Themes{Global.s}{theme}.potheme";
-            if (File.Exists(filepath))
-            {
-                ThemesFileLoad(filepath);
-            }
-        }
-        public void ThemesBackgroundUpload_Click(object sender, RoutedEventArgs e)
-        {
-            string filterExtensions = string.Join(";", themeimageExtensions.Select(ext => $"*{ext}"));
-            string filter = $"Image Files ({filterExtensions})|{filterExtensions}";
-
-            var dialog = new Microsoft.Win32.OpenFileDialog
-            {
-                Title = "Select Background",
-                Filter = filter,
-                DefaultExt = themeimageExtensions[0], 
-                Multiselect = false 
-            };
-
-            bool? result = dialog.ShowDialog();
-
-            if (result == true)
-            {
-                System.IO.File.Copy(dialog.FileName, System.IO.Path.Combine(Global.customassetsfolder, $"background{Path.GetExtension(dialog.FileName)}"), true);   
-            }
-        }
-        public void ThemesBackgroundReset_Click(object sender, RoutedEventArgs e)
-        {
-            if (Directory.Exists(Global.customassetsfolder))
-            {
-                var bgImagePath = Directory.GetFiles(Global.customassetsfolder)
-                    .FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).Equals("background", StringComparison.OrdinalIgnoreCase) && themeimageExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase));
-                if (!string.IsNullOrEmpty(bgImagePath) && File.Exists(bgImagePath))
-                {
-                    System.IO.File.Delete(bgImagePath);
-                }
-            }
-        }
     }
 }
 

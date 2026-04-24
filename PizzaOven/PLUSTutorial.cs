@@ -137,9 +137,9 @@ namespace PizzaOven
         public static async Task RunTutorial(MainWindow window)
         {
             bool tutorialskip = false;
-            if (File.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaTower_GM2", "RonnieTutorial.ini")))
+            if (File.Exists($@"{Global.appdata}{Global.s}PizzaTower_GM2{Global.s}RonnieTutorial.ini"))
             {
-                File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaTower_GM2", "RonnieTutorial.ini"));
+                File.Delete($@"{Global.appdata}{Global.s}PizzaTower_GM2{Global.s}RonnieTutorial.ini");
             }
             Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
@@ -682,7 +682,80 @@ namespace PizzaOven
 
             window.introanimator.Destroy();
         }
+        //1.0.7 [future update] - GMLoader explaination
+        public static async Task GMLoaderExplaination(MainWindow window)
+        {
+            window.gmloaderanimator = new PLUSRonnieAnimate();
+            window.gmloaderanimator.StepEvent = () =>
+            {
+                window.gmloaderanimator.SetVisible(window.ModManager.IsEnabled && !PLUSRonnieAnimate.GetActive(new[] { window.gmloaderanimator }).Any());
+                MessageBox.Show(window.ModManager.IsEnabled.ToString());
+            };
+            window.gmloaderanimator.Initialize(window, window.Width / 6, -100, 1.5);
+            window.gmloaderanimator.SetExpression("thinking");  
+            var curtextbox = window.gmloaderanimator.MakeTextbox(window.gmloaderanimator.GetX() + 110, window.gmloaderanimator.GetY() + 25, "Oh... I see you have GMLoader installed...");
+            await window.gmloaderanimator.WaitForClickOnImageAsync();
+            curtextbox = window.gmloaderanimator.MakeTextbox(window.gmloaderanimator.GetX() + 110, window.gmloaderanimator.GetY() + 25, "You can enable them by turning on \"GMLoader\"");
+        }
+        public static async Task ReplayTutorial(MainWindow window)
+        {
+            if (window.replayanimator != null || Global.ronnietutorial)
+            {
+                return;
+            }
+            PLUSSavesystem.write_ini("Tutorial", "BrokenModSkip", "false");
+            PLUSSavesystem.write_ini("Tutorial", "SettingsSection", "false");
+            MessageBoxResult result = MessageBox.Show("Do you want to replay the tutorial?", "Confirm Replay", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (result == MessageBoxResult.Yes)
+            {
+                PLUSSavesystem.write_ini("Tutorial", "Replay", "true");
+                PLUSSavesystem.write_ini("Tutorial", "ForcedReplay", "false");
+                PLUSSavesystem.write_ini("Tutorial", "Finished", "false");
+                window.replayanimator = new PLUSRonnieAnimate();
+                window.replayanimator.Initialize(window, window.Width / 6, -100, 1.5);
+                window.replayanimator.SetExpression("happy");
 
+                window.replayanimator.GlideTo(window.Width / 6, 250, 40);
+
+                await PLUSWait.WaitUntil(() => window.replayanimator.GetY() >= 250);
+                var curtextbox = window.replayanimator.MakeTextbox(window.replayanimator.GetX() + 110, window.replayanimator.GetY() + 25, "TAKE IT FROM THE TOP");
+                await PLUSWait.WaitSeconds(5);
+                PLUSTutorial.TutorialState("false");
+            }
+            else
+            {
+                PLUSTutorial.RonnieVariables.DeclineReplay += 1;
+                window.replayanimator = new PLUSRonnieAnimate();
+                window.replayanimator.Initialize(window, window.Width / 6, -100, 1.5);
+                var curtextbox = window.replayanimator.MakeTextbox(window.replayanimator.GetX() + 110, window.replayanimator.GetY() + 25, "");
+                window.replayanimator.DestroyTextbox(curtextbox);
+                window.replayanimator.GlideTo(window.Width / 6, 250, 40);
+                window.replayanimator.SetExpression("sad");
+                await PLUSWait.WaitUntil(() => window.replayanimator.GetY() >= 250);
+                if (PLUSTutorial.RonnieVariables.DeclineReplay == 3)
+                {
+                    window.replayanimator.DestroyTextbox(curtextbox);
+                    curtextbox = window.replayanimator.MakeTextbox(window.replayanimator.GetX() + 110, window.replayanimator.GetY() + 25, "Stop it! or else");
+                    await PLUSWait.WaitSeconds(3);
+                    window.replayanimator.DestroyTextbox(curtextbox);
+                }
+                else if (PLUSTutorial.RonnieVariables.DeclineReplay > 3)
+                {
+                    PLUSSavesystem.write_ini("Tutorial", "Replay", "false");
+                    PLUSSavesystem.write_ini("Tutorial", "ForcedReplay", "true");
+                    PLUSSavesystem.write_ini("Tutorial", "Finished", "false");
+                    window.replayanimator.DestroyTextbox(curtextbox);
+                    curtextbox = window.replayanimator.MakeTextbox(window.replayanimator.GetX() + 110, window.replayanimator.GetY() + 25, "You asked for this");
+                    await PLUSWait.WaitSeconds(3);
+                    window.replayanimator.DestroyTextbox(curtextbox);
+                    PLUSTutorial.TutorialState("false");
+                }
+                window.replayanimator.GlideTo(window.Width / 6, -250, 40);
+                await PLUSWait.WaitUntil(() => window.replayanimator.GetY() <= -250);
+                window.replayanimator.Destroy();
+                window.replayanimator = null;
+            }
+        }
         public static void TutorialState(string finished = "true")
         {
             PLUSSavesystem.write_ini("Tutorial", "Finished", finished);

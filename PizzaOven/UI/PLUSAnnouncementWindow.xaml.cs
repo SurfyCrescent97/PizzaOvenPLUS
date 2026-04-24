@@ -11,12 +11,13 @@ using static System.Net.Mime.MediaTypeNames;
 namespace PizzaOven
 {
     /// <summary>
-    /// Interaction logic for PLUSANNOUNCE.xaml
+    /// Interaction logic for PLUSAnnouncementWindow.xaml
     /// </summary>
     /// 
-    
+
     public partial class PLUSAnnouncementWindow : Window
     {
+        public bool IsClosed { get; private set; }
         public class PLUSAnnouncement
         {
             public DateTime date { get; set; }
@@ -26,16 +27,15 @@ namespace PizzaOven
             public bool shake { get; set; }
             public string url { get; set; }
         }
-        public static async Task<PLUSAnnouncement> GetLatestAnnouncement()
+        public static PLUSAnnouncement GetLatestAnnouncement()
         {
             string url = "https://raw.githubusercontent.com/SurfyCrescent97/PizzaOvenPLUS/main/announcements.json";
 
             using HttpClient client = new HttpClient();
-            string json = await client.GetStringAsync(url);
 
-            var announcement = JsonSerializer.Deserialize<PLUSAnnouncement>(json);
+            string json = client.GetStringAsync(url).GetAwaiter().GetResult();
 
-            return announcement;
+            return JsonSerializer.Deserialize<PLUSAnnouncement>(json);
         }
         public double MeasureTextboxHeightWithTextBlock(string text, double boxWidth = 373, double fontSize = 21, double sidePadding = 35, double topHeight = 19, double bottomHeight = 19, double middleSliceHeight = 5)
         { 
@@ -59,7 +59,7 @@ namespace PizzaOven
         {
             try
             {
-                PLUSAnnouncement ann = await GetLatestAnnouncement();
+                PLUSAnnouncement ann = GetLatestAnnouncement();
                 var parse = PLUSSavesystem.read_ini("Announcement", "lastshown", "");
                 if (parse != "")
                 {
@@ -97,8 +97,20 @@ namespace PizzaOven
                 catch { }
 
                 this.Width = 500;
-                announcewindowanimator._overlayCanvas.Width = this.ActualWidth;
-                announcewindowanimator._overlayCanvas.Height = this.ActualHeight;
+                this.SizeChanged += (s, e) =>
+                {
+                    if (announcewindowanimator?._overlayCanvas == null)
+                    {
+                        return;
+                    }
+                    if (IsClosed) 
+                    { 
+                        return; 
+                    }
+
+                    announcewindowanimator._overlayCanvas.Width = this.ActualWidth;
+                    announcewindowanimator._overlayCanvas.Height = this.ActualHeight;
+                };
 
                 PLUSSavesystem.write_ini("Announcement", "lastshown", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ"));
 
@@ -117,6 +129,7 @@ namespace PizzaOven
         public PLUSRonnieAnimate announcewindowanimator;
         public PLUSAnnouncementWindow()
         {
+            Closed += (s, e) => IsClosed = true;
             InitializeComponent();
             ShowAnnouncement();
         }

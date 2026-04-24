@@ -31,7 +31,6 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
-
                     <TextBlock VerticalAlignment="Center" Panel.ZIndex="4" FontSize="40" FontWeight="Medium" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}">
                         <TextBlock.Style>
                             <Style TargetType="{x:Type TextBlock}">
@@ -896,7 +895,7 @@
                                 <ComboBox Name="DowngradeCombo" Width="200" Height="30" HorizontalAlignment="Left"/>
 
                                 <TextBlock Text="Downgrade Download:" Margin="0,8,0,2" Foreground="{DynamicResource TextBrush}"/>
-                                <StackPanel Orientation="Horizontal"  Tag="Patch Version">
+                                <StackPanel Orientation="Horizontal">
                                     <ComboBox Name="DowngradeDownloadCombo" Width="200" Height="30"/>
                                     <Button Name="DowngradeDownloadButton" Content="Download" Width="90" Height="30" Margin="8,0,0,0" Click="DowngradeDownload_Click"/>
                                 </StackPanel>
@@ -908,7 +907,7 @@
                                 <Button x:Name="SteamLaunchToggle" Height="35" HorizontalAlignment="Left" Click="SteamLaunch_Click" Foreground="{DynamicResource TextBrush}" Background="#3b82f6" Cursor="Hand" Content="Use Steam?">
                                     <Button.ContentTemplate>
                                         <DataTemplate>
-                                            <StackPanel Orientation="Horizontal" Tag="Launch Settings">
+                                            <StackPanel Orientation="Horizontal">
                                                 <Image Source="pack://application:,,,/PizzaOven;component/Icons/Steam.png" Height="30" Width="30" Margin="0,0,5,0"/>
                                                 <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
                                             </StackPanel>
@@ -1055,7 +1054,7 @@
 
                             <TextBlock Text="These are taken from the Gamebanana itself and may have other additional notes (once the update is downloaded it will display)" Margin="0,5,0,10" TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}"/>
 
-                            <StackPanel x:Name="PatchNotesPanel"/>
+                            <StackPanel x:Name="PatchNotesPanel" Width="1200"/>
 
                         </StackPanel>
                     </ScrollViewer>

@@ -25,6 +25,7 @@ namespace PizzaOven
         private static WaveStream tutorialReader;
         private static LoopStream tutorialLoop;
 
+        public static string musicfolder = PLUSSavesystem.read_ini("Audio", "MusicFolder", "Default");
         public static async Task Play_TutorialMusic()
         {
             try
@@ -138,13 +139,14 @@ namespace PizzaOven
             loopReader = null;
             loopStream = null;
 
-            unfocusedMuteEnabled = PLUSSavesystem.read_ini("Audio", "UnfocusedMute", "true").ToLower() == "true";
-            MuteEnabled = PLUSSavesystem.read_ini("Audio", "Mute", "true").ToLower() == "true";
+            unfocusedMuteEnabled = PLUSSavesystem.read_ini_bool("Audio", "UnfocusedMute", true);
+            MuteEnabled = PLUSSavesystem.read_ini_bool("Audio", "Mute", true);
 
+            
             string customAssets = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),"PizzaOvenPLUS","CustomAssets");
 
-            string startFile = Path.Combine(customAssets, "BGMusic_Start.mp3");
-            string loopFile = Path.Combine(customAssets, "BGMusic_Loop.mp3");
+            string startFile = $"{Global.customassetsfolder}{Global.s}Music{Global.s}{musicfolder}{Global.s}BGMusic_Start.mp3";
+            string loopFile = $"{Global.customassetsfolder}{Global.s}Music{Global.s}{musicfolder}{Global.s}BGMusic_Loop.mp3";
 
             outputDevice = new WaveOutEvent();
             ApplyCurrentVolume();
@@ -162,6 +164,7 @@ namespace PizzaOven
             if (File.Exists(startFile))
             {
                 startReader = new AudioFileReader(startFile);
+
                 outputDevice.Init(startReader);
                 outputDevice.Play();
 

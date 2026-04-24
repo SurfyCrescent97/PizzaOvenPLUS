@@ -10,6 +10,7 @@ namespace PizzaOven
     public partial class DownloadWindow : Window
     {
         public bool YesNo = false;
+        public bool Tower = false;
         public DownloadWindow(GameBananaAPIV4 record)
         {
             InitializeComponent();
@@ -34,6 +35,13 @@ namespace PizzaOven
         {
             YesNo = true;
             
+            Close();
+        }
+        public void YesTower_Click(object sender, RoutedEventArgs e)
+        {
+            YesNo = true;
+            Tower = true;
+
             Close();
         }
         private void No_Click(object sender, RoutedEventArgs e)

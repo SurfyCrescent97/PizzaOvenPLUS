@@ -54,15 +54,16 @@ namespace PizzaOven
 
             return result;
         }
-		
-		public static bool toggle_ini_bool(string filePath, string section, string key, bool defaultValue)
+        public static bool read_ini_bool(string filePath, string section, string key, bool defaultValue)
+        {
+            return read_ini(filePath, section, key, defaultValue.ToString().ToLowerInvariant()) == "true";
+        }
+        public static bool toggle_ini_bool(string filePath, string section, string key, bool defaultValue)
 		{
 			bool toggle = read_ini(filePath, section, key, defaultValue.ToString().ToLowerInvariant()) != "true";
 			write_ini(filePath, section, key, toggle.ToString().ToLowerInvariant());
 			return toggle;
 		}
-
-		
         public static void delete_ini_value(string filePath, string section, string key)
         {
             if (string.IsNullOrWhiteSpace(section) || string.IsNullOrWhiteSpace(key))
@@ -89,7 +90,6 @@ namespace PizzaOven
                 }
             }
         }
-
         public static void delete_ini_section(string filePath, string section)
         {
             if (string.IsNullOrWhiteSpace(section))

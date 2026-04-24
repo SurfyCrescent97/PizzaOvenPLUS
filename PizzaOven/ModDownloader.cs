@@ -8,6 +8,7 @@ using SharpCompress.Readers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -17,7 +18,10 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Media.Media3D;
 
 namespace PizzaOven
 {
@@ -49,6 +53,41 @@ namespace PizzaOven
         public async void BrowserDownload(string game, GameBananaRecord record)
         {
             DownloadWindow downloadWindow = new DownloadWindow(record);
+            var grid = downloadWindow.DownloadGrid;
+            if (record.CategoryName == "Towers/Levels CYOP/AFOM")
+            {
+                grid.RowDefinitions.Add(new RowDefinition
+                {
+                    Height = new GridLength(40)
+                });
+
+                int row = grid.RowDefinitions.Count - 1;
+
+                if (grid.ColumnDefinitions.Count == 0)
+                {
+                    grid.ColumnDefinitions.Add(new ColumnDefinition
+                    {
+                        Width = new GridLength(1, GridUnitType.Star)
+                    });
+                }
+
+                var button = new Button
+                {
+                    Content = "Yes (Download as Tower)",
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    VerticalAlignment = VerticalAlignment.Stretch,
+                    FontSize = 16,
+                    Margin = new Thickness(20, 5, 20, 5),
+                    FontWeight = FontWeights.Bold
+                };
+
+                button.Click += downloadWindow.YesTower_Click;
+                Grid.SetRow(button, row);
+                Grid.SetColumn(button, 0);
+                Grid.SetColumnSpan(button, grid.ColumnDefinitions.Count);
+                grid.Children.Add(button);
+            }
+            
             downloadWindow.ShowDialog();
             if (downloadWindow.YesNo)
             {
@@ -79,10 +118,67 @@ namespace PizzaOven
                         fileDescription = file.Description;
                         if (downloadUrl != null && fileName != null)
                         {
-                            await DownloadFile(downloadUrl, fileName, new Progress<DownloadProgress>(ReportUpdateProgress),
+                            if (downloadWindow.Tower)
+                            {
+                                await DownloadFile(downloadUrl, fileName, new Progress<DownloadProgress>(ReportUpdateProgress),
                                 CancellationTokenSource.CreateLinkedTokenSource(cancellationToken.Token));
-                            if (!cancelled)
-                                await ExtractFile(fileName, record);
+                                if (!cancelled)
+                                {
+                                    string tempPath = $@"{Global.assemblyLocation}{Global.s}AFOMTEMP";
+
+                                    if (Directory.Exists(tempPath))
+                                        Directory.Delete(tempPath, true);
+
+                                    await ExtractFile(fileName, record, tempPath);
+
+                                    string realFolder = tempPath;
+
+                                    foreach (var dir in Directory.GetDirectories(tempPath, "*", SearchOption.AllDirectories))
+                                    {
+                                        if (Directory.Exists(Path.Combine(dir, "levels")))
+                                        {
+                                            realFolder = dir;
+                                            break;
+                                        }
+                                    }
+                                    string basePath = $@"{Global.appdata}{Global.s}PizzaTower_GM2{Global.s}towers{Global.s}" + string.Concat(record.Title.Split(Path.GetInvalidFileNameChars()));
+
+                                    string finalPath = basePath;
+                                    int counter = 2;
+
+                                    while (Directory.Exists(finalPath))
+                                    {
+                                        finalPath = $"{basePath} ({counter})";
+                                        counter++;
+                                    }
+
+                                    Directory.CreateDirectory(finalPath);
+
+                                    foreach (var afomdir in Directory.GetDirectories(realFolder, "*", SearchOption.AllDirectories))
+                                    {
+                                        string targetDir = afomdir.Replace(realFolder, finalPath);
+                                        Directory.CreateDirectory(targetDir);
+                                    }
+
+                                    foreach (var afomfile in Directory.GetFiles(realFolder, "*", SearchOption.AllDirectories))
+                                    {
+                                        string targetFile = afomfile.Replace(realFolder, finalPath);
+                                        File.Copy(afomfile, targetFile, true);
+                                    }
+
+                                    if (Directory.Exists(tempPath))
+                                    {
+                                        Directory.Delete(tempPath, true);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                await DownloadFile(downloadUrl, fileName, new Progress<DownloadProgress>(ReportUpdateProgress),
+                                    CancellationTokenSource.CreateLinkedTokenSource(cancellationToken.Token));
+                                if (!cancelled)
+                                    await ExtractFile(fileName, record);
+                            }
                         }
                     }
                 }
@@ -90,10 +186,67 @@ namespace PizzaOven
                 {
                     if (downloadUrl != null && fileName != null)
                     {
-                        await DownloadFile(downloadUrl, fileName, new Progress<DownloadProgress>(ReportUpdateProgress),
+                        if (downloadWindow.Tower)
+                        {
+                            await DownloadFile(downloadUrl, fileName, new Progress<DownloadProgress>(ReportUpdateProgress),
                             CancellationTokenSource.CreateLinkedTokenSource(cancellationToken.Token));
-                        if (!cancelled)
-                            await ExtractFile(fileName, record);
+                            if (!cancelled)
+                            {
+                                string tempPath = $@"{Global.assemblyLocation}{Global.s}AFOMTEMP";
+
+                                if (Directory.Exists(tempPath))
+                                    Directory.Delete(tempPath, true);
+
+                                await ExtractFile(fileName, record, tempPath);
+
+                                string realFolder = tempPath;
+
+                                foreach (var dir in Directory.GetDirectories(tempPath, "*", SearchOption.AllDirectories))
+                                {
+                                    if (Directory.Exists(Path.Combine(dir, "levels")))
+                                    {
+                                        realFolder = dir;
+                                        break;
+                                    }
+                                }
+                                string basePath = $@"{Global.appdata}{Global.s}PizzaTower_GM2{Global.s}towers{Global.s}" + string.Concat(record.Title.Split(Path.GetInvalidFileNameChars()));
+
+                                string finalPath = basePath;
+                                int counter = 2;
+
+                                while (Directory.Exists(finalPath))
+                                {
+                                    finalPath = $"{basePath} ({counter})";
+                                    counter++;
+                                }
+
+                                Directory.CreateDirectory(finalPath);
+
+                                foreach (var afomdir in Directory.GetDirectories(realFolder, "*", SearchOption.AllDirectories))
+                                {
+                                    string targetDir = afomdir.Replace(realFolder, finalPath);
+                                    Directory.CreateDirectory(targetDir);
+                                }
+
+                                foreach (var afomfile in Directory.GetFiles(realFolder, "*", SearchOption.AllDirectories))
+                                {
+                                    string targetFile = afomfile.Replace(realFolder, finalPath);
+                                    File.Copy(afomfile, targetFile, true);
+                                }
+
+                                if (Directory.Exists(tempPath))
+                                {
+                                    Directory.Delete(tempPath, true);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            await DownloadFile(downloadUrl, fileName, new Progress<DownloadProgress>(ReportUpdateProgress),
+                            CancellationTokenSource.CreateLinkedTokenSource(cancellationToken.Token));
+                            if (!cancelled)
+                                await ExtractFile(fileName, record);
+                        }
                     }
                 }
             }
@@ -200,25 +353,42 @@ namespace PizzaOven
                 return false;
             }
         }
-        private async Task ExtractFile(string fileName, GameBananaRecord record)
+        bool valid7z(string path)
+        {
+            try
+            {
+                using (var archive = new ArchiveFile(path))
+                {
+                    return archive.Entries != null;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private async Task ExtractFile(string fileName, GameBananaRecord record, string DirectoryDestination = null)
         {
             await Task.Run(() =>
             {
+                if (DirectoryDestination == null)
+                    DirectoryDestination = $@"{Global.assemblyLocation}{Global.s}Mods{Global.s}{string.Concat(record.Title.Split(Path.GetInvalidFileNameChars()))}";
+                string ArchiveDestination = DirectoryDestination;
                 string _ArchiveSource = $@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}";
                 string _ArchiveType = Path.GetExtension(fileName);
-                string ArchiveDestination = $@"{Global.assemblyLocation}{Global.s}Mods{Global.s}{string.Concat(record.Title.Split(Path.GetInvalidFileNameChars()))}";
                 // Find a unique destination if it already exists
                 var counter = 2;
                 while (Directory.Exists(ArchiveDestination))
                 {
-                    ArchiveDestination = $@"{Global.assemblyLocation}{Global.s}Mods{Global.s}{string.Concat(record.Title.Split(Path.GetInvalidFileNameChars()))} ({counter})";
+                    ArchiveDestination = $@"{DirectoryDestination} ({counter})";
                     ++counter;
                 }
                 if (File.Exists(_ArchiveSource))
                 {
                     try
                     {
-                        if (Path.GetExtension(_ArchiveSource).Equals(".7z", StringComparison.InvariantCultureIgnoreCase))
+                        if (Path.GetExtension(_ArchiveSource).Equals(".7z", StringComparison.InvariantCultureIgnoreCase) && valid7z(_ArchiveSource)) 
                         {
                             using (var archive = new ArchiveFile(_ArchiveSource))
                             {
@@ -279,18 +449,20 @@ namespace PizzaOven
             });
 
         }
-        private async Task ExtractFile(string fileName, GameBananaAPIV4 record)
+        private async Task ExtractFile(string fileName, GameBananaAPIV4 record, string DirectoryDestination = null)
         {
             await Task.Run(() =>
             {
+                if (DirectoryDestination == null)
+                    DirectoryDestination = $@"{Global.assemblyLocation}{Global.s}Mods{Global.s}{string.Concat(record.Title.Split(Path.GetInvalidFileNameChars()))}";
                 string _ArchiveSource = $@"{Global.assemblyLocation}{Global.s}Downloads{Global.s}{fileName}";
                 string _ArchiveType = Path.GetExtension(fileName);
-                string ArchiveDestination = $@"{Global.assemblyLocation}{Global.s}Mods{Global.s}{string.Concat(record.Title.Split(Path.GetInvalidFileNameChars()))}";
+                string ArchiveDestination = DirectoryDestination;
                 // Find a unique destination if it already exists
                 var counter = 2;
                 while (Directory.Exists(ArchiveDestination))
                 {
-                    ArchiveDestination = $@"{Global.assemblyLocation}{Global.s}Mods{Global.s}{string.Concat(record.Title.Split(Path.GetInvalidFileNameChars()))} ({counter})";
+                    ArchiveDestination = $@"{DirectoryDestination} ({counter})";
                     ++counter;
                 }
                 if (File.Exists(_ArchiveSource))

@@ -5,14 +5,14 @@
     <TargetFramework>net7.0-windows</TargetFramework>
     <RootNamespace>PizzaOven</RootNamespace>
     <AssemblyName>PizzaOven</AssemblyName>
-	<AssemblyTitle>PizzaOven+</AssemblyTitle>
-	<AssemblyDescription>Extension by SurfyCrescent97</AssemblyDescription>
-    <AssemblyVersion>1.0.6.0</AssemblyVersion>
+    <AssemblyTitle>PizzaOven+</AssemblyTitle>
+    <AssemblyDescription>Extension by SurfyCrescent97</AssemblyDescription>
+    <AssemblyVersion>1.0.7.0</AssemblyVersion>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>Assets\PizzaOvenPLUSIcon.ico</ApplicationIcon>
-	<Authors>SurfyCrescent97, Tekka</Authors>
+    <Authors>SurfyCrescent97, Tekka</Authors>
   </PropertyGroup>
-
+  
   <ItemGroup>
     <None Remove="Assets\PizzaOvenLogo.png" />
     <None Remove="Assets\PizzaOvenPreview.png" />
@@ -21,9 +21,9 @@
     <None Remove="GameBanana.png" />
     <None Remove="OvenRonnie\**\*" />
     <None Remove="CustomAssets\**\*" />
-	<None Remove="Language\**\*" />
-	<None Remove="TutorialMod\**\*" />
-	<None Remove="Icons\**\*" />
+    <None Remove="Language\**\*" />
+    <None Remove="TutorialMod\**\*" />
+    <None Remove="Icons\**\*" />
   </ItemGroup>
 
   <ItemGroup>
@@ -38,36 +38,41 @@
     <EmbeddedResource Include="Dependencies\XDelta_Common_Checksum.txt" />
     <EmbeddedResource Include="CustomAssets\**\*" />
     <EmbeddedResource Include="Language\**\*" />
-	<Resource Include="Icons\**\*" />
+    <Resource Include="Icons\**\*" />
     <Resource Include="OvenRonnie\**\*" />
-	<Resource Include="Themes\**\*" />
-	<Resource Include="TutorialMod\**\*" />
+    <Resource Include="Themes\**\*" />
+    <Resource Include="TutorialMod\**\*" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="Assets\PizzaOvenPLUSIcon.ico" />
+
     <Content Include="GMLoader\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+
     <None Update="Dependencies\xdelta.exe" CopyToOutputDirectory="PreserveNewest" />
-	<None Update="Dependencies\xdeltaUI.exe" CopyToOutputDirectory="PreserveNewest" />
-	<None Update="Dependencies\ptversions.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Dependencies\xdeltaUI.exe" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Dependencies\ptversions.json" CopyToOutputDirectory="PreserveNewest" />
     <None Update=".disable_gb1click" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Downgrades\**\*" CopyToOutputDirectory="PreserveNewest" />
-	<None Update="Themes\**\*" CopyToOutputDirectory="PreserveNewest" />
-	<None Update="Dependencies\DepotDownloader\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Themes\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Dependencies\DepotDownloader\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
 
   <ItemGroup>
     <PackageReference Include="Costura.Fody" Version="6.0.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+
     <PackageReference Include="DiscordRichPresence" Version="1.6.1.70" />
     <PackageReference Include="Fody" Version="6.9.3">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+
     <PackageReference Include="FontAwesome5" Version="2.1.0" />
     <PackageReference Include="gong-wpf-dragdrop" Version="2.3.2" />
     <PackageReference Include="NAudio" Version="2.2.1" />
@@ -76,7 +81,7 @@
     <PackageReference Include="SharpCompress" Version="0.28.1" />
     <PackageReference Include="WindowsAPICodePack-Core" Version="1.1.2" />
     <PackageReference Include="WindowsAPICodePack-Shell" Version="1.1.1" />
-	<PackageReference Include="PixiEditor.ColorPicker" Version="2.0.0" />
+    <PackageReference Include="PixiEditor.ColorPicker" Version="2.0.0" />
   </ItemGroup>
 
   <ItemGroup>

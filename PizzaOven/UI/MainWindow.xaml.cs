@@ -298,30 +298,41 @@ namespace PizzaOven
             catch
             {
             }
-            PLUSMUSIC.InitializeAsync();
-            InitializeToggles();
 
-
-            SoundVolume.Value = double.TryParse(PLUSSavesystem.read_ini("Audio", "SoundVolume", "100"), out double value) ? value : 100;
-            PLUSMUSIC.ApplyCurrentVolume();
-
-            PLUSSavesystem.StartWatcher();
-
-            PLUSSavesystem.IniEdited += () =>
+            try
             {
-                string newFolder = PLUSSavesystem.read_ini("Audio", "MusicFolder", "Default");
+                PLUSMUSIC.InitializeAsync();
+                InitializeToggles();
+            }
+            catch { }
 
-                if (newFolder == PLUSMUSIC.musicfolder)
-                    return;
+            try
+            { 
+                SoundVolume.Value = double.TryParse(PLUSSavesystem.read_ini("Audio", "SoundVolume", "100"), out double value) ? value : 100;
+                PLUSMUSIC.ApplyCurrentVolume();
+            } catch { }
 
-                if (PLUSMUSIC.musicfolder != newFolder)
+            try
+            {
+
+                PLUSSavesystem.StartWatcher();
+
+                PLUSSavesystem.IniEdited += () =>
                 {
-                    PLUSMUSIC.musicfolder = newFolder;
+                    string newFolder = PLUSSavesystem.read_ini("Audio", "MusicFolder", "Default");
 
-                    PLUSMUSIC.InitializeAsync();
-                    PLUSMUSIC.ApplyCurrentVolume();
-                }
-            };
+                    if (newFolder == PLUSMUSIC.musicfolder)
+                        return;
+
+                    if (PLUSMUSIC.musicfolder != newFolder)
+                    {
+                        PLUSMUSIC.musicfolder = newFolder;
+
+                        PLUSMUSIC.InitializeAsync();
+                        PLUSMUSIC.ApplyCurrentVolume();
+                    }
+                };
+            } catch { }
 
             Global.logger = new Logger(ConsoleWindow);
             Global.config = new();
@@ -2835,84 +2846,88 @@ namespace PizzaOven
         }
         public void InitPLUSToggle(string name, bool enabled)
         {
-            Button? button = null;
-            string? OnText = "";
-            string? OffText = "";
-
-            switch (name)
+            try
             {
-                case "Mute":
-                    PLUSMUSIC.MuteEnabled = enabled;
-                    PLUSMUSIC.ApplyCurrentVolume();
-                    button = MuteButton;
-                    OnText = "Disable Mute? [IT'S ON]";
-                    OffText = "Enable Mute? [IT'S OFF]";
-                    break;
-                case "UnfocusedMute":
-                    PLUSMUSIC.unfocusedMuteEnabled = enabled;
-                    PLUSMUSIC.ApplyCurrentVolume();
-                    button = UnfocusedMuteButton;
-                    OnText = "Disable Unfocused Mute? [IT'S ON]";
-                    OffText = "Enable Unfocused Mute? [IT'S OFF]";
-                    break;
-                case "RPC":
-                    try
-                    {
-                        if (enabled)
-                            PLUSRPC.DiscordPresenceService.Initialize();
-                        else
-                            PLUSRPC.DiscordPresenceService.Shutdown();
-                    }
-                    catch { }
-                    button = RPCtoggle;
-                    OnText = "Enable RPC? [IT'S ON]";
-                    OffText = "Disable RPC? [IT'S OFF]";
-                    break;
-                case "Debug":
-                    button = DebugToggle;
-                    OnText = "Enable Debug? [IT'S ON]";
-                    OffText = "Disable Debug? [IT'S OFF]";
-                    break;
-                case "SteamLaunch":
-                    button = SteamLaunchToggle;
-                    OnText = "Don't use Steam? [IT'S ON]";
-                    OffText = "Use Steam? [IT'S OFF]";
-                    break;
-                case "ModUpdater":
-                    button = MODUPDATERtoggle;
-                    OnText = "Disable Check for Mod Updates? [IT'S ON]";
-                    OffText = "Enable Check for Mod Updates? [IT'S OFF]";
-                    break;
-                case "POLanguage":
-                    if (!enabled)
-                    {
-                        var ptfolder = $"{Global.config.ModsFolder}";
-                        var langPath = Path.Combine(ptfolder, "lang");
-                        var extensions = new[] { ".po", ".custompo", ".downgradepo" };
+                Button? button = null;
+                string? OnText = "";
+                string? OffText = "";
 
-                        if (Directory.Exists(langPath))
+                switch (name)
+                {
+                    case "Mute":
+                        PLUSMUSIC.MuteEnabled = enabled;
+                        PLUSMUSIC.ApplyCurrentVolume();
+                        button = MuteButton;
+                        OnText = "Disable Mute? [IT'S ON]";
+                        OffText = "Enable Mute? [IT'S OFF]";
+                        break;
+                    case "UnfocusedMute":
+                        PLUSMUSIC.unfocusedMuteEnabled = enabled;
+                        PLUSMUSIC.ApplyCurrentVolume();
+                        button = UnfocusedMuteButton;
+                        OnText = "Disable Unfocused Mute? [IT'S ON]";
+                        OffText = "Enable Unfocused Mute? [IT'S OFF]";
+                        break;
+                    case "RPC":
+                        try
                         {
-                            foreach (var file in Directory.GetFiles(langPath, "*.*", SearchOption.AllDirectories)
-                                                          .Where(f => extensions.Contains(Path.GetExtension(f))))
+                            if (enabled)
+                                PLUSRPC.DiscordPresenceService.Initialize();
+                            else
+                                PLUSRPC.DiscordPresenceService.Shutdown();
+                        }
+                        catch { }
+                        button = RPCtoggle;
+                        OnText = "Enable RPC? [IT'S ON]";
+                        OffText = "Disable RPC? [IT'S OFF]";
+                        break;
+                    case "Debug":
+                        button = DebugToggle;
+                        OnText = "Enable Debug? [IT'S ON]";
+                        OffText = "Disable Debug? [IT'S OFF]";
+                        break;
+                    case "SteamLaunch":
+                        button = SteamLaunchToggle;
+                        OnText = "Don't use Steam? [IT'S ON]";
+                        OffText = "Use Steam? [IT'S OFF]";
+                        break;
+                    case "ModUpdater":
+                        button = MODUPDATERtoggle;
+                        OnText = "Disable Check for Mod Updates? [IT'S ON]";
+                        OffText = "Enable Check for Mod Updates? [IT'S OFF]";
+                        break;
+                    case "POLanguage":
+                        if (!enabled)
+                        {
+                            var ptfolder = $"{Global.config.ModsFolder}";
+                            var langPath = Path.Combine(ptfolder, "lang");
+                            var extensions = new[] { ".po", ".custompo", ".downgradepo" };
+
+                            if (Directory.Exists(langPath))
                             {
-                                File.Delete(file);
+                                foreach (var file in Directory.GetFiles(langPath, "*.*", SearchOption.AllDirectories)
+                                                              .Where(f => extensions.Contains(Path.GetExtension(f))))
+                                {
+                                    File.Delete(file);
+                                }
                             }
                         }
-                    }
-                    button = POLanguage;
-                    OnText = "Do not Apply to Language Files? [IT'S ON]";
-                    OffText = "Do Apply to Language Files? [IT'S OFF]";
-                    break;
-                case "Startup":
-                    button = StartupToggle;
-                    OnText = "Do not open on Startup? [IT'S ON]";
-                    OffText = "Do open on Startup? [IT'S OFF]";
-                    break;
+                        button = POLanguage;
+                        OnText = "Do not Apply to Language Files? [IT'S ON]";
+                        OffText = "Do Apply to Language Files? [IT'S OFF]";
+                        break;
+                    case "Startup":
+                        button = StartupToggle;
+                        OnText = "Do not open on Startup? [IT'S ON]";
+                        OffText = "Do open on Startup? [IT'S OFF]";
+                        break;
+                }
+                if (button != null && OnText != null && OffText != null)
+                {
+                    button.Content = enabled ? OnText : OffText;
+                }
             }
-            if (button != null && OnText != null && OffText != null)
-            {
-                button.Content = enabled ? OnText : OffText;
-            }
+            catch { }
         }
         private void InitializeToggles()
         {

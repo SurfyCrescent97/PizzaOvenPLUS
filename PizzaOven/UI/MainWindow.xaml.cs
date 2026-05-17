@@ -52,7 +52,7 @@ namespace PizzaOven
         class CreditItem
         {
             public string Name { get; set; }
-            public string SmallText { get; set; }
+            public string SmallText { get; set; } 
         }
 
         Dictionary<string, List<CreditItem>> credits = new Dictionary<string, List<CreditItem>>()
@@ -75,7 +75,8 @@ namespace PizzaOven
                     new CreditItem { Name = "SurfyCrescent97", SmallText = "Main Programmer and made PizzaOven+" },
                     new CreditItem { Name = "Mak n' Sauce", SmallText = "All Assets that aren't PizzaOven" },
                     new CreditItem { Name = "noodlecup", SmallText = "Made Tutorial Theme" },
-                    new CreditItem { Name = "Joel Eastwood", SmallText = "Made Ronnie's Jingle" }
+                    new CreditItem { Name = "Joel Eastwood", SmallText = "Made Ronnie's Jingle" },
+                    new CreditItem { Name = "Cristiandis", SmallText = "Avalonia Port (Linux)" }
                 }
             },
             {
@@ -2711,11 +2712,17 @@ namespace PizzaOven
         private void FilterButton_HoverOn(object sender, RoutedEventArgs e)
         {
             if (introanimator != null)
-                introanimator.Destroy();
+            {
+                return;
+            }
             if (launchanimator != null)
-                launchanimator.Destroy();
+            {
+                return;
+            }
             if (replayanimator != null)
-                replayanimator.Destroy();
+            {
+                return;
+            }
             if (Global.ronnietutorial && PLUSTutorial.RonnieVariables.RonnieExplainSettings != 1)
             {
                 if (Global.ronnietutorial && PLUSTutorial.RonnieVariables.RonnieExplainSettings == 0)
@@ -2725,7 +2732,7 @@ namespace PizzaOven
                 return;
             }
             settinganimator = new PLUSRonnieAnimate();
-            settinganimator.Initialize(this, 0, this.Height - 300, 1);
+            settinganimator.Initialize(this, this.Width / 2, this.Height - 300, 1);
             settinganimator.SetExpression("thinking");
             if (sender is Button btn)
             {
@@ -2791,6 +2798,8 @@ namespace PizzaOven
         {
             filter = (filter ?? string.Empty).Trim();
 
+            PLUSrefresh();
+
             var settingsContent = Settings?.Content as DependencyObject;
             if (settingsContent == null)
                 return;
@@ -2831,7 +2840,7 @@ namespace PizzaOven
                 panel.Visibility = match ? Visibility.Visible : Visibility.Collapsed;
             }
             TutorialButton.Visibility = Visibility.Visible;
-            SettingOptions.Visibility = string.IsNullOrEmpty(filter) ? Visibility.Visible : Visibility.Collapsed;
+            SettingOptions.Visibility = Visibility.Visible;
 
             if (Global.ronnietutorial)
             {
@@ -3011,6 +3020,19 @@ namespace PizzaOven
         {
             RegistryConfig.ToggleStartup();
             InitPLUSToggle("Startup", RegistryConfig.GetStartupStatus() == "Enabled");
+        }
+        private void StartupOpen_Click(object sender, RoutedEventArgs e)
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = "/c start \"\" taskmgr /0 /startup",
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                WindowStyle = ProcessWindowStyle.Hidden
+            };
+
+            Process.Start(psi);
         }
         private void RPCtoggle_Click(object sender, RoutedEventArgs e)
         {

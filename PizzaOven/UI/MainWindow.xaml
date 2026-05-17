@@ -814,18 +814,27 @@
             </TabItem>
             <TabItem Name="Settings" Header="PLUS' Settings" HorizontalAlignment="Center" FontSize="18">
                 <Grid Name="SettingsGrid">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="10" Orientation="Vertical" VerticalAlignment="Top">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="200" />
+						<ColumnDefinition />
+					</Grid.ColumnDefinitions>
+                    <Grid Background="{DynamicResource SecondaryBrush}">
+					    <ScrollViewer VerticalScrollBarVisibility="Auto" Grid.Column="0" >
                             <StackPanel Orientation="Vertical" Margin="0,0,0,30" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="SettingOptions">
                                 <Button x:Name="TutorialButton" Content="Tutorial" Height="40" Margin="0,5" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}" Background="{DynamicResource SecondaryBrush}" Click="FilterButton_Click" MouseEnter="FilterButton_HoverOn" MouseLeave="FilterButton_HoverOff"/>
-                                <Button Content="Links" Height="40" Margin="0,5" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}" Background="{DynamicResource SecondaryBrush}" Click="FilterButton_Click" MouseEnter="FilterButton_HoverOn" MouseLeave="FilterButton_HoverOff"/>
-                                <Button Content="App Settings" Height="40" Margin="0,5" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}" Background="{DynamicResource SecondaryBrush}" Click="FilterButton_Click" MouseEnter="FilterButton_HoverOn" MouseLeave="FilterButton_HoverOff"/>
-                                <Button Content="Launch Settings" Height="40" Margin="0,5" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}" Background="{DynamicResource SecondaryBrush}" Click="FilterButton_Click" MouseEnter="FilterButton_HoverOn" MouseLeave="FilterButton_HoverOff"/>
-                                <Button Content="Mod Settings" Height="40" Margin="0,5" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}" Background="{DynamicResource SecondaryBrush}" Click="FilterButton_Click" MouseEnter="FilterButton_HoverOn" MouseLeave="FilterButton_HoverOff"/>
-                                <Button Content="App Customization" Height="40" Margin="0,5" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}" Background="{DynamicResource SecondaryBrush}" Click="FilterButton_Click" MouseEnter="FilterButton_HoverOn" MouseLeave="FilterButton_HoverOff"/>
-                                <Button Content="GMLoader" Height="40" Margin="0,5" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}" Background="{DynamicResource SecondaryBrush}" Click="FilterButton_Click" MouseEnter="FilterButton_HoverOn" MouseLeave="FilterButton_HoverOff"/>
-                                <Button Content="Credits" Height="40" Margin="0,5" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}" Background="{DynamicResource SecondaryBrush}" Click="FilterButton_Click" MouseEnter="FilterButton_HoverOn" MouseLeave="FilterButton_HoverOff"/>
-                            </StackPanel>
+						        <Button Content="Links" Height="40" Margin="0,5" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}" Background="{DynamicResource SecondaryBrush}" Click="FilterButton_Click" MouseEnter="FilterButton_HoverOn" MouseLeave="FilterButton_HoverOff"/>
+						        <Button Content="App Settings" Height="40" Margin="0,5" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}" Background="{DynamicResource SecondaryBrush}" Click="FilterButton_Click" MouseEnter="FilterButton_HoverOn" MouseLeave="FilterButton_HoverOff"/>
+						        <Button Content="Launch Settings" Height="40" Margin="0,5" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}" Background="{DynamicResource SecondaryBrush}" Click="FilterButton_Click" MouseEnter="FilterButton_HoverOn" MouseLeave="FilterButton_HoverOff"/>
+						        <Button Content="Mod Settings" Height="40" Margin="0,5" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}" Background="{DynamicResource SecondaryBrush}" Click="FilterButton_Click" MouseEnter="FilterButton_HoverOn" MouseLeave="FilterButton_HoverOff"/>
+						        <Button Content="App Customization" Height="40" Margin="0,5" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}" Background="{DynamicResource SecondaryBrush}" Click="FilterButton_Click" MouseEnter="FilterButton_HoverOn" MouseLeave="FilterButton_HoverOff"/>
+						        <Button Content="GMLoader" Height="40" Margin="0,5" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}" Background="{DynamicResource SecondaryBrush}" Click="FilterButton_Click" MouseEnter="FilterButton_HoverOn" MouseLeave="FilterButton_HoverOff"/>
+						        <Button Content="Credits" Height="40" Margin="0,5" HorizontalAlignment="Center" Foreground="{DynamicResource TextBrush}" Background="{DynamicResource SecondaryBrush}" Click="FilterButton_Click" MouseEnter="FilterButton_HoverOn" MouseLeave="FilterButton_HoverOff"/>
+					        </StackPanel>
+				        </ScrollViewer>
+                    </Grid>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Grid.Column="1">
+                        <StackPanel Margin="10" Orientation="Vertical" VerticalAlignment="Top">
+
                             
                             <StackPanel x:Name="TutorialPanel" Orientation="Vertical" Margin="0,0,0,30" Tag="Tutorial" HorizontalAlignment="Left">
                                 <Button Content="Back" Height="30" HorizontalAlignment="Left" Click="FilterButtonBack_Click"/>
@@ -873,7 +882,9 @@
 
                             <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="App Settings">
                                 <Button Content="Back" Height="30" HorizontalAlignment="Left" Click="FilterButtonBack_Click"/>
+                                <TextBlock Text="Startup:" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
                                 <Button x:Name="StartupToggle" Content="Do not open on Device Startup" Height="30" HorizontalAlignment="Left" Click="StartupToggle_Click"/>
+                                <Button x:Name="StartupOpen" Content="Open Task Manager Startup" Height="30" HorizontalAlignment="Left" Click="StartupOpen_Click"/>
                                 <TextBlock Text="Discord RPC (Displays on Discord):" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
                                 <Button x:Name="RPCtoggle" Height="35" HorizontalAlignment="Left" Click="RPCtoggle_Click" Foreground="{DynamicResource TextBrush}" Background="#3b82f6" Cursor="Hand" Content="Disable RPC?">
                                     <Button.ContentTemplate>

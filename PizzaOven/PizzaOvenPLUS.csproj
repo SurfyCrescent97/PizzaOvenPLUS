@@ -7,7 +7,7 @@
     <AssemblyName>PizzaOven</AssemblyName>
     <AssemblyTitle>PizzaOven+</AssemblyTitle>
     <AssemblyDescription>Extension by SurfyCrescent97</AssemblyDescription>
-    <AssemblyVersion>1.0.7.0</AssemblyVersion>
+    <AssemblyVersion>1.0.8.0</AssemblyVersion>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>Assets\PizzaOvenPLUSIcon.ico</ApplicationIcon>
     <Authors>SurfyCrescent97, Tekka</Authors>

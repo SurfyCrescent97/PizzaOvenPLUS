@@ -1,4 +1,5 @@
-using DiscordRPC;
+using NAudio.Midi;
+using PizzaOven.UI;
 using SharpCompress.Compressors.Xz;
 using System;
 using System.Collections.Generic;
@@ -16,8 +17,10 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Forms.VisualStyles;
 using System.Windows.Markup;
 using System.Windows.Media;
+
 
 
 namespace PizzaOven
@@ -117,6 +120,232 @@ namespace PizzaOven
             }
             return failed;
         }
+
+        public static async Task<bool> Upgrade(string path)
+        {
+            var isbase = System.Windows.Forms.MessageBox.Show("Please ensure your data.win.po(most likely true) or if that doesn't exist your data.win is base Pizza Tower\n\nPress yes if you are sure\nPress no if you are unsure or no (this will open you to choose the correct one)", "Confirmation", System.Windows.Forms.MessageBoxButtons.YesNo, System.Windows.Forms.MessageBoxIcon.Question);
+            string ogWinFile = "";
+
+            if (isbase == System.Windows.Forms.DialogResult.Yes)
+            {
+                if (File.Exists($@"{Global.config.ModsFolder}{Global.s}data.win.po"))
+                {
+                    ogWinFile = $@"{Global.config.ModsFolder}{Global.s}data.win.po";
+                }
+                else if (File.Exists($@"{Global.config.ModsFolder}{Global.s}data.win"))
+                {
+                    ogWinFile = $@"{Global.config.ModsFolder}{Global.s}data.win";
+                }
+                else
+                {
+                    MessageBox.Show("No data.win or data.win.po file found in the application directory try again but press no.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return false;
+                }
+            }
+            else
+            {
+                var ogWinFileDialog = new System.Windows.Forms.OpenFileDialog();
+                ogWinFileDialog.Filter = "Source (*.win)|*.win";
+
+                if (File.Exists($@"{Global.config.ModsFolder}"))
+                {
+                    ogWinFileDialog.InitialDirectory = $@"{Global.config.ModsFolder}";
+                }
+                if (ogWinFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    ogWinFile = ogWinFileDialog.FileName;
+                }
+                else
+                {
+                    MessageBox.Show("No file selected.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return false;
+                }
+                if (string.IsNullOrEmpty(ogWinFile))
+                {
+                    System.Windows.Forms.MessageBox.Show("Please select a .win file first.", "Error", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                    return false;
+                }
+            }
+
+            var xdeltaFiles = Directory.GetFiles(path, "*.xdelta", SearchOption.AllDirectories).Select(f => Path.GetRelativePath(path, f)).ToList();
+
+            string[] result = new string[] { };
+            string[] modxdeltafiles = new string[] { };
+            Dictionary<string, string> versions = new();
+            List<string> failedpatches = new();
+            List<String> uptodate = new();
+
+            if (xdeltaFiles.Count == 0)
+            {
+                MessageBox.Show("No .xdelta files found in the selected folder.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+
+            if (xdeltaFiles.Count == 1)
+            {
+                result = new[] { xdeltaFiles[0] };
+            }
+            else
+            {
+                var win = new PLUSxdeltawindow(xdeltaFiles);
+
+                if (win.ShowDialog() == true)
+                {
+                    result = win.ResultXDeltas;
+                }
+                if (win.ResultXDeltas == null) 
+                {
+                    MessageBox.Show("Cancelled.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return false;
+                }
+            }
+
+            string patchtestpath = $@"{Global.assemblyLocation}{Global.s}PatchTest";
+
+            if (Directory.Exists(patchtestpath))
+                Directory.Delete(patchtestpath, true);
+            Directory.CreateDirectory(patchtestpath);
+            Directory.CreateDirectory($@"{patchtestpath}{Global.s}XDELTAS");
+            var sourcepath = $@"{patchtestpath}{Global.s}source.win";
+            File.Copy(ogWinFile, sourcepath, true);
+
+            foreach (var mod in result)
+            {
+                string fullpath = $@"{path}{Global.s}{mod}";
+                string destPath = $@"{patchtestpath}{Global.s}XDELTAS{Global.s}{Path.GetRelativePath(path, fullpath)}";
+                Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
+                File.Copy(fullpath, destPath, true);
+            }
+            string DowngradePath = $@"{Global.assemblyLocation}{Global.s}Downgrades";
+            var xdelta = $"{Global.assemblyLocation}{Global.s}Dependencies{Global.s}xdelta.exe";
+            if (!File.Exists(xdelta))
+            {
+                Global.logger.WriteLine($"{xdelta} is not found. Please try redownloading Pizza Oven+", LoggerType.Error); 
+                return false;
+            }
+            foreach (var downgrade in Directory.GetFiles(DowngradePath))
+            {
+                var downgradepath = $@"{patchtestpath}{Global.s}{Path.GetFileName(downgrade)}";
+                File.Copy(downgrade, downgradepath, true);
+                PathFixPatch(sourcepath, downgradepath, $@"{patchtestpath}{Global.s}{Path.GetFileNameWithoutExtension(downgrade)}.win", xdelta);
+                if (File.Exists($@"{patchtestpath}{Global.s}{Path.GetFileNameWithoutExtension(downgrade)}.win"))
+                {
+                    File.Delete(downgradepath);
+                    downgradepath = $@"{patchtestpath}{Global.s}{Path.GetFileNameWithoutExtension(downgrade)}.win";
+                }
+                else
+                {
+                    File.Delete(downgradepath);
+                    failedpatches.Add(Path.GetFileName(downgradepath));
+                    continue;
+                }
+                modxdeltafiles = Directory.GetFiles($@"{patchtestpath}{Global.s}XDELTAS", "*", SearchOption.AllDirectories);
+                foreach (var modxdelta in modxdeltafiles)
+                {  
+                    try
+                    {
+                        if (File.Exists($@"{patchtestpath}{Global.s}temp.win"))
+                            File.Delete($@"{patchtestpath}{Global.s}temp.win");
+                        PathFixPatch(downgradepath, modxdelta, $@"{patchtestpath}{Global.s}temp.win", xdelta);
+                        if (File.Exists($@"{patchtestpath}{Global.s}temp.win"))
+                        {
+                            File.Delete(modxdelta);
+                            CreatePatch(sourcepath, $@"{patchtestpath}{Global.s}temp.win", modxdelta, xdelta);
+                            versions.Add(Path.GetRelativePath($@"{patchtestpath}{Global.s}XDELTAS", modxdelta), Path.GetFileName(downgrade));
+                        }
+                        else
+                        {
+                            continue;
+                        }
+                    }
+                    catch
+                    {
+                        string dir = Path.GetDirectoryName(modxdelta)!;
+                        string tempPath = Path.Combine(dir, "xdeltatemp.win");
+                        try
+                        {
+                            PathFixPatch(sourcepath, modxdelta, tempPath, xdelta);
+                            if (File.Exists(tempPath))
+                            {
+                                File.Delete(tempPath);
+                                if (uptodate.Contains(Path.GetRelativePath($@"{patchtestpath}{Global.s}XDELTAS", modxdelta)))
+                                    continue;
+                                uptodate.Add(Path.GetRelativePath($@"{patchtestpath}{Global.s}XDELTAS", modxdelta));
+                            }
+                        }
+                        catch
+                        {
+                            if (File.Exists(tempPath))
+                                File.Delete(tempPath);
+                        }
+                        continue; 
+                    }
+                }
+                File.Delete(downgradepath);
+            }
+            modxdeltafiles = Directory.GetFiles($@"{patchtestpath}{Global.s}XDELTAS", "*", SearchOption.AllDirectories);
+            foreach (var modfile in modxdeltafiles)
+            {
+                var ogmodfile = $@"{path}{Global.s}{Path.GetRelativePath($@"{patchtestpath}{Global.s}XDELTAS", modfile)}";
+                if (File.Exists(ogmodfile))
+                    File.Delete(ogmodfile);
+                File.Move(modfile, ogmodfile);
+            }
+            var outputentry = "";
+            if (versions.Count <= 0)
+            {
+                if (failedpatches.Count > 0)
+                {
+                    outputentry += "\n\nThere were also Failed Downgrade Patches to Source could also be the cause(Likely reason your source data.win isn't up to date)...\n";
+                    foreach (var entry in failedpatches)
+                    {
+                        outputentry += $"{entry} failed\n";
+                    }
+                }
+                if (uptodate.Count > 0)
+                {
+                    var uptodatedatawinstext = uptodate.Count == 1 ? "was also a data.win" : "were also data.wins";
+                    outputentry += $"\n\nThere {uptodatedatawinstext} that were already up to date with source\n";
+                    foreach (var entry in uptodate)
+                    {
+                        outputentry += $"{entry} was up to date with source\n";
+                    }
+                }
+                if (modxdeltafiles.Length > 1)
+                {
+                    outputentry = $"No files were upgraded ensure you have a bunch of downgrades it hypothetically maybe{outputentry}";
+                }
+                else
+                {
+                    outputentry = $"The file was not upgraded ensure it is a modfile or ensure you have a bunch of downgrades it hypothetically maybe{outputentry}";
+                }
+
+                MessageBox.Show(outputentry, "None Upgraded", MessageBoxButton.OK, MessageBoxImage.Error);
+                if (Directory.Exists(patchtestpath))
+                    Directory.Delete(patchtestpath, true);
+                return false;
+            }
+            else
+            {
+                foreach (var entry in versions)
+                {
+                    outputentry += $"{entry.Key} is now upgraded from {entry.Value}\n";
+                }
+                if (modxdeltafiles.Length > 1)
+                {
+                    outputentry = $"File(s) below have been upgraded\n\n{outputentry}";
+                }
+                else
+                {
+                    outputentry = $"The file {outputentry}";
+                }
+                MessageBox.Show(outputentry, $"{versions.Count} Upgraded");
+            }
+            if (Directory.Exists(patchtestpath))
+                Directory.Delete(patchtestpath, true);
+            return true;
+        }
+
         private static string AFOMfilepath()
         {
             var modsfolder = $@"{Global.assemblyLocation}{Global.s}Mods";
@@ -448,6 +677,7 @@ namespace PizzaOven
 
         public static bool Build(string mod)
         {
+            List<string> datawinpatches = new List<string>();
             var langapply = PLUSSavesystem.read_ini("Files", "POLanguage", "true") == "true";
             var errors = 0;
             var successes = 0;
@@ -492,6 +722,8 @@ namespace PizzaOven
                                 File.Move($"{Path.GetDirectoryName(file)}{Global.s}temp", file, true);
                                 Global.logger.WriteLine($"Applied {Path.GetFileName(modFile)} to {Path.GetFileName(file)}.", LoggerType.Info);
                                 successes++;
+                                if (file == $"{Global.config.ModsFolder}{Global.s}data.win")
+                                    datawinpatches.Add(Path.GetRelativePath(mod, modFile));
                                 if (Path.GetFileName(modFile).ToLowerInvariant().Contains("yyc") && File.Exists($"{Global.config.ModsFolder}{Global.s}Steamworks_x64.dll"))
                                     File.Move($"{Global.config.ModsFolder}{Global.s}Steamworks_x64.dll", $"{Global.config.ModsFolder}{Global.s}Steamworks_x64.dll.po", true);
                             }
@@ -530,6 +762,8 @@ namespace PizzaOven
                             }
                             else
                             {
+                                if (DoesPatchtoDataWin(modFile, xdelta))
+                                    datawinpatches.Add(Path.GetRelativePath(mod, modFile));
                                 Global.logger.WriteLine($"{Path.GetFileName(modFile)} wasn't able to patch any file. Ensure that either the mod or your game version is up to date. {Path.GetFileName(modFile)} is intended for {version}. " +
                                     $"If this version number matches with your current game version go to {Global.config.ModsFolder} and delete data.win.po and anything else with a .po extension(or use the provided clean PO. files button) then verify integrity of game files and try again.", LoggerType.Error);
                             }
@@ -862,6 +1096,15 @@ namespace PizzaOven
             }
             if (successes == 0)
                 Global.logger.WriteLine($"No file was used from the current mod", LoggerType.Error);
+            if (datawinpatches.Count > 1)
+            {
+                Global.logger.WriteLine($"Multiple patches were found which could be the cause to an error", LoggerType.Error);
+                foreach (var entry in datawinpatches)
+                {
+                    Global.logger.WriteLine($"[Multiple Patches] {entry} can be patched to the data.win", LoggerType.Error);
+                }
+            }
+   
 			if (File.Exists($"{Global.config.ModsFolder}{Global.s}data.win.downgradepo"))
 			{
                 if (errors != 0 || successes < 0)
@@ -874,7 +1117,22 @@ namespace PizzaOven
 			}
             return errors == 0 && successes > 0;
         }
+        public static void CreatePatch(string sourceFile, string targetFile, string patchFile, string xdelta)
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = xdelta,
+                Arguments = $@"-e -s ""{sourceFile}"" ""{targetFile}"" ""{patchFile}""",
+                WorkingDirectory = Path.GetDirectoryName(xdelta),
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WindowStyle = ProcessWindowStyle.Hidden
+            };
 
+            using var process = new Process { StartInfo = startInfo };
+            process.Start();
+            process.WaitForExit();
+        }
         public static void Patch(string file, string patch, string output, string xdelta)
         {
             ProcessStartInfo startInfo = new ProcessStartInfo();
@@ -893,7 +1151,7 @@ namespace PizzaOven
         }
         public static void PathFixPatch(string file, string patch, string outputFileName, string xdelta)
         {
-            string baseDir = Path.Combine(Path.GetDirectoryName(outputFileName)!, "PizzaOvenPlusPatching");
+            string baseDir = $@"{Path.GetDirectoryName(outputFileName)}{Global.s}PizzaOvenPlusPatching";
             string workingDir = baseDir;
             int count = 1;
 
@@ -1210,6 +1468,27 @@ namespace PizzaOven
             win.ShowDialog();
 
             return selected;
+        }
+
+        public static bool DoesPatchtoDataWin(string file, string xdelta)
+        {
+            string dir = Path.GetDirectoryName(file)!;
+            string tempPath = Path.Combine(dir, "temp.win");
+            try
+            {
+                string sourceWin = File.Exists(Path.Combine(Global.config.ModsFolder, "data.win.po")) ? Path.Combine(Global.config.ModsFolder, "data.win.po") : Path.Combine(Global.config.ModsFolder, "data.win");
+                PathFixPatch(sourceWin, file, tempPath, xdelta);
+                bool success = File.Exists(tempPath);
+                if (File.Exists(tempPath))
+                    File.Delete(tempPath);
+                return success;
+            }
+            catch
+            {
+                if (File.Exists(tempPath))
+                    File.Delete(tempPath);
+                return false;
+            }
         }
 
 

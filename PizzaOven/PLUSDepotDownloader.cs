@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Text.Json;
 using Microsoft.Win32;
+using System.Diagnostics.Eventing.Reader;
 
 namespace PizzaOven
 {
@@ -27,27 +28,54 @@ namespace PizzaOven
         }
         public static async Task DowngradeDownload(MainWindow mainWindow)
         {
+            var isbase = System.Windows.Forms.MessageBox.Show("Please ensure your data.win.po(most likely true) or if that doesn't exist your data.win is base Pizza Tower\n\nPress yes if you are sure\nPress no if you are unsure or no (this will open you to choose the correct one)", "Confirmation", System.Windows.Forms.MessageBoxButtons.YesNo, System.Windows.Forms.MessageBoxIcon.Question);
             string ogWinFile = "";
-            var ogWinFileDialog = new OpenFileDialog();
-            ogWinFileDialog.Filter = "Source (*.win)|*.win";
 
 
-            if (ogWinFileDialog.ShowDialog() == true)
+            if (isbase == System.Windows.Forms.DialogResult.Yes)
             {
-                ogWinFile = ogWinFileDialog.FileName;
+                if (File.Exists($@"{Global.config.ModsFolder}{Global.s}data.win.po"))
+                {
+                    ogWinFile = $@"{Global.config.ModsFolder}{Global.s}data.win.po";
+                }
+                else if (File.Exists($@"{Global.config.ModsFolder}{Global.s}data.win"))
+                {
+                    ogWinFile = $@"{Global.config.ModsFolder}{Global.s}data.win";
+                }
+                else
+                {
+                    MessageBox.Show("No data.win or data.win.po file found in the application directory try again but press no.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
             }
             else
             {
-                MessageBox.Show("No file selected.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-            if (string.IsNullOrEmpty(ogWinFile))
-            {
-                System.Windows.Forms.MessageBox.Show("Please select a .win file first.", "Error", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
-                return;
+                var ogWinFileDialog = new OpenFileDialog();
+                ogWinFileDialog.Filter = "Source (*.win)|*.win";
+
+                if (File.Exists($@"{Global.config.ModsFolder}"))
+                {
+                    ogWinFileDialog.InitialDirectory = $@"{Global.config.ModsFolder}";
+                }
+
+
+                if (ogWinFileDialog.ShowDialog() == true)
+                {
+                    ogWinFile = ogWinFileDialog.FileName;
+                }
+                else
+                {
+                    MessageBox.Show("No file selected.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+                if (string.IsNullOrEmpty(ogWinFile))
+                {
+                    System.Windows.Forms.MessageBox.Show("Please select a .win file first.", "Error", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                    return;
+                }
             }
 
-            var ptVersions = JsonSerializer.Deserialize<List<PTversion>>(File.ReadAllText($@"Dependencies{Global.s}ptversions.json"));
+            var ptVersions = JsonSerializer.Deserialize<List<PTversion>>(File.ReadAllText($@"{Global.assemblyLocation}{Global.s}Dependencies{Global.s}ptversions.json"));
 
             string selectedVersion = mainWindow.DowngradeDownloadCombo.SelectedItem as string;
             if (string.IsNullOrEmpty(selectedVersion))
@@ -56,12 +84,12 @@ namespace PizzaOven
                 return;
             }
 
-            string versionsDir = Path.Combine(Global.assemblyLocation, "Downgrades");
-            string tempDir = Path.Combine(versionsDir, "temp");
+            string versionsDir = $@"{Global.assemblyLocation}{Global.s}Downgrades";
+            string tempDir = $@"{Global.assemblyLocation}{Global.s}Downgrades{Global.s}temp";
             Directory.CreateDirectory(versionsDir);
             Directory.CreateDirectory(tempDir);
 
-            string steamUser = PLUSDepotDownloader.GetSteamUsername();
+            string steamUser = GetSteamUsername();
             foreach (var v in ptVersions)
             {
                 if (v.version != selectedVersion)
@@ -101,22 +129,6 @@ namespace PizzaOven
             }
             catch { }
         }
-        public static void CreatePatch(string sourceFile, string targetFile, string patchFile, string xdelta)
-        {
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = xdelta,
-                Arguments = $@"-e -s ""{sourceFile}"" ""{targetFile}"" ""{patchFile}""",
-                WorkingDirectory = Path.GetDirectoryName(xdelta),
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                WindowStyle = ProcessWindowStyle.Hidden
-            };
-
-            using var process = new Process { StartInfo = startInfo };
-            process.Start();
-            process.WaitForExit();
-        }
 
         public static async Task<bool> DownloadDowngradeAsync(string appID, string depotID, string manifestID, string username, string outputDir, string ogWinFile, string version)
         {
@@ -151,16 +163,16 @@ namespace PizzaOven
                     return false;
                 }
 
-                string tempSource = Path.Combine(outputDir, "source.win");
-                string tempTarget = Path.Combine(outputDir, "data.win");
-                string patchFile = Path.Combine(Global.assemblyLocation, "Downgrades", $"{version}.xdelta");
-                string xdeltaPath = Path.Combine(Global.assemblyLocation, "Dependencies", "xdelta.exe");
+                string tempSource = $"{outputDir}{Global.s}source.win";
+                string tempTarget = $"{outputDir}{Global.s}data.win";
+                string patchFile = $"{Global.assemblyLocation}{Global.s}Downgrades{Global.s}{version}.xdelta";
+                string xdeltaPath = $"{Global.assemblyLocation}{Global.s}Dependencies{Global.s}xdelta.exe";
 
                 File.Copy(ogWinFile, tempSource, true);
 
                 if (File.Exists(tempTarget))
                 {
-                    CreatePatch(tempSource, tempTarget, patchFile, xdeltaPath);
+                    ModLoader.CreatePatch(tempSource, tempTarget, patchFile, xdeltaPath);
                     File.Delete(tempTarget);
                 }
                 else Console.WriteLine($"Warning: {tempTarget} not found.");
@@ -172,6 +184,8 @@ namespace PizzaOven
                         Directory.Delete(tempDepotDir, true);
                 }
                 catch { }
+
+                System.Windows.Forms.MessageBox.Show($"Version {version} downloaded! Select and Use Patch Version when patching to use it!", "Success", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Information);
 
                 return true;
             }

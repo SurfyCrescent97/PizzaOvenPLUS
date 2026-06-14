@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using Newtonsoft.Json.Linq;
 using PizzaOven.UI;
+using SevenZipExtractor;
 using SharpCompress.Archives.SevenZip;
 using SharpCompress.Common;
 using SharpCompress.Readers;
@@ -17,6 +18,8 @@ using System.Media;
 using System.Net.Http;
 using System.Reflection;
 using System.Security.Cryptography;
+using System.Security.Policy;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -97,6 +100,7 @@ namespace PizzaOven
         public PLUSRonnieAnimate gmloaderanimator;
         public string version;
         public static string PizzaTowerVersion = "1.1.280";
+        public static string SavedDirectionBrowserGridSearch = "";
         private Dictionary<string, string> defaultBrushHexes = new Dictionary<string, string>();
         // Separated from Global.config so that order is updated when datagrid is modified
         public List<string> exes;
@@ -223,7 +227,7 @@ namespace PizzaOven
             {
                 if (PLUSSavesystem.read_ini("Init", "AssetsVer", "-1") != PizzaOvenVersion)
                 {
-                    string appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaOvenPLUS", "CustomAssets");
+                    string appDataPath = $@"{Global.appdata}{Global.s}PizzaOvenPLUS{Global.s}CustomAssets";
 
                     Directory.CreateDirectory(appDataPath);
 
@@ -249,7 +253,7 @@ namespace PizzaOven
                                 relativePath[(lastSeparator + 1)..];
                         }
 
-                        string outputPath = Path.Combine(appDataPath, relativePath);
+                        string outputPath = $@"{appDataPath}{Global.s}{relativePath}";
                         Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
 
                         if (File.Exists(outputPath))
@@ -340,6 +344,7 @@ namespace PizzaOven
 
             PLUSrefresh();
             PLUSWatcher();
+            UpgradeRefresh();
 
             Global.logger.WriteLine($"Launched PizzaOven+ Mod Manager v{version}!", LoggerType.Info);
             // Get Global.config if it exists
@@ -495,10 +500,10 @@ namespace PizzaOven
             {
                 Activate();
             });
+            UpgradeRefresh();
         }
         private async void SelectItem()
         {
-
             await Task.Run(() =>
             {
                 App.Current.Dispatcher.Invoke((Action)delegate
@@ -1007,7 +1012,7 @@ namespace PizzaOven
                         return false;
                 }
                 
-                string patchPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Downgrades", downgradename + ".xdelta");
+                string patchPath = $@"{Global.assemblyLocation}{Global.s}Downgrades{Global.s}{downgradename}.xdelta";
 
                 var prenoisepatch = new List<string>
                 {
@@ -1496,7 +1501,7 @@ namespace PizzaOven
         }
         private int imageCounter;
         private int imageCount;
-        private FlowDocument ConvertToFlowDocument(string text)
+        private FlowDocument ConvertToFlowDocument(string text) //OLD PIZZAOVEN FUNCTION
         {
             var flowDocument = new FlowDocument();
 
@@ -1528,6 +1533,480 @@ namespace PizzaOven
 
             return flowDocument;
         }
+
+        public static FlowDocument MergeFlowDocuments(params FlowDocument[] docs)
+        {
+            FlowDocument merged = new FlowDocument();
+
+            foreach (var doc in docs)
+            {
+                while (doc.Blocks.FirstBlock != null)
+                {
+                    Block block = doc.Blocks.FirstBlock;
+                    doc.Blocks.Remove(block);
+                    merged.Blocks.Add(block);
+                }
+            }
+
+            return merged;
+        }
+
+        private FlowDocument ConvertToFlowDocumentHTML(string text)
+        {
+            var flowDocument = new FlowDocument();
+            var paragraph = new Paragraph();
+            flowDocument.Blocks.Add(paragraph);
+
+            int textid = 0;
+            bool inCode = false;
+            Stack<string> spanStack = new();
+            bool inTag = false;
+            bool inLink = false;
+            bool bold = false;
+            bool italic = false;
+            bool inList = false;
+
+            double fontSize = 16;
+
+            StringBuilder textBuffer = new StringBuilder();
+            StringBuilder tagBuffer = new StringBuilder();
+            StringBuilder linkText = new StringBuilder();
+
+            string linkHref = "";
+
+            void FlushText()
+            {
+                if (textBuffer.Length == 0)
+                    return;
+
+                string text = textBuffer.ToString();
+                textBuffer.Clear();
+
+                bool isSpoiler = spanStack.Contains("Spoiler");
+                bool isRed = spanStack.Contains("RedColor");
+                bool isGreen = spanStack.Contains("GreenColor");
+
+
+                Run run = new Run(text)
+                {
+                    FontSize = fontSize,
+                    FontWeight = bold ? FontWeights.Bold : FontWeights.Normal,
+                    FontStyle = italic ? FontStyles.Italic : FontStyles.Normal
+                };
+                var textcolor = Brushes.White;
+                if (isRed)
+                {
+                    run.Foreground = Brushes.Red;
+                    textcolor = Brushes.Red;
+                }
+
+                if (isGreen)
+                {
+                    run.Foreground = Brushes.Green;
+                    textcolor = Brushes.Green;
+                }
+
+                if (inCode)
+                {
+                    run.FontFamily = new FontFamily("Consolas");
+                    run.Background = Brushes.LightGray;
+                }
+
+                if (isSpoiler)
+                {
+                    var tb = new TextBlock
+                    {
+                        Text = text,
+                        FontSize = fontSize,
+                        FontWeight = bold ? FontWeights.Bold : FontWeights.Normal,
+                        FontStyle = italic ? FontStyles.Italic : FontStyles.Normal,
+                        Foreground = Brushes.LightGray,
+                        Background = Brushes.LightGray
+                    };
+
+                    tb.MouseEnter += (s, e) =>
+                    {
+                        tb.Foreground = textcolor;
+                        tb.Background = Brushes.Transparent;
+                    };
+
+                    tb.MouseLeave += (s, e) =>
+                    {
+                        tb.Foreground = Brushes.LightGray;
+                        tb.Background = Brushes.LightGray;
+                    };
+
+                    paragraph.Inlines.Add(new InlineUIContainer(tb));
+                    return;
+                }
+
+                paragraph.Inlines.Add(run);
+            }
+
+            void FlushLink()
+            {
+                if (string.IsNullOrEmpty(linkHref))
+                {
+                    linkText.Clear();
+                    return;
+                }
+
+                string text = linkText.ToString();
+                linkText.Clear();
+
+                bool isSpoiler = spanStack.Contains("Spoiler");
+
+                if (isSpoiler)
+                {
+                    var tb = new TextBlock
+                    {
+                        Text = text,
+                        FontSize = fontSize,
+                        FontWeight = bold ? FontWeights.Bold : FontWeights.Normal,
+                        FontStyle = italic ? FontStyles.Italic : FontStyles.Normal,
+                        Foreground = Brushes.LightGray,
+                        Background = Brushes.LightGray
+                    };
+
+                    tb.MouseEnter += (s, e) =>
+                    {
+                        tb.Foreground = Brushes.Blue;
+                        tb.Background = Brushes.Transparent;
+                    };
+
+                    tb.MouseLeave += (s, e) =>
+                    {
+                        tb.Foreground = Brushes.LightGray;
+                        tb.Background = Brushes.LightGray;
+                    };
+
+                    var hyperlink = new Hyperlink(new InlineUIContainer(tb))
+                    {
+                        NavigateUri = new Uri(linkHref)
+                    };
+
+                    hyperlink.RequestNavigate += (s, e) =>
+                    {
+                        Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri)
+                        {
+                            UseShellExecute = true
+                        });
+                    };
+
+                    paragraph.Inlines.Add(hyperlink);
+
+                    linkHref = "";
+                    return;
+                }
+
+                Run run = new Run(text)
+                {
+                    FontSize = fontSize,
+                    Foreground = Brushes.Blue,
+                    FontWeight = bold ? FontWeights.Bold : FontWeights.Normal,
+                    FontStyle = italic ? FontStyles.Italic : FontStyles.Normal
+                };
+
+                var normalLink = new Hyperlink(run)
+                {
+                    NavigateUri = new Uri(linkHref)
+                };
+
+                normalLink.RequestNavigate += (s, e) =>
+                {
+                    Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri)
+                    {
+                        UseShellExecute = true
+                    });
+                };
+
+                paragraph.Inlines.Add(normalLink);
+
+                linkHref = "";
+            }
+
+            bool TryReadEntity(string text, ref int i, out string result)
+            {
+                result = null;
+
+                if (text[i] != '&')
+                    return false;
+
+                int start = i;
+                int j = i + 1;
+
+                while (j < text.Length)
+                {
+                    char ch = text[j];
+
+                    if (ch == ';')
+                    {
+                        j++;
+
+                        string entity = text.Substring(start, j - start);
+                        string decoded = System.Net.WebUtility.HtmlDecode(entity);
+
+                        if (decoded != entity)
+                        {
+                            result = decoded;
+                            i = j - 1;
+                            return true;
+                        }
+
+                        result = entity;
+                        i = j - 1;
+                        return true;
+                    }
+
+                    if (!(char.IsLetterOrDigit(ch) || ch == '#' || ch == 'x'))
+                        break;
+
+                    j++;
+                }
+
+                return false;
+            }
+
+            while (textid < text.Length)
+            {
+                char c = text[textid];
+
+                if (!inTag)
+                {
+                    if (c == '<')
+                    {
+                        FlushText();
+                        inTag = true;
+                        tagBuffer.Clear();
+                    }
+                    else
+                    {
+                        if (c == '&')
+                        {
+                            if (TryReadEntity(text, ref textid, out string entity))
+                            {
+                                if (inLink)
+                                    linkText.Append(entity);
+                                else
+                                    textBuffer.Append(entity);
+
+                                textid++;
+                                continue;
+                            }
+                        }
+
+                        if (inLink)
+                            linkText.Append(c);
+                        else
+                            textBuffer.Append(c);
+                    }
+                }
+                else
+                {
+                    if (c == '>')
+                    {
+                        string tag = tagBuffer.ToString().Trim();
+
+                        if (tag == "br")
+                        {
+                            FlushText();
+                            paragraph.Inlines.Add(new LineBreak());
+                        }
+
+                        else if (tag == "b")
+                            bold = true;
+                        else if (tag == "/b")
+                            bold = false;
+
+                        else if (tag == "i")
+                            italic = true;
+                        else if (tag == "/i")
+                            italic = false;
+
+                        else if (tag == "h1")
+                            fontSize = 28;
+                        else if (tag == "/h1")
+                        {
+                            fontSize = 16;
+                            paragraph.Inlines.Add(new LineBreak());
+                        }
+                        else if (tag == "h2")
+                            fontSize = 24;
+                        else if (tag == "/h2")
+                        {
+                            fontSize = 16;
+                            paragraph.Inlines.Add(new LineBreak());
+                        }
+                        else if (tag == "h3")
+                            fontSize = 20;
+                        else if (tag == "/h3")
+                        {
+                            fontSize = 16;
+                            paragraph.Inlines.Add(new LineBreak());
+                        }
+
+                        else if (tag == "ul")
+                            inList = true;
+                        else if (tag == "/ul")
+                            inList = false;
+
+                        else if (tag == "li")
+                        {
+                            FlushText();
+                            paragraph.Inlines.Add(new Run("• "));
+                        }
+                        else if (tag == "/li")
+                        {
+                            paragraph.Inlines.Add(new LineBreak());
+                        }
+                        else if (tag.StartsWith("a "))
+                        {
+                            inLink = true;
+
+                            int hrefIndex = tag.IndexOf("href=\"", StringComparison.OrdinalIgnoreCase);
+                            if (hrefIndex != -1)
+                            {
+                                int start = hrefIndex + 6;
+                                int end = tag.IndexOf('"', start);
+                                if (end > start)
+                                    linkHref = tag.Substring(start, end - start);
+                            }
+
+                            linkText.Clear();
+                        }
+                        else if (tag == "/a")
+                        {
+                            inLink = false;
+                            FlushLink();
+                        }
+
+                        else if (tag.StartsWith("span "))
+                        {
+                            int classIndex = tag.IndexOf("class=\"", StringComparison.OrdinalIgnoreCase);
+
+                            if (classIndex != -1)
+                            {
+                                int start = classIndex + 7;
+                                int end = tag.IndexOf('"', start);
+
+                                if (end > start)
+                                    spanStack.Push(tag.Substring(start, end - start));
+                            }
+                        }
+                        else if (tag == "/span")
+                        {
+                            if (spanStack.Count > 0)
+                                spanStack.Pop();
+                        }
+
+                        else if (tag == "code")
+                        {
+                            inCode = true;
+                        }
+                        else if (tag == "/code")
+                        {
+                            inCode = false;
+                        }
+
+                        else if (tag == "hr")
+                        {
+                            FlushText();
+
+                            paragraph.Inlines.Add(new Run(new string('─', 77)));
+                            paragraph.Inlines.Add(new LineBreak());
+                        }
+                        else if (tag.StartsWith("img"))
+                        {
+                            FlushText();
+
+                            string imgSrc = "";
+                            string altText = "[Image]";
+                            double imageWidth = 500;
+
+                            int srcIndex = tag.IndexOf("src=\"", StringComparison.OrdinalIgnoreCase);
+                            if (srcIndex != -1)
+                            {
+                                int start = srcIndex + 5;
+                                int end = tag.IndexOf('"', start);
+
+                                if (end > start)
+                                    imgSrc = tag.Substring(start, end - start);
+                            }
+
+                            int altIndex = tag.IndexOf("alt=\"", StringComparison.OrdinalIgnoreCase);
+                            if (altIndex != -1)
+                            {
+                                int start = altIndex + 5;
+                                int end = tag.IndexOf('"', start);
+
+                                if (end > start)
+                                    altText = tag.Substring(start, end - start);
+                            }
+
+                            int widthIndex = tag.IndexOf("width=\"", StringComparison.OrdinalIgnoreCase);
+                            if (widthIndex != -1)
+                            {
+                                int start = widthIndex + 7;
+                                int end = tag.IndexOf('"', start);
+
+                                if (end > start)
+                                {
+                                    string widthValue = tag.Substring(start, end - start);
+
+                                    if (widthValue.EndsWith("%"))
+                                    {
+                                        if (double.TryParse(widthValue.TrimEnd('%'), out double percent))
+                                            imageWidth = 500 * (percent / 100.0);
+                                    }
+                                    else if (double.TryParse(widthValue, out double width))
+                                    {
+                                        imageWidth = width;
+                                    }
+                                }
+                            }
+
+                            if (!string.IsNullOrWhiteSpace(imgSrc))
+                            {
+                                try
+                                {
+                                    var image = new System.Windows.Controls.Image
+                                    {
+                                        Source = new System.Windows.Media.Imaging.BitmapImage(new Uri(imgSrc)),
+                                        MaxWidth = imageWidth,
+                                        Margin = new Thickness(0, 5, 0, 5)
+                                    };
+
+                                    paragraph.Inlines.Add(new InlineUIContainer(image));
+                                }
+                                catch
+                                {
+                                    paragraph.Inlines.Add(new Run(altText));
+                                }
+                            }
+                            else
+                            {
+                                paragraph.Inlines.Add(new Run(altText));
+                            }
+                        }
+                        inTag = false;
+                        tagBuffer.Clear();
+                    }
+                    else
+                    {
+                        tagBuffer.Append(c);
+                    }
+                }
+
+                textid++;
+            }
+
+            FlushText();
+
+            if (inLink)
+                FlushLink();
+
+            return flowDocument;
+        }
         private void MoreInfo_Click(object sender, RoutedEventArgs e)
         {
             HomepageButton.Content = $"{(TypeBox.SelectedValue as ComboBoxItem).Content.ToString().Trim().TrimEnd('s')} Page";
@@ -1545,8 +2024,12 @@ namespace PizzaOven
             MediaPanel.DataContext = button.DataContext;
             DescText.ScrollToHome();
             var text = "";
-            text += item.ConvertedText;
-            DescText.Document = ConvertToFlowDocument(text);
+            //OLD CONVERTION METHOD
+            //text += item.ConvertedText;
+            //DescText.Document = ConvertToFlowDocument(text);
+            text = item.Text;
+            FlowDocument DescTextContent = ConvertToFlowDocumentHTML(text);
+            DescText.Document = DescTextContent;
             ImageLeft.IsEnabled = true;
             ImageRight.IsEnabled = true;
             BigImageLeft.IsEnabled = true;
@@ -1675,6 +2158,7 @@ namespace PizzaOven
                 FeedBox.ItemsSource = FeedGenerator.CurrentFeed.Records;
                 LoadingBar.Visibility = Visibility.Collapsed;
                 BrowserRefreshButton.Visibility = Visibility.Collapsed;
+                TypeRedirection.Visibility = Visibility.Collapsed;
                 return;
             }
             using (var httpClient = new HttpClient())
@@ -1935,11 +2419,57 @@ namespace PizzaOven
             modManagerRefreshed = false;
         }
 
+        private void UpgradeRefresh()
+        {
+            string modsPath = $@"{Global.assemblyLocation}{Global.s}Mods";
+            if (Global.ronnietutorial)
+            {
+                UpgradeXDELTACombo.Items.Clear();
+                return;
+            }
+            if (Directory.Exists(modsPath))
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    var savedUpgradeSelection = UpgradeXDELTACombo.SelectedItem as string;
+                    if (string.IsNullOrEmpty(savedUpgradeSelection))
+                        savedUpgradeSelection = null;
+
+                    UpgradeXDELTACombo.Items.Clear();
+
+                    foreach (string dir in Directory.GetDirectories(modsPath))
+                    {
+                        string modName = Path.GetFileName(dir);
+
+                        if (!UpgradeXDELTACombo.Items.Contains(modName))
+                            UpgradeXDELTACombo.Items.Add(modName);
+                    }
+
+                    bool hasSavedUpgradeSelection = false;
+                    if (!string.IsNullOrEmpty(savedUpgradeSelection))
+                    {
+                        hasSavedUpgradeSelection = UpgradeXDELTACombo.Items.Cast<object>().Any(i => string.Equals(i?.ToString(), savedUpgradeSelection, StringComparison.OrdinalIgnoreCase));
+                    }
+
+                    if (savedUpgradeSelection != null && hasSavedUpgradeSelection)
+                    {
+                        var match = UpgradeXDELTACombo.Items.Cast<object>().FirstOrDefault(i => string.Equals(i?.ToString(), savedUpgradeSelection, StringComparison.OrdinalIgnoreCase));
+
+                        if (match != null)
+                            UpgradeXDELTACombo.SelectedItem = match;
+                    }
+                    else if (UpgradeXDELTACombo.Items.Count > 0)
+                    {
+                        UpgradeXDELTACombo.SelectedIndex = 0;
+                    }
+                });
+            }
+        }
         private void PLUSrefresh()
         {
             ApplyTransparentBoxes();
-            string DowngradePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Downgrades");
-            string ThemesPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Themes");
+            string DowngradePath = $@"{Global.assemblyLocation}{Global.s}Downgrades";
+            string ThemesPath = $@"{Global.assemblyLocation}{Global.s}Themes";
             if (Directory.Exists(DowngradePath))
             {
                 string[] files = Directory.GetFiles(DowngradePath);
@@ -2153,6 +2683,7 @@ namespace PizzaOven
             PerPageBox.IsEnabled = false;
             ClearCacheButton.IsEnabled = false;
             ErrorPanel.Visibility = Visibility.Collapsed;
+            TypeRedirection.Visibility = Visibility.Collapsed;
             filterSelect = true;
             PageBox.SelectedValue = page;
             filterSelect = false;
@@ -2206,6 +2737,13 @@ namespace PizzaOven
                 BrowserRefreshButton.Visibility = Visibility.Collapsed;
                 BrowserMessage.Visibility = Visibility.Visible;
                 BrowserMessage.Text = "Pizza Oven+ couldn't find any mods.";
+                var gbtype = (TypeFilter)TypeBox.SelectedIndex;
+                var gbtyperedirection = (gbtype == TypeFilter.Mods) ? "WIPs" : "MODs";
+                if (!Global.ronnietutorial && (gbtype == TypeFilter.Mods || gbtype == TypeFilter.WiPs))
+                {
+                    TypeRedirection.Content = $"Click to go to {gbtyperedirection} instead to look for it";
+                    TypeRedirection.Visibility = Visibility.Visible;
+                }
             }
             PageBox.ItemsSource = Enumerable.Range(1, (int)(FeedGenerator.CurrentFeed.TotalPages));
 
@@ -2220,8 +2758,33 @@ namespace PizzaOven
             SearchButton.IsEnabled = true;
             NSFWCheckbox.IsEnabled = true;
             ClearCacheButton.IsEnabled = true;
-        }
 
+            if (SavedDirectionBrowserGridSearch != "")
+            {
+                var temp = SavedDirectionBrowserGridSearch;
+                SavedDirectionBrowserGridSearch = "";
+
+                SearchBar.Text = temp;
+
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    Search();
+                });
+            }
+        }
+        private void TypeRedirection_Click(object sender, RoutedEventArgs e)
+        {
+            SavedDirectionBrowserGridSearch = SearchBar.Text;
+            var gbtype = (TypeFilter)TypeBox.SelectedIndex;
+            if (gbtype == TypeFilter.Mods)
+            {
+                TypeBox.SelectedIndex = (int)TypeFilter.WiPs;
+            }
+            else if (gbtype == TypeFilter.WiPs)
+            {
+                TypeBox.SelectedIndex = (int)TypeFilter.Mods;
+            }
+        }
         private void FilterSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (IsLoaded && !filterSelect)
@@ -2437,8 +3000,8 @@ namespace PizzaOven
         {
             string[] foldersToWatch = new string[]
             {
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Downgrades"),
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaOvenPLUS", "CustomAssets")
+                $@"{Global.assemblyLocation}{Global.s}Downgrades",
+                $@"{Global.appdata}{Global.s}PizzaOvenPLUS{Global.s}CustomAssets"
             };
 
             foreach (var folder in foldersToWatch)
@@ -2682,7 +3245,7 @@ namespace PizzaOven
                             {
                                 if (PLUSThemes.IsBase64String(backgroundata[1]))
                                 {
-                                    PLUSThemes.Base64_LoadFile(backgroundata[1], System.IO.Path.Combine(Global.customassetsfolder, $"background.{backgroundata[0]}"));
+                                    PLUSThemes.Base64_LoadFile(backgroundata[1], $@"{Global.customassetsfolder}{Global.s}background.{backgroundata[0]}");
                                 }
                             }
                         }
@@ -2738,8 +3301,8 @@ namespace PizzaOven
             {
                 var messages = new Dictionary<string, string>
                 {
-                    ["Tutorial"] = "You can use this to replay my tutorial",
-                    ["Links"] = "Wanna suggest something? there's a form in there where you can suggest features, maybe join our discord or check out other social links",
+                    ["Tutorial"] = "You can use this to replay my tutorial, YOU CAN EVEN LISTEN TO MY THEME ON YOUTUBE IN THE LINKS SECTION",
+                    ["Links"] = "Wanna suggest something? there's a form in there where you can suggest features, maybe join our discord, listen to my theme or check out other social links",
                     ["App Settings"] = "Settings mainly to do with the application such as display on discord so people can see my cute little face on it or startup on opening your device",
                     ["Launch Settings"] = "Settings mainly to do with the launch like applying downgrades or customising what happens on launch",
                     ["Mod Settings"] = "Settings mainly to do with mods such as PO. Files, Adding folder to categorise your mods or saving current Pizza Tower folder as mod",
@@ -2909,7 +3472,7 @@ namespace PizzaOven
                         if (!enabled)
                         {
                             var ptfolder = $"{Global.config.ModsFolder}";
-                            var langPath = Path.Combine(ptfolder, "lang");
+                            var langPath = $@"{ptfolder}{Global.s}lang";
                             var extensions = new[] { ".po", ".custompo", ".downgradepo" };
 
                             if (Directory.Exists(langPath))
@@ -3001,6 +3564,7 @@ namespace PizzaOven
                     "OpenEmail" => "https://mail.google.com/mail/u/0/#inbox?compose=GTvVlcSGKZhCvzvPvWzHvQZTnWMgDSzDHWTFDjnfWdjQscBHkRtBhmJPRKjjJbkNqlGRbtHlWzDWW",
                     "OpenTwitterX" => "https://x.com/SurfyCrescent97",
                     "OpenDiscord" => "https://discord.gg/snv7CrRQzx",
+                    "OpenMusicYoutube" => "https://youtu.be/k4WZVmOhVHo?si=qpXWDeST1-B4KLx9",
                     _ => null
                 };
 
@@ -3047,6 +3611,47 @@ namespace PizzaOven
         public async void DowngradeDownload_Click(object sender, RoutedEventArgs e)
         {
             await PLUSDepotDownloader.DowngradeDownload(this);
+        }
+        public async void UpgradeXDELTA_Click(object sender, RoutedEventArgs e)
+        {
+            if (Global.ronnietutorial)
+            {
+                MessageBox.Show("Wait for the tutorial to be over", "Tutorial", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            if (UpgradeXDELTACombo.SelectedValue == null)
+            {
+                MessageBox.Show("Please select an option from the dropdown first.", "No Option Selected", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            var path = $"{Global.assemblyLocation}{Global.s}Mods{Global.s}{UpgradeXDELTACombo.SelectedValue.ToString()}";
+            if (Directory.Exists(path))
+            {
+                ModGrid.IsEnabled = false;
+                ConfigButton.IsEnabled = false;
+                LaunchButton.IsEnabled = false;
+                ClearButton.IsEnabled = false;
+                UpdateButton.IsEnabled = false;
+                ModGridSearchButton.IsEnabled = false;
+                if (await ModLoader.Upgrade(path))
+                {
+                    MessageBox.Show("Upgrade successful!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Upgrade failed.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                ModGrid.IsEnabled = true;
+                ConfigButton.IsEnabled = true;
+                LaunchButton.IsEnabled = true;
+                ClearButton.IsEnabled = true;
+                UpdateButton.IsEnabled = true;
+                ModGridSearchButton.IsEnabled = true;
+            }
+            else
+            {
+                MessageBox.Show("Selected mod folder does not exist.", "Folder Not Found", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
         public void OpenPTFolder_Click(object sender, RoutedEventArgs e)
         {
@@ -3234,7 +3839,7 @@ namespace PizzaOven
                     return;
                 }
 
-                string path = System.IO.Path.Combine($"{Global.assemblyLocation}{Global.s}Mods", modName);
+                string path = $@"{Global.assemblyLocation}{Global.s}Mods{Global.s}{modName}";
 
                 if (System.IO.Directory.Exists(path))
                 {
@@ -3410,7 +4015,7 @@ namespace PizzaOven
 
             if (result == true)
             {
-                System.IO.File.Copy(dialog.FileName, System.IO.Path.Combine(Global.customassetsfolder, $"background{Path.GetExtension(dialog.FileName)}"), true);
+                System.IO.File.Copy(dialog.FileName, $@"{Global.customassetsfolder}{Global.s}background{Path.GetExtension(dialog.FileName)}", true);
             }
         }
         public void ThemesBackgroundReset_Click(object sender, RoutedEventArgs e)
@@ -3458,11 +4063,11 @@ namespace PizzaOven
         }
         private void AssetsFolder_Click(object sender, RoutedEventArgs e)
         {
-            Process process = Process.Start("explorer.exe", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaOvenPLUS", "CustomAssets"));
+            Process process = Process.Start("explorer.exe", $@"{Global.appdata}{Global.s}PizzaOvenPLUS{Global.s}CustomAssets");
         }
         private void RestoreMissingAssets_Click(object sender, RoutedEventArgs e)
         {
-            string assetPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaOvenPLUS", "CustomAssets");
+            string assetPath = $@"{Global.appdata}{Global.s}PizzaOvenPLUS{Global.s}CustomAssets";
 
             Directory.CreateDirectory(assetPath);
 
@@ -3488,7 +4093,7 @@ namespace PizzaOven
                         relativePath[(lastSeparator + 1)..];
                 }
 
-                string outputPath = Path.Combine(assetPath, relativePath);
+                string outputPath = $@"{assetPath}{Global.s}{relativePath}";
                 Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
 
                 if (File.Exists(outputPath))
@@ -3506,7 +4111,7 @@ namespace PizzaOven
         }
         private void RestoreALLAssets_Click(object sender, RoutedEventArgs e)
         {
-            string folderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaOvenPLUS", "CustomAssets");
+            string folderPath = $@"{Global.appdata}{Global.s}PizzaOvenPLUS{Global.s}CustomAssets";
             if (Directory.Exists(folderPath))
             {
                 foreach (string file in Directory.GetFiles(folderPath, "*", SearchOption.AllDirectories))
@@ -3648,7 +4253,7 @@ namespace PizzaOven
             }
             Global.logger.WriteLine("Sucessfully Patch Modded to Source", LoggerType.Info);
 
-            string gmLoaderExe = Path.Combine(GMLoaderFolder, "GMLoader.exe");
+            string gmLoaderExe = $@"{GMLoaderFolder}{Global.s}GMLoader.exe";
 
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
@@ -3666,7 +4271,7 @@ namespace PizzaOven
                 process.StartInfo = startInfo;
 
                 process.Start();
-                string outputFolder = Path.Combine(GMLoaderFolder, "converted_output");
+                string outputFolder = $@"{GMLoaderFolder}{Global.s}converted_output";
 
                 string[] GMLoaderFOLDERS = { "audio", "code", "lib", "csx", "room", "shader", "texture", "xdelta" };
                 bool anyExist = false;
@@ -3678,13 +4283,13 @@ namespace PizzaOven
                     if (process.HasExited)
                         break;
                     emptydir = false;
-                    string convertedOutput = Path.Combine(GMLoaderFolder, "converted_output");
+                    string convertedOutput = $@"{GMLoaderFolder}{Global.s}converted_output";
 
                     if (Directory.Exists(convertedOutput))
                     {
                         foreach (var folder in GMLoaderFOLDERS)
                         {
-                            string path = Path.Combine(convertedOutput, folder);
+                            string path = $@"{convertedOutput}{Global.s}{folder}";
                             if (Directory.Exists(path))
                             {
                                 noGMLoaderFolders = false;
@@ -3978,6 +4583,7 @@ namespace PizzaOven
                     "1.0.4" => new string[] { "Autoupdater should work from 1.0.3" },
                     "1.0.5" => new string[] { "Patch Notes Tab Introduction" },
                     "1.0.6" => new string[] { "Bug Fixes" },
+                    "1.0.9" => new string[] { "GO LISTEN TO RONNIE'S THEME ON YOUTUBE (Check links)" },
                     _ => new string[] { "" }
                 };
 

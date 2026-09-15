@@ -1,0 +1,72 @@
+<Window x:Class="PizzaOven.UI.PLUSSoundWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Sound Editor"
+        Width="800"
+        Height="500"
+        MinWidth="800"
+        MaxWidth="800"
+        MinHeight="500"
+        MaxHeight="500"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource PrimaryBrush}">
+
+    <Grid Margin="10">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="{StaticResource InnerBrush}" BorderBrush="{StaticResource SecondaryBrush}" BorderThickness="1" Margin="0,0,0,10">
+
+            <Canvas x:Name="WaveformCanvas" ClipToBounds="True" Background="{StaticResource InnerBrush}">
+
+                <Polygon x:Name="Waveform" Fill="{StaticResource TextBrush}" IsHitTestVisible="False"/>
+
+                <Rectangle x:Name="LoopArea" Fill="#553399FF" Cursor="SizeAll"/>
+
+                <Rectangle x:Name="LoopStartHandle" Width="4" Fill="#993399FF" Cursor="SizeWE"/>
+
+                <Rectangle x:Name="LoopEndHandle" Width="4" Fill="#993399FF" Cursor="SizeWE"/>
+
+            </Canvas>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="0,0,0,10">
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Text="Loop Start" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+
+            <TextBox x:Name="LoopStartText" Grid.Column="1" Text="00.00.00" Width="100" Height="26" HorizontalAlignment="Left" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Background="{StaticResource PrimaryBrush}" Foreground="{StaticResource TextBrush}" BorderBrush="{StaticResource SecondaryBrush}" PreviewTextInput="TimeTextBox_PreviewTextInput" KeyDown="LoopStartText_KeyDown"/>
+        </Grid>
+
+        <Grid Grid.Row="2" Margin="0,0,0,10">
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Text="Loop End" Foreground="{StaticResource TextBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+
+            <TextBox x:Name="LoopEndText" Grid.Column="1" Text="00.00.00" Width="100" Height="26" HorizontalAlignment="Left" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Background="{StaticResource PrimaryBrush}" Foreground="{StaticResource TextBrush}" BorderBrush="{StaticResource SecondaryBrush}" PreviewTextInput="TimeTextBox_PreviewTextInput" KeyDown="LoopEndText_KeyDown"/>
+        </Grid>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
+
+            <Button Content="Cancel" Width="90" Height="30" Margin="0,0,6,0" Click="CancelButton_Click"/>
+
+            <Button Content="Confirm" Width="90" Height="30" Click="ConfirmButton_Click"/>
+
+        </StackPanel>
+
+    </Grid>
+</Window>

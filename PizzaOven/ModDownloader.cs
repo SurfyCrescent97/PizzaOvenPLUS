@@ -42,6 +42,7 @@ namespace PizzaOven
         private string DL_ID;
         private string MOD_TYPE;
         private string MOD_ID;
+        private string QUERIES;
         private string fileName;
         private string fileDescription;
         private bool cancelled;
@@ -320,7 +321,8 @@ namespace PizzaOven
         }
         private PROTOCOLTYPE GetProtocolType(string protocollink)
         {
-            if (protocollink.Contains("pair"))
+            protocollink = protocollink.Replace("pizzaovenplus://", "");
+            if (protocollink.StartsWith("pair"))
             {
                 return PROTOCOLTYPE.Pair;
             }
@@ -331,7 +333,18 @@ namespace PizzaOven
             try
             {
                 line = line.Replace("pizzaovenplus:", "");
+                try
+                {
+                    string[] queryParts = line.Split('?', 2);
+                    line = queryParts[0];
+                    QUERIES = queryParts[1];
+                }
+                catch
+                {
+                    QUERIES = "";
+                }
                 string[] data = line.Split(',');
+
                 if (protocoltype == PROTOCOLTYPE.Pair)
                 {
                     MEMBERID = data[1].Replace("/", "");

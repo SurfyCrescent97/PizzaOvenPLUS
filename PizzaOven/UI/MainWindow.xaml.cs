@@ -1,4 +1,7 @@
 ﻿using Microsoft.Win32;
+using NAudio.SoundFont;
+using NAudio.Wave;
+using NAudio.Wave.SampleProviders;
 using Newtonsoft.Json.Linq;
 using PizzaOven.UI;
 using SevenZipExtractor;
@@ -37,9 +40,9 @@ using System.Windows.Shapes;
 using System.Windows.Threading;
 using System.Xml.Linq;
 using static System.Collections.Specialized.BitVector32;
+using static System.Windows.Forms.DataFormats;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 using Path = System.IO.Path;
-
 
 namespace PizzaOven
 {
@@ -61,7 +64,7 @@ namespace PizzaOven
         Dictionary<string, List<CreditItem>> credits = new Dictionary<string, List<CreditItem>>()
         {
             {
-                "Orginal PizzaOven",
+                "Original PizzaOven",
                 new List<CreditItem>
                 {
                     new CreditItem { Name = "Tekka", SmallText = "All of the original PizzaOven Code and owner of PizzaOven" },
@@ -89,6 +92,8 @@ namespace PizzaOven
                     new CreditItem { Name = "EmeraldMan", SmallText = "AFOM" },
                     new CreditItem { Name = "C1229", SmallText = "Depots List" },
                     new CreditItem { Name = "Senjay", SmallText = "GMLoader" },
+                    new CreditItem { Name = "FFmpeg Developers", SmallText = "FFmpeg" },
+                    new CreditItem { Name = "AcoustID", SmallText = "FFmpeg compilation" } 
                 }
             }
         };
@@ -164,6 +169,7 @@ namespace PizzaOven
         }
         public MainWindow()
         {
+
             InitializeComponent();
             // Get Version Number
             var PizzaOvenVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
@@ -223,6 +229,33 @@ namespace PizzaOven
             CurrentFilter = "";
             ApplyTransparentBoxes(true);
             Global.ronnietutorial = PLUSSavesystem.read_ini("Tutorial", "Finished", "false") != "true";
+            if (!Directory.Exists($"{Global.assemblyLocation}{Global.s}LocalCollections"))
+            {
+                string templatePath = $"{Global.assemblyLocation}{Global.s}LocalCollections{Global.s}MyTemplate";
+
+                Directory.CreateDirectory(templatePath);
+
+                File.WriteAllText(
+                    $"{templatePath}{Global.s}info.txt",
+                    """
+                    ; You can add comments to your info files such as this one
+                    ; NEVER add a comment on the same line as info
+                    ; Comments aren't a requirement
+
+                    [METADATA]
+                    AUTHOR = SurfyCrescent97
+                    ; "DISABLED" true just means it gets hidden
+                    DISABLED = false
+
+                    [ITEMS]
+                    ; :) Some of my stuff as an example of how to format this section
+                    https://gamebanana.com/wips/85673
+                    https://gamebanana.com/mods/528751
+                    https://gamebanana.com/mods/563468
+                    https://gamebanana.com/wips/97389
+                    """
+                );
+            }
             try
             {
                 if (PLUSSavesystem.read_ini("Init", "AssetsVer", "-1") != PizzaOvenVersion)
@@ -319,7 +352,6 @@ namespace PizzaOven
 
             try
             {
-
                 PLUSSavesystem.StartWatcher();
 
                 PLUSSavesystem.IniEdited += () =>
@@ -327,7 +359,9 @@ namespace PizzaOven
                     string newFolder = PLUSSavesystem.read_ini("Audio", "MusicFolder", "Default");
 
                     if (newFolder == PLUSMUSIC.musicfolder)
+                    {
                         return;
+                    }
 
                     if (PLUSMUSIC.musicfolder != newFolder)
                     {
@@ -484,7 +518,6 @@ namespace PizzaOven
                     introanimator.Destroy();
                 }
             }
-
         }
 
         private void WindowLoaded(object sender, RoutedEventArgs e)
@@ -2132,8 +2165,38 @@ namespace PizzaOven
         }
         private static bool selected = false;
 
-        private static Dictionary<TypeFilter, List<GameBananaCategory>> cats = new();
+        private static Dictionary<TypeFilter, List<GameBananaCategory>> cats = new()
+        {
+            {
+                TypeFilter.Tutorials,
+                new List<GameBananaCategory>
+                {
 
+                }
+            },
+            {
+                TypeFilter.Collections,
+                new List<GameBananaCategory>
+                {
+                    new GameBananaCategory
+                    {
+                        ID = null,
+                        RootID = 0,
+                        Model = "Collection",
+                        Name = "GameBanana",
+                        Icon = new Uri("about:blank")
+                    },
+                    new GameBananaCategory
+                    {
+                        ID = null,
+                        RootID = 0,
+                        Model = "Collection",
+                        Name = "Local",
+                        Icon = new Uri("about:blank")
+                    }
+                }
+            }
+        };
         private static readonly List<GameBananaCategory> All = new GameBananaCategory[]
         {
             new GameBananaCategory()
@@ -2381,6 +2444,11 @@ namespace PizzaOven
             ApplyTransparentBoxes();
         }
 
+        private void OnBrowserTabUnselected(object sender, RoutedEventArgs e)
+        {
+            PLUSTutorial.StopCollectionTutorial(this);
+        }
+
         private static int page = 1;
         private void DecrementPage(object sender, RoutedEventArgs e)
         {
@@ -2400,6 +2468,8 @@ namespace PizzaOven
                 RefreshFilter();
         }
         private static bool filterSelect;
+
+        private static bool filterreloadwait = false;
         private static bool searched = false;
         private bool modManagerRefreshed = false;
 
@@ -2668,8 +2738,63 @@ namespace PizzaOven
             }
 
         }
+        private void CollectionView_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button button || button.DataContext is not GameBananaCollection collection)
+                return;
+
+            FeedGenerator.CollectionID = null;
+            FeedGenerator.CollectionFileID = null;
+            if (collection.IsLocal)
+                FeedGenerator.CollectionFileID = collection.Name;
+            else
+                FeedGenerator.CollectionID = collection.Id;
+            filterSelect = true;
+            PageBox.ItemsSource = Enumerable.Range(1, 1);
+            PageBox.SelectedValue = 1;
+            page = 1;
+            RefreshFilter();
+        }
         private async void RefreshFilter()
         {
+            var ShowCollections = false;
+            var IsCollections = (TypeFilter)TypeBox.SelectedIndex == TypeFilter.Collections;
+            string? CatBoxSelect = ((GameBananaCategory)CatBox.SelectedItem)?.Name;
+            CollectionBackButton.Visibility = Visibility.Collapsed;
+            if (IsCollections)
+            {
+                if (CatBoxSelect == "GameBanana")
+                {
+                    FeedGenerator.CollectionFileID = null;
+                }
+                else if (CatBoxSelect == "Local")
+                {
+                    FeedGenerator.CollectionID = null;
+                }
+                ShowCollections = FeedGenerator.CollectionID == null && FeedGenerator.CollectionFileID == null;
+                CollectionBackButton.Visibility = ShowCollections ? Visibility.Collapsed : Visibility.Visible;
+                if (ShowCollections)
+                {
+                    FeedBox.ItemTemplate = (DataTemplate)FindResource("CollectionTemplate");
+                    PerPageBox.Visibility = Visibility.Visible;
+                    LockedPerPageBox.Visibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    FeedBox.ItemTemplate = (DataTemplate)FindResource("BrowserTemplate");
+                    PerPageBox.Visibility = Visibility.Collapsed;
+                    LockedPerPageBox.Visibility = Visibility.Visible;
+                }
+            }
+            else
+            {
+                FeedBox.ItemTemplate = (DataTemplate)FindResource("BrowserTemplate");
+                ShowCollections = false;
+                FeedGenerator.CollectionID = null;
+                FeedGenerator.CollectionFileID = null;
+                PerPageBox.Visibility = Visibility.Visible;
+                LockedPerPageBox.Visibility = Visibility.Collapsed;
+            }
             NSFWCheckbox.IsEnabled = false;
             SearchBar.IsEnabled = false;
             SearchButton.IsEnabled = false;
@@ -2693,9 +2818,100 @@ namespace PizzaOven
             PageLeft.IsEnabled = false;
             PageRight.IsEnabled = false;
             var search = searched ? SearchBar.Text : null;
-            await FeedGenerator.GetFeed(page, (TypeFilter)TypeBox.SelectedIndex, (FeedFilter)FilterBox.SelectedIndex, (GameBananaCategory)CatBox.SelectedItem,
+            if (IsCollections)
+            {
+                FeedGenerator.CurrentFeed.Records.Clear();
+                if (ShowCollections)
+                {
+                    FeedGenerator.CollectionCurrentFeed = new GameBananaCollectionList();
+                    FeedGenerator.CollectionCurrentFeed.Records = new ObservableCollection<GameBananaCollection>();
+                    FeedGenerator.CollectionCurrentFeed.TotalPages = 1;
+                    if (CatBoxSelect == "GameBanana")
+                    {
+                        FeedGenerator.CollectionCurrentFeed = await FeedGenerator.MakeCollection("7692", page, (PerPageBox.SelectedIndex + 1) * 10, search);
+                    }
+                    else
+                    {
+                        string localCollections = $"{Global.assemblyLocation}{Global.s}LocalCollections";
+                        string[] collectionFolders = Directory.GetDirectories(localCollections)
+                            .Where(folderPath =>
+                            {
+                                string collectionName = Path.GetRelativePath(localCollections, folderPath);
+                                if (!FeedGenerator.TryParseLocalCollection(collectionName, out var localCollectionData))
+                                    return false;
+
+                                return !localCollectionData.Metadata.TryGetValue("DISABLED", out string disabled)
+                                    || !bool.TryParse(disabled, out bool isDisabled)
+                                    || !isDisabled;
+                            })
+                            .ToArray();
+
+                        int perPage = (PerPageBox.SelectedIndex + 1) * 10;
+                        int startIndex = (page - 1) * perPage;
+                        int endIndex = Math.Min(startIndex + perPage, collectionFolders.Length);
+
+                        for (int i = startIndex; i < endIndex; i++)
+                        {
+                            DirectoryInfo folder = new DirectoryInfo(collectionFolders[i]);
+
+                            string filePath = Path.GetRelativePath(localCollections, folder.FullName);
+                            long dateAddedLong = new DateTimeOffset(folder.CreationTimeUtc).ToUnixTimeSeconds();
+
+                            GameBananaCollection collection = new GameBananaCollection();
+                            collection.Name = filePath;
+                            collection.Id = -1;
+                            collection.Source = "Local";
+                            collection.Records = 0;
+                            collection.Link = new Uri("about:blank");
+                            var localCollectionData = FeedGenerator.ParseLocalCollection(filePath);
+                            collection.Owner = new GameBananaMember
+                            {
+                                Name = localCollectionData.Metadata.TryGetValue("AUTHOR", out string author) && !string.IsNullOrWhiteSpace(author) ? author : ""
+                            };
+                            collection.Game = new GameBananaGame
+                            {
+                                Name = "Pizza Tower"
+                            };
+                            collection.IsPrivate = false;
+                            collection.HasContentRatings = false;
+                            collection.DateAddedLong = dateAddedLong;
+
+                            FeedGenerator.CollectionCurrentFeed.Records.Add(collection);
+                        }
+                        FeedGenerator.CollectionCurrentFeed.TotalPages = Math.Max(1, (int)Math.Ceiling((double)collectionFolders.Length / perPage));
+                    }
+                    FeedBox.ItemsSource = FeedGenerator.CollectionCurrentFeed.Records;
+                }
+                else if (FeedGenerator.CollectionID != null || FeedGenerator.CollectionFileID != null)
+                {
+                    FeedGenerator.CurrentFeed.Records.Clear();
+                    FeedGenerator.CurrentFeed.TotalPages = 1;
+                    if (CatBoxSelect == "GameBanana")
+                    {
+                        FeedGenerator.CurrentFeed = await FeedGenerator.MakeCollectionToRecords((int)FeedGenerator.CollectionID, page, (bool)NSFWCheckbox.IsChecked, search, (FeedFilter)FilterBox.SelectedIndex);
+                    }
+                    else
+                    {
+                        FeedGenerator.CurrentFeed = await FeedGenerator.MakeLocalCollectionRecord(FeedGenerator.CollectionFileID, page, 15);
+                    }
+                    FeedBox.ItemsSource = FeedGenerator.CurrentFeed.Records;
+                }
+            }
+            else if ((TypeFilter)TypeBox.SelectedIndex == TypeFilter.Tutorials)
+            {
+                FeedGenerator.CurrentFeed.Records = new ObservableCollection<GameBananaRecord>();
+                FeedGenerator.CurrentFeed.Records.Clear();
+                FeedGenerator.CurrentFeed.TotalPages = 1;
+                FeedGenerator.CurrentFeed = await FeedGenerator.MakeGBTut("7692", page, (PerPageBox.SelectedIndex + 1) * 10, search, (FeedFilter)FilterBox.SelectedIndex);
+                FeedBox.ItemsSource = FeedGenerator.CurrentFeed.Records;
+            }
+            else
+            {
+                await FeedGenerator.GetFeed(page, (TypeFilter)TypeBox.SelectedIndex, (FeedFilter)FilterBox.SelectedIndex, (GameBananaCategory)CatBox.SelectedItem,
                 (GameBananaCategory)SubCatBox.SelectedItem, (PerPageBox.SelectedIndex + 1) * 10, (bool)NSFWCheckbox.IsChecked, search);
-            FeedBox.ItemsSource = FeedGenerator.CurrentFeed.Records;
+                FeedBox.ItemsSource = FeedGenerator.CurrentFeed.Records;
+            }
+
             if (FeedGenerator.error)
             {
                 LoadingBar.Visibility = Visibility.Collapsed;
@@ -2703,7 +2919,7 @@ namespace PizzaOven
                 BrowserRefreshButton.Visibility = Visibility.Visible;
                 if (FeedGenerator.exception.Message.Contains("JSON tokens"))
                 {
-                    BrowserMessage.Text = "Uh oh! Pizza Oven failed to deserialize the GameBanana feed.";
+                    BrowserMessage.Text = "Uh oh! Pizza Oven+ failed to deserialize the GameBanana feed.";
                     return;
                 }
                 switch (Regex.Match(FeedGenerator.exception.Message, @"\d+").Value)
@@ -2722,10 +2938,21 @@ namespace PizzaOven
                 }
                 return;
             }
-            if (page < FeedGenerator.CurrentFeed.TotalPages)
-                PageRight.IsEnabled = true;
+            if (!ShowCollections)
+            {
+                if (page < FeedGenerator.CurrentFeed.TotalPages)
+                    PageRight.IsEnabled = true;
+            }
+            else
+            {
+                if (page < FeedGenerator.CollectionCurrentFeed.TotalPages)
+                    PageRight.IsEnabled = true;
+            }
+
             if (page != 1)
                 PageLeft.IsEnabled = true;
+
+
             if (FeedBox.Items.Count > 0)
             {
                 FeedBox.ScrollIntoView(FeedBox.Items[0]);
@@ -2736,7 +2963,14 @@ namespace PizzaOven
                 ErrorPanel.Visibility = Visibility.Visible;
                 BrowserRefreshButton.Visibility = Visibility.Collapsed;
                 BrowserMessage.Visibility = Visibility.Visible;
-                BrowserMessage.Text = "Pizza Oven+ couldn't find any mods.";
+                if (IsCollections && ShowCollections)
+                {
+                    BrowserMessage.Text = "Pizza Oven+ couldn't find any collections.";
+                }
+                else
+                {
+                    BrowserMessage.Text = "Pizza Oven+ couldn't find any mods.";
+                }
                 var gbtype = (TypeFilter)TypeBox.SelectedIndex;
                 var gbtyperedirection = (gbtype == TypeFilter.Mods) ? "WIPs" : "MODs";
                 if (!Global.ronnietutorial && (gbtype == TypeFilter.Mods || gbtype == TypeFilter.WiPs))
@@ -2745,19 +2979,28 @@ namespace PizzaOven
                     TypeRedirection.Visibility = Visibility.Visible;
                 }
             }
-            PageBox.ItemsSource = Enumerable.Range(1, (int)(FeedGenerator.CurrentFeed.TotalPages));
+            if (!ShowCollections)
+            {
+                PageBox.ItemsSource = Enumerable.Range(1, (int)(FeedGenerator.CurrentFeed.TotalPages));
+            }
+            else
+            {
+                PageBox.ItemsSource = Enumerable.Range(1, Math.Max(1, (int)FeedGenerator.CollectionCurrentFeed.TotalPages));
+            }
 
             LoadingBar.Visibility = Visibility.Collapsed;
             CatBox.IsEnabled = true;
             SubCatBox.IsEnabled = true;
             TypeBox.IsEnabled = true;
-            FilterBox.IsEnabled = true;
+            if (CatBoxSelect != "Local" || !IsCollections)
+                FilterBox.IsEnabled = true;
             PageBox.IsEnabled = true;
             PerPageBox.IsEnabled = true;
             SearchBar.IsEnabled = true;
             SearchButton.IsEnabled = true;
             NSFWCheckbox.IsEnabled = true;
             ClearCacheButton.IsEnabled = true;
+
 
             if (SavedDirectionBrowserGridSearch != "")
             {
@@ -2825,7 +3068,12 @@ namespace PizzaOven
                 }
                 // Set categories
                 if (cats[(TypeFilter)TypeBox.SelectedIndex].Any(x => x.RootID == 0))
-                    CatBox.ItemsSource = All.Concat(cats[(TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID));
+                {
+                    if ((TypeFilter)TypeBox.SelectedIndex == TypeFilter.Collections)
+                        CatBox.ItemsSource = cats[(TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID);
+                    else
+                        CatBox.ItemsSource = All.Concat(cats[(TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID));
+                }
                 else
                     CatBox.ItemsSource = None;
                 CatBox.SelectedIndex = 0;
@@ -2838,6 +3086,11 @@ namespace PizzaOven
                 filterSelect = false;
                 page = 1;
                 RefreshFilter();
+
+                if ((TypeFilter)TypeBox.SelectedIndex == TypeFilter.Collections)
+                    _ = PLUSTutorial.RunCollectionTutorial(this);
+                else
+                    PLUSTutorial.StopCollectionTutorial(this);
             }
         }
         private void MainFilterSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -2861,6 +3114,8 @@ namespace PizzaOven
                 SubCatBox.SelectedIndex = 0;
                 filterSelect = false;
                 page = 1;
+                if ((TypeFilter)TypeBox.SelectedIndex == TypeFilter.Collections && cat?.Name == "Local")
+                    PLUSTutorial.ContinueCollectionTutorial(this);
                 RefreshFilter();
             }
         }
@@ -2915,6 +3170,50 @@ namespace PizzaOven
             RefreshFilter();
         }
 
+        private void CollectionBack(object sender, RoutedEventArgs e)
+        {
+            page = 1;
+            FeedGenerator.CollectionID = null;
+            FeedGenerator.CollectionFileID = null;
+            RefreshFilter();
+        }
+
+        private void CollectionOpen_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button button || button.DataContext is not GameBananaCollection collection)
+                return;
+
+            try
+            {
+                if (collection.IsLocal)
+                {
+                    string localCollectionPath = Path.Combine(Global.assemblyLocation, "LocalCollections", collection.Name);
+                    if (Directory.Exists(localCollectionPath))
+                    {
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = localCollectionPath,
+                            UseShellExecute = true
+                        });
+                        return;
+                    }
+                }
+
+                if (collection.Link != null && !string.IsNullOrWhiteSpace(collection.Link.AbsoluteUri))
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = collection.Link.AbsoluteUri,
+                        UseShellExecute = true
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Global.logger?.WriteLine($"Couldn't open collection: {ex.Message}", LoggerType.Error);
+            }
+        }
+
         private void Search()
         {
             if (!filterSelect && IsLoaded && !String.IsNullOrWhiteSpace(SearchBar.Text))
@@ -2925,7 +3224,12 @@ namespace PizzaOven
                 NSFWCheckbox.IsChecked = true;
                 // Set categories
                 if (cats[(TypeFilter)TypeBox.SelectedIndex].Any(x => x.RootID == 0))
-                    CatBox.ItemsSource = All.Concat(cats[(TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID));
+                {
+                    if ((TypeFilter)TypeBox.SelectedIndex == TypeFilter.Collections)
+                        CatBox.ItemsSource = cats[(TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID);
+                    else
+                        CatBox.ItemsSource = All.Concat(cats[(TypeFilter)TypeBox.SelectedIndex].Where(x => x.RootID == 0).OrderBy(y => y.ID));
+                }
                 else
                     CatBox.ItemsSource = None;
                 CatBox.SelectedIndex = 0;
@@ -3001,7 +3305,8 @@ namespace PizzaOven
             string[] foldersToWatch = new string[]
             {
                 $@"{Global.assemblyLocation}{Global.s}Downgrades",
-                $@"{Global.appdata}{Global.s}PizzaOvenPLUS{Global.s}CustomAssets"
+                $@"{Global.appdata}{Global.s}PizzaOvenPLUS{Global.s}CustomAssets",
+                $@"{Global.assemblyLocation}{Global.s}LocalCollections"
             };
 
             foreach (var folder in foldersToWatch)
@@ -3027,12 +3332,46 @@ namespace PizzaOven
 
         private void PLUSWatcher_Changed(object sender, FileSystemEventArgs e)
         {
-            Dispatcher.BeginInvoke((Action)(() => PLUSrefresh()));
+            Dispatcher.BeginInvoke((Action)(() =>
+            {
+                var localCollectionsPath = $@"{Global.assemblyLocation}{Global.s}LocalCollections";
+                if (string.Equals(e.FullPath?.StartsWith(localCollectionsPath, StringComparison.OrdinalIgnoreCase) == true ? Path.GetDirectoryName(e.FullPath) : null, localCollectionsPath, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(e.FullPath, localCollectionsPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    if ((TypeFilter)TypeBox.SelectedIndex == TypeFilter.Collections && CatBox.SelectedItem is GameBananaCategory localCat && localCat.Name == "Local")
+                    {
+                        page = 1;
+                        FeedGenerator.CollectionID = null;
+                        FeedGenerator.CollectionFileID = null;
+                        RefreshFilter();
+                        return;
+                    }
+                }
+
+                PLUSrefresh();
+            }));
         }
 
         private void PLUSWatcher_Renamed(object sender, RenamedEventArgs e)
         {
-            Dispatcher.BeginInvoke((Action)(() => PLUSrefresh()));
+            Dispatcher.BeginInvoke((Action)(() =>
+            {
+                var localCollectionsPath = $@"{Global.assemblyLocation}{Global.s}LocalCollections";
+                if (e.OldFullPath.StartsWith(localCollectionsPath, StringComparison.OrdinalIgnoreCase)
+                    || e.FullPath.StartsWith(localCollectionsPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    if ((TypeFilter)TypeBox.SelectedIndex == TypeFilter.Collections && CatBox.SelectedItem is GameBananaCategory localCat && localCat.Name == "Local")
+                    {
+                        page = 1;
+                        FeedGenerator.CollectionID = null;
+                        FeedGenerator.CollectionFileID = null;
+                        RefreshFilter();
+                        return;
+                    }
+                }
+
+                PLUSrefresh();
+            }));
         }
         private string PLUSModType(string path)
         {
@@ -3488,10 +3827,28 @@ namespace PizzaOven
                         OnText = "Do not Apply to Language Files? [IT'S ON]";
                         OffText = "Do Apply to Language Files? [IT'S OFF]";
                         break;
+                    case "StartupRegister":
+                        button = StartupRegisterToggle;
+                        OnText = "Unregister Startup? [IT'S REGISTERED]";
+                        OffText = "Register Startup? [IT'S UNREGISTERED]";
+                        InitPLUSToggle("Startup", RegistryConfig.GetStartupStatus() == "Enabled");
+                        break;
                     case "Startup":
                         button = StartupToggle;
                         OnText = "Do not open on Startup? [IT'S ON]";
                         OffText = "Do open on Startup? [IT'S OFF]";
+                        if (RegistryConfig.GetStartupStatus() == "Unregistered")
+                        {
+                            enabled = false;
+                            OffText = "Register startup to use this option.";
+                            RegistryConfig.UnregisterStartup();
+                            button.IsEnabled = false;
+                        }
+                        else
+                        {
+                            RegistryConfig.RegisterStartup();
+                            button.IsEnabled = true;
+                        }
                         break;
                 }
                 if (button != null && OnText != null && OffText != null)
@@ -3510,6 +3867,7 @@ namespace PizzaOven
             InitPLUSToggle("SteamLaunch", PLUSSavesystem.read_ini_bool("Launch", "Steam", false));
             InitPLUSToggle("ModUpdater", PLUSSavesystem.read_ini_bool("LowEnd", "ModUpdate", true));
             InitPLUSToggle("POLanguage", PLUSSavesystem.read_ini_bool("Files", "POLanguage", true));
+            InitPLUSToggle("StartupRegister", PLUSSavesystem.read_ini_bool("Startup", "Registered", false));
             InitPLUSToggle("Startup", RegistryConfig.GetStartupStatus() == "Enabled");
 
             foreach (var name in themebrushes)
@@ -3584,6 +3942,10 @@ namespace PizzaOven
         {
             RegistryConfig.ToggleStartup();
             InitPLUSToggle("Startup", RegistryConfig.GetStartupStatus() == "Enabled");
+        }
+        private void StartupRegisterToggle_Click(object sender, RoutedEventArgs e)
+        {
+            HandlePLUStoggle("Startup", "Registered", false, "StartupRegister");
         }
         private void StartupOpen_Click(object sender, RoutedEventArgs e)
         {
@@ -4154,6 +4516,31 @@ namespace PizzaOven
         private void UnfocusedMute_Click(object sender, RoutedEventArgs e)
         {
             HandlePLUStoggle("Audio", "UnfocusedMute", true, "UnfocusedMute");
+        }
+        private async void AddMusic_Click(object sender, RoutedEventArgs e)
+        {
+            var window = new PLUSSoundWindow();
+
+            OpenFileDialog dialog = new OpenFileDialog
+            {
+                Filter = "Audio Files|*.mp3;*.wav;*.ogg;*.flac;*.m4a;*.aac|All Files|*.*"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                string soundPath = dialog.FileName;
+                var tempmp3 = $"{Path.GetTempPath()}{Global.s}{Guid.NewGuid()}.mp3";
+
+                PLUSSoundWindow.ConvertToMp3(soundPath, tempmp3);
+
+                window.filesToDelete.Add(tempmp3);
+
+                window.Init(tempmp3, $"{Global.customassetsfolder}{Global.s}Music{Global.s}Default{Global.s}BGMusic_Start.mp3", $"{Global.customassetsfolder}{Global.s}Music{Global.s}Default{Global.s}BGMusic_Loop.mp3", 800, 500);
+
+                window.ShowDialog();
+
+                await PLUSMUSIC.ReloadAsync();
+            }
         }
         #endregion 
         #region GMLoader

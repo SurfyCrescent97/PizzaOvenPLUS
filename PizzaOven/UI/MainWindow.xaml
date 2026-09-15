@@ -120,6 +120,17 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition/>
                         </Grid.ColumnDefinitions>
+                        <Grid.Style>
+                            <Style TargetType="Grid">
+                                <Setter Property="Visibility" Value="Visible"/>
+
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ToolCompatible}" Value="False">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Style>
                         <Image Name="CatIcon" Grid.Column="0" VerticalAlignment="Center" Source="{Binding Path=Category.Icon}" Margin="0,0,10,0" Stretch="Uniform" Height="35" Width="35"/>
                         <TextBlock Name="CatText" Grid.ColumnSpan="2" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}" Text="{Binding Path=CategoryName}" TextTrimming="WordEllipsis">
                             <TextBlock.Style>
@@ -287,8 +298,30 @@
                         </Border>
                     </Popup>
                     <StackPanel Name="StatPanel" Background="Transparent" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="4">
-                        <fa5:ImageAwesome Name="DownloadIcon" Margin="0,0,5,0" Height="15" Icon="Solid_Download" Foreground="{DynamicResource TextBrush}"/>
-                        <TextBlock Name="DownloadText" Margin="5,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}" Text="{Binding Path=DownloadString}" />
+                        <fa5:ImageAwesome Name="DownloadIcon" Margin="0,0,5,0" Height="15" Icon="Solid_Download" Foreground="{DynamicResource TextBrush}">
+                            <fa5:ImageAwesome.Style>
+                                <Style TargetType="{x:Type fa5:ImageAwesome}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsTutorial}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </fa5:ImageAwesome.Style>
+                        </fa5:ImageAwesome>
+                        <TextBlock Name="DownloadText" Margin="5,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}" Text="{Binding Path=DownloadString}">
+                            <TextBlock.Style>
+                                <Style TargetType="{x:Type TextBlock}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsTutorial}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                         <fa5:ImageAwesome Name="LikeIcon" Margin="5,0,5,0" Height="15" Icon="Solid_Heart" Foreground="{DynamicResource TextBrush}"/>
                         <TextBlock Name="LikeText" Margin="5,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}" Text="{Binding Path=LikeString}" />
                         <fa5:ImageAwesome Name="ViewIcon" Margin="5,0,5,0" Height="15" Icon="Solid_Eye" Foreground="{DynamicResource TextBrush}"/>
@@ -321,24 +354,144 @@
                             <Border.Background>
                                 <SolidColorBrush Color="#101010" Opacity="0.9"/>
                             </Border.Background>
-                            <TextBlock Margin="10" Foreground="{DynamicResource TextBrush}" FontWeight="Medium" FontSize="18" VerticalAlignment="Center" >
-                                <TextBlock.Text>
-                                    <MultiBinding StringFormat="{}{0:N0} Downloads • {1:N0} Likes • {2:N0} Views">
-                                        <Binding Path="Downloads"/>
-                                        <Binding Path="Likes"/>
-                                        <Binding Path="Views"/>
-                                    </MultiBinding>
-                                </TextBlock.Text>
-                            </TextBlock>
+                            <TextBlock Margin="10" Foreground="{DynamicResource TextBrush}" FontWeight="Medium" FontSize="18" VerticalAlignment="Center" Text="{Binding Path=StatsTooltipText}" />
                         </Border>
                     </Popup>
                     <Grid Grid.Row="7" Margin="5,5,5,10">
+                        <Grid.Style>
+                            <Style TargetType="{x:Type Grid}">
+                                <Setter Property="Visibility" Value="Visible"/>
+
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Path=ToolCompatible}" Value="False">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Style>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition/>
                             <ColumnDefinition/>
                         </Grid.ColumnDefinitions>
                         <Button Grid.Column="0" Foreground="{DynamicResource TextBrush}" FontWeight="Medium" Height="30" Width="95" Background="{DynamicResource SecondaryBrush}" BorderBrush="#353535" VerticalAlignment="Bottom" Content="More Info" Click="MoreInfo_Click"/>
                         <Button Grid.Column="1" Foreground="{DynamicResource TextBrush}" FontWeight="Medium" Height="30" Width="95" Background="{DynamicResource SecondaryBrush}" BorderBrush="#353535" VerticalAlignment="Top" Content="Download" IsEnabled="{Binding Path=Compatible}" Click="Download_Click"/>
+                    </Grid>
+                    <Grid Grid.Row="7" Margin="5,5,5,10">
+                        <Grid.Style>
+                            <Style TargetType="{x:Type Grid}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Path=ToolCompatible}" Value="False">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Style>
+                        <TextBlock Text="{Binding Path=NotCompatibleString}" FontWeight="Bold" Foreground="{DynamicResource TextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Grid>
+                </Grid>
+            </Border>
+        </DataTemplate>
+        <DataTemplate x:Key="CollectionTemplate">
+            <Border CornerRadius="5" Margin="5">
+                <Border.BorderBrush>
+                    <SolidColorBrush Color="#101010" Opacity="0.75"/>
+                </Border.BorderBrush>
+                <Border.Background>
+                    <SolidColorBrush Color="#101010" Opacity="0.75"/>
+                </Border.Background>
+                <Grid VerticalAlignment="Center" x:Name="GridItem" Margin="3">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Image Grid.Row="0" Margin="5,10,5,5" Source="{Binding Path=Image,Mode=OneWay,IsAsync=True}" Height="168" Panel.ZIndex="2" VerticalAlignment="Center" Stretch="Uniform"/>
+                    <Rectangle Grid.Row="0" Height="168" Panel.ZIndex="1" Fill="Black" Stretch="UniformToFill" Margin="5,10,5,5" VerticalAlignment="Center">
+                        <Rectangle.OpacityMask>
+                            <ImageBrush ImageSource="{Binding Path=Image,Mode=OneWay,IsAsync=True}"/>
+                        </Rectangle.OpacityMask>
+                    </Rectangle>
+                    <TextBlock x:Name="Title" Grid.Row="1" Margin="5" FontWeight="Medium" TextTrimming="WordEllipsis" Background="Transparent" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}" Text="{Binding Path=Name}"/>
+                    <Popup PlacementTarget="{Binding ElementName=Title}" IsOpen="{Binding IsMouseDirectlyOver, ElementName=Title, Mode=OneWay}" AllowsTransparency="True">
+                        <Border CornerRadius="5" Panel.ZIndex="0" Margin="10">
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="#101010" Opacity="0.9"/>
+                            </Border.BorderBrush>
+                            <Border.Background>
+                                <SolidColorBrush Color="#101010" Opacity="0.9"/>
+                            </Border.Background>
+                            <TextBlock Margin="10" Text="{Binding Path=Name}" Foreground="{DynamicResource TextBrush}" FontWeight="Medium" FontSize="18" VerticalAlignment="Center"/>
+                        </Border>
+                    </Popup>
+                    <StackPanel Grid.Row="2" Margin="10,-5,10,5" Orientation="Horizontal">
+                        <Image VerticalAlignment="Center" Source="{Binding Path=Owner.Avatar}" Margin="0,0,10,0" Height="35"/>
+                        <TextBlock VerticalAlignment="Center" Foreground="#909090" Text="{Binding Path=Owner.Name}">
+                            <TextBlock.Style>
+                                <Style TargetType="{x:Type TextBlock}">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Path=Owner.HasUpic}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <Image VerticalAlignment="Center" Source="{Binding Path=Owner.Upic}" Height="25"/>
+                    </StackPanel>
+                    <StackPanel Name="StatPanel" Background="Transparent" Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="3">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <fa5:ImageAwesome Name="RecordsIcon" Margin="0,0,5,0" Height="15" Icon="Solid_BoxOpen" Foreground="{DynamicResource TextBrush}"/>
+                            <TextBlock Name="RecordsText" Margin="5,0,10,0" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}" Text="{Binding Path=RecordsString}"/>
+                        </StackPanel>
+                        <StackPanel Background="Transparent" Name="DateAddedPanel" Margin="0,5,0,0" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <fa5:ImageAwesome Name="DateAddedIcon" Margin="0,0,5,0" Height="15" Icon="Solid_Plus" Foreground="{DynamicResource TextBrush}"/>
+                            <TextBlock Name="DateAddedText" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}" Text="{Binding Path=DateAddedFormatted}" />
+                        </StackPanel>
+                    </StackPanel>
+                    <Popup PlacementTarget="{Binding ElementName=StatPanel}" HorizontalAlignment="Center" AllowsTransparency="True">
+                        <Popup.Style>
+                            <Style TargetType="Popup">
+                                <Setter Property="IsOpen" Value="True"/>
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding IsMouseDirectlyOver, ElementName=StatPanel}" Value="False"/>
+                                            <Condition Binding="{Binding IsMouseDirectlyOver, ElementName=RecordsIcon}" Value="False" />
+                                            <Condition Binding="{Binding IsMouseDirectlyOver, ElementName=RecordsText}" Value="False" />
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="IsOpen" Value="False"/>
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Popup.Style>
+                        <Border CornerRadius="5" Panel.ZIndex="0" Margin="10">
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="#101010" Opacity="0.9"/>
+                            </Border.BorderBrush>
+                            <Border.Background>
+                                <SolidColorBrush Color="#101010" Opacity="0.9"/>
+                            </Border.Background>
+                            <TextBlock Margin="10" Foreground="{DynamicResource TextBrush}" FontWeight="Medium" FontSize="18" VerticalAlignment="Center">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="{}{0:N0} Records">
+                                        <Binding Path="Records"/>
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </Border>
+                    </Popup>
+                    <Grid Grid.Row="4" Margin="5" HorizontalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Content="View Collection" Margin="0,0,5,0" HorizontalAlignment="Center" Click="CollectionView_Click"/>
+                        <Button Grid.Column="1" Content="{Binding OpenActionText}" Margin="5,0,0,0" HorizontalAlignment="Center" Click="CollectionOpen_Click"/>
                     </Grid>
                 </Grid>
             </Border>
@@ -558,7 +711,7 @@
                     </Grid>
                 </TabItem.Content>
             </TabItem>
-            <TabItem Name="ModBrowser" Selector.Selected="OnBrowserTabSelected" FontSize="18" HorizontalAlignment="Center" Header="Browse Mods">
+            <TabItem Name="ModBrowser" Selector.Selected="OnBrowserTabSelected" Selector.Unselected="OnBrowserTabUnselected" FontSize="18" HorizontalAlignment="Center" Header="Browse Mods">
                 <Grid Name="ModBrowserGrid">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="50"/>
@@ -689,6 +842,8 @@
                         <ComboBoxItem xml:space="preserve" IsSelected="True">Mods</ComboBoxItem>
                         <ComboBoxItem xml:space="preserve">WiPs</ComboBoxItem>
                         <ComboBoxItem xml:space="preserve">Sounds</ComboBoxItem>
+                        <ComboBoxItem xml:space="preserve">Tutorials</ComboBoxItem>
+                        <ComboBoxItem xml:space="preserve">Collections</ComboBoxItem>
                     </ComboBox>
                     <ComboBox Margin="5,0,0,0" Grid.Column="2" IsEnabled="False" Name="CatBox" Height="35" HorizontalAlignment="Stretch" MinWidth="150" SelectionChanged="MainFilterSelectionChanged">
                         <ComboBox.ItemTemplate>
@@ -751,6 +906,13 @@
                         <ComboBox IsEnabled="False" Margin="15,0,15,0" Name="PageBox" SelectionChanged="PageBox_SelectionChanged" Height="35" VerticalAlignment="Center"/>
                     </StackPanel>
                     <StackPanel Margin="5,5,10,5" Grid.ColumnSpan="8" Orientation="Horizontal" HorizontalAlignment="Right" Grid.Row="2">
+                        <Button Margin="0,0,15,0" Click="CollectionBack" Name="CollectionBackButton" Content="Back" HorizontalAlignment="center" FontSize="18" FontWeight="Medium"  Height="35" Width="80" Background="#181818" BorderBrush="#252525" Visibility="Collapsed" Foreground="{DynamicResource TextBrush}">
+                            <Button.Resources>
+                                <Style TargetType="{x:Type Border}">
+                                    <Setter Property="CornerRadius" Value="5"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
                         <Button Margin="0,0,15,0" Click="ClearCache" Name="ClearCacheButton" Content="Refresh" HorizontalAlignment="center" FontSize="18" FontWeight="Medium"  Height="35" Width="80" Background="#181818" BorderBrush="#252525" IsEnabled="False" Foreground="{DynamicResource TextBrush}">
                             <Button.Resources>
                                 <Style TargetType="{x:Type Border}">
@@ -767,6 +929,9 @@
                             <ComboBoxItem>30</ComboBoxItem>
                             <ComboBoxItem>40</ComboBoxItem>
                             <ComboBoxItem>50</ComboBoxItem>
+                        </ComboBox>
+                        <ComboBox IsEnabled="False" Name="LockedPerPageBox" Visibility="Collapsed" SelectionChanged="PerPageSelectionChanged" Height="35" VerticalAlignment="Center">
+                            <ComboBoxItem IsSelected="True">15</ComboBoxItem>
                         </ComboBox>
                     </StackPanel>
                     <fa5:ImageAwesome Name="LoadingBar" Grid.ColumnSpan="8" Foreground="{DynamicResource LoadingBrush}" Panel.ZIndex="1" Grid.Row="1" Icon="Solid_Spinner" Height="110" VerticalAlignment="Center" HorizontalAlignment="Center" Spin="True" SpinDuration="2"/>
@@ -895,6 +1060,7 @@
                             <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="App Settings">
                                 <Button Content="Back" Height="30" HorizontalAlignment="Left" Click="FilterButtonBack_Click"/>
                                 <TextBlock Text="Startup:" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
+                                <Button x:Name="StartupRegisterToggle" Content="Register Startup" Height="30" HorizontalAlignment="Left" Click="StartupRegisterToggle_Click"/>
                                 <Button x:Name="StartupToggle" Content="Do not open on Device Startup" Height="30" HorizontalAlignment="Left" Click="StartupToggle_Click"/>
                                 <Button x:Name="StartupOpen" Content="Open Task Manager Startup" Height="30" HorizontalAlignment="Left" Click="StartupOpen_Click"/>
                                 <TextBlock Text="Discord RPC (Displays on Discord):" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
@@ -1041,18 +1207,21 @@
                                     <Slider x:Name="Transparency_ModGrid" Minimum="0" Maximum="100" Width="120" ValueChanged="Transparent_ValueChanged" Foreground="{DynamicResource TextBrush}"/>
                                     <TextBlock Text="{Binding ElementName=Transparency_ModGrid, Path=Value, StringFormat={}{0:0}}" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}"/>
                                 </StackPanel>
-                                
-                                <TextBlock Text="Custom Assets:" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
-                                <Button x:Name="AssetsFolder" Foreground="{DynamicResource TextBrush}" Content="Open Assets Folder" Height="35" HorizontalAlignment="Left" Click="AssetsFolder_Click"/>
-                                <Button x:Name="RestoreMissingAssets" Foreground="{DynamicResource TextBrush}" Content="Restore Missing Assets" Height="35" HorizontalAlignment="Left" Click="RestoreMissingAssets_Click"/>
-                                <Button x:Name="RestoreALLAssets" Foreground="{DynamicResource TextBrush}" Content="Restore All Assets" Height="35" HorizontalAlignment="Left" Click="RestoreALLAssets_Click"/>
+
+                                <TextBlock Text="Music:" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
                                 <Button x:Name="MuteButton" Foreground="{DynamicResource TextBrush}" Content="Enable Mute?" Height="35" HorizontalAlignment="Left" Click="Mute_Click"/>
                                 <Button x:Name="UnfocusedMuteButton" Foreground="{DynamicResource TextBrush}" Content="Enable Unfocused Mute?" Height="35" HorizontalAlignment="Left" Click="UnfocusedMute_Click"/>
+                                <Button x:Name="AddMusicButton" Foreground="{DynamicResource TextBrush}" Content="Add Music" Height="35" HorizontalAlignment="Left" Click="AddMusic_Click"/>
                                 <TextBlock Text="Volume:" Margin="0,0,0,5" Foreground="{DynamicResource TextBrush}"/>
                                 <StackPanel Orientation="Horizontal">
                                     <Slider x:Name="SoundVolume" Minimum="0" Maximum="100" Width="120" ValueChanged="SoundVolume_ValueChanged" Foreground="{DynamicResource TextBrush}"/>
                                     <TextBlock Text="{Binding ElementName=SoundVolume, Path=Value, StringFormat={}{0:0}}" Margin="8,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}"/>
                                 </StackPanel>
+
+                                <TextBlock Text="Custom Assets:" Margin="0,5,0,2" Foreground="{DynamicResource TextBrush}"/>
+                                <Button x:Name="AssetsFolder" Foreground="{DynamicResource TextBrush}" Content="Open Assets Folder" Height="35" HorizontalAlignment="Left" Click="AssetsFolder_Click"/>
+                                <Button x:Name="RestoreMissingAssets" Foreground="{DynamicResource TextBrush}" Content="Restore Missing Assets" Height="35" HorizontalAlignment="Left" Click="RestoreMissingAssets_Click"/>
+                                <Button x:Name="RestoreALLAssets" Foreground="{DynamicResource TextBrush}" Content="Restore All Assets" Height="35" HorizontalAlignment="Left" Click="RestoreALLAssets_Click"/>
                             </StackPanel>
 
                             <StackPanel Orientation="Vertical" Margin="0,0,0,10" Tag="GMLoader">

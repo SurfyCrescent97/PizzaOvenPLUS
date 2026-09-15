@@ -24,6 +24,18 @@ namespace PizzaOven
             reg.SetValue("PizzaOven+", $"\"{AppPath}\"", RegistryValueKind.String);
             reg.Close();
         }
+        public static void UnregisterStartup()
+        {
+            var reg = Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", true);
+
+            if (reg != null)
+            {
+                if (reg.GetValue("PizzaOven+") != null)
+                    reg.DeleteValue("PizzaOven+");
+
+                reg.Close();
+            }
+        }
         public static bool InstallGBHandler()
         {
             string AppPath = $"{Global.assemblyLocation}{Global.s}{AppDomain.CurrentDomain.FriendlyName}.exe";
@@ -157,6 +169,11 @@ namespace PizzaOven
         {
             string runKeyPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
             string itemName = "PizzaOven+";
+
+            if (!PLUSSavesystem.read_ini_bool("Startup", "Registered", false))
+            {
+                return "Unregistered";
+            }
 
             using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(runKeyPath))
             {

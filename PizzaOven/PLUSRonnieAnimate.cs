@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
@@ -488,7 +489,7 @@ namespace PizzaOven
             }
         }
 
-        public async Task WaitForClickOnImageAsync()
+        public async Task WaitForClickOnImageAsync(CancellationToken cancellationToken = default)
         {
             if (_image == null || _overlayCanvas == null || _window == null)
                 throw new InvalidOperationException("Image, overlayCanvas, or window not initialized.");
@@ -516,9 +517,14 @@ namespace PizzaOven
 
             _window.PreviewMouseLeftButtonDown += MouseDownHandler;
 
-            await tcs.Task;
-
-            _window.PreviewMouseLeftButtonDown -= MouseDownHandler;
+            try
+            {
+                await tcs.Task.WaitAsync(cancellationToken);
+            }
+            finally
+            {
+                _window.PreviewMouseLeftButtonDown -= MouseDownHandler;
+            }
         }
         public void SetVisible(bool? visible = null)
         {

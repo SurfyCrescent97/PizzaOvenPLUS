@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Media;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -31,6 +32,73 @@ namespace PizzaOven
             public static int DeclineReplay = 0;
             public static int RonnieExplainSettings = -1;
             public static int publictextbox = 0;
+        }
+
+        private static CancellationTokenSource collectionTutorialCancellation;
+        private static TaskCompletionSource<bool> collectionTutorialAdvance;
+        private static int collectionTutorialTextbox = -1;
+        private static bool collectionTutorialExplained;
+        private static bool collectionTutorialDismissing;
+
+        public static void ContinueCollectionTutorial(MainWindow window)
+        {
+            collectionTutorialAdvance?.TrySetResult(true);
+        }
+
+        public static async void StopCollectionTutorial(MainWindow window)
+        {
+            if (collectionTutorialDismissing)
+                return;
+
+            if (collectionTutorialExplained)
+            {
+                DestroyCollectionTutorial(window);
+                return;
+            }
+
+            collectionTutorialDismissing = true;
+            collectionTutorialCancellation?.Cancel();
+            collectionTutorialCancellation = null;
+
+            PLUSRonnieAnimate animator = window.tutorialanimator;
+            if (animator != null)
+            {
+                animator.SetExpression("sad");
+                if (collectionTutorialTextbox >= 0)
+                    animator.DestroyTextbox(collectionTutorialTextbox);
+
+                collectionTutorialTextbox = animator.MakeTextbox(animator.GetX() + 110, animator.GetY() + 25, "Oh okay...");
+                animator.GlideTo(-400, Math.Max(100, window.ActualHeight - 230), 5);
+                await Task.Delay(700);
+
+                if (ReferenceEquals(window.tutorialanimator, animator))
+                {
+                    animator.DestroyTextbox(collectionTutorialTextbox);
+                    animator.Destroy();
+                    window.tutorialanimator = null;
+                }
+            }
+
+            collectionTutorialTextbox = -1;
+            collectionTutorialDismissing = false;
+        }
+
+        private static void DestroyCollectionTutorial(MainWindow window)
+        {
+            collectionTutorialCancellation?.Cancel();
+            collectionTutorialCancellation = null;
+
+            if (window.tutorialanimator != null)
+            {
+                if (collectionTutorialTextbox >= 0)
+                    window.tutorialanimator.DestroyTextbox(collectionTutorialTextbox);
+                window.tutorialanimator.Destroy();
+                window.tutorialanimator = null;
+            }
+
+            collectionTutorialTextbox = -1;
+            collectionTutorialExplained = false;
+            collectionTutorialDismissing = false;
         }
         public static async Task<bool> WaitUntilTutorialDownloaded(int checkDelayMs = 16)
         {
@@ -133,6 +201,103 @@ namespace PizzaOven
 
                 await Task.Delay(100);
             }
+        }
+        public static async Task RunCollectionTutorial(MainWindow window)
+        {
+            if (PLUSSavesystem.read_ini("Tutorial", "CollectionTutorial", "false") == "true")
+                return;
+
+            if (collectionTutorialCancellation != null)
+                return;
+
+            PLUSSavesystem.write_ini("Tutorial", "CollectionTutorial", "true");
+            collectionTutorialCancellation = new CancellationTokenSource();
+            collectionTutorialAdvance = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            CancellationToken cancellationToken = collectionTutorialCancellation.Token;
+
+            try
+            {
+                while (!cancellationToken.IsCancellationRequested &&
+                       (!window.ModBrowser.IsSelected ||
+                        !window.IsLoaded ||
+                        !selectedCollectionType(window) ||
+                        window.LoadingBar.Visibility != Visibility.Collapsed))
+                {
+                    await Task.Delay(50, cancellationToken);
+                }
+
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
+                window.tutorialanimator = new PLUSRonnieAnimate();
+                double targetY = Math.Max(100, window.ActualHeight - 230);
+                window.tutorialanimator.Initialize(window, -220, targetY, 1.5);
+                window.tutorialanimator.GlideTo(20, targetY, 5);
+
+                while (!cancellationToken.IsCancellationRequested && window.tutorialanimator.GetX() < 20)
+                    await Task.Delay(16, cancellationToken);
+
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+
+                window.tutorialanimator.SetExpression("happy");
+                int textbox = collectionTutorialTextbox = window.tutorialanimator.MakeTextbox(window.tutorialanimator.GetX() + 110, window.tutorialanimator.GetY() + 25, "Hey do you wanna make your own collection lists\n(click to continue)");
+                using var clickCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                Task clickTask = window.tutorialanimator.WaitForClickOnImageAsync(clickCancellation.Token);
+                Task localSelectionTask = collectionTutorialAdvance.Task;
+                bool localWasSelected = await Task.WhenAny(clickTask, localSelectionTask) == localSelectionTask;
+                if (localWasSelected)
+                    clickCancellation.Cancel();
+                window.tutorialanimator.DestroyTextbox(textbox);
+
+                if (!localWasSelected)
+                {
+                    window.TypeBox.SelectedIndex = (int)TypeFilter.Collections;
+                    await Task.Delay(150, cancellationToken);
+                    window.CatBox.SelectedIndex = 1;
+                    string localCollectionsPath = $"{Global.assemblyLocation}{Global.s}LocalCollections";
+                    if (Directory.Exists(localCollectionsPath))
+                    {
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = localCollectionsPath,
+                            UseShellExecute = true
+                        });
+                    }
+                }
+
+                collectionTutorialExplained = true;
+                textbox = window.tutorialanimator.MakeTextbox(window.tutorialanimator.GetX() + 110, window.tutorialanimator.GetY() + 25, "You can use the template to make your own lists [click to proceed]");
+                await window.tutorialanimator.WaitForClickOnImageAsync(cancellationToken);
+                window.tutorialanimator.DestroyTextbox(textbox);
+                textbox = window.tutorialanimator.MakeTextbox(window.tutorialanimator.GetX() + 110, window.tutorialanimator.GetY() + 25, "You can edit the info.txt in the \"MyTemplate\" and duplicate the folder");
+                await window.tutorialanimator.WaitForClickOnImageAsync(cancellationToken);
+                window.tutorialanimator.DestroyTextbox(textbox);
+                textbox = window.tutorialanimator.MakeTextbox(window.tutorialanimator.GetX() + 110, window.tutorialanimator.GetY() + 25, "and you can share them to allow people to easily download mods from there");
+                await window.tutorialanimator.WaitForClickOnImageAsync(cancellationToken);
+                window.tutorialanimator.DestroyTextbox(textbox);
+                DestroyCollectionTutorial(window);
+            }
+            catch (OperationCanceledException)
+            {
+                StopCollectionTutorial(window);
+            }
+            catch
+            {
+                StopCollectionTutorial(window);
+            }
+            finally
+            {
+                collectionTutorialAdvance = null;
+                if (collectionTutorialCancellation == null)
+                    collectionTutorialTextbox = -1;
+            }
+        }
+
+        private static bool selectedCollectionType(MainWindow window)
+        {
+            return window.TypeBox.SelectedIndex == (int)TypeFilter.Collections &&
+                   window.CatBox.SelectedItem is GameBananaCategory;
         }
         public static async Task RunTutorial(MainWindow window)
         {

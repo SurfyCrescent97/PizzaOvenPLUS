@@ -143,9 +143,9 @@ namespace PizzaOven
         [JsonPropertyName("_sAvatarUrl")]
         public Uri Avatar { get; set; }
         [JsonPropertyName("_sUpicUrl")]
-        public Uri Upic { get; set; }
+        public Uri? Upic { get; set; }
         [JsonIgnore]
-        public bool HasUpic => Upic.OriginalString.Length > 0;
+        public bool HasUpic => Upic != null && Upic.OriginalString.Length > 0;
     }
     public class GameBananaItemUpdate
     {
@@ -188,7 +188,7 @@ namespace PizzaOven
         [JsonIgnore]
         public bool HasAltLinks => AlternateFileSources != null;
         [JsonIgnore]
-        public Uri Image => Media.Where(x => x.Type == "image").ToList().Count > 0 ? new Uri($"{Media[0].Base}/{Media[0].File}") 
+        public Uri Image => Media.Where(x => x.Type == "image").ToList().Count > 0 ? new Uri($"{Media[0].Base}/{Media[0].File}")
             : new Uri("https://images.gamebanana.com/static/img/DefaultEmbeddables/Sound.jpg");
         [JsonPropertyName("_aPreviewMedia")]
         public List<GameBananaImage> Media { get; set; }
@@ -196,6 +196,12 @@ namespace PizzaOven
         public string Description { get; set; }
         [JsonIgnore]
         public bool HasDescription => Description.Length > 100;
+        [JsonIgnore]
+        public bool IsTutorial => Link != null && Link.AbsoluteUri.Contains("/tuts/", StringComparison.OrdinalIgnoreCase);
+        [JsonIgnore]
+        public string StatsTooltipText => IsTutorial
+            ? $"{Likes:N0} Likes • {Views:N0} Views"
+            : $"{Downloads:N0} Downloads • {Likes:N0} Likes • {Views:N0} Views";
         [JsonPropertyName("_sText")]
         public string Text { get; set; }
         [JsonIgnore]
@@ -272,6 +278,17 @@ namespace PizzaOven
         }
         [JsonPropertyName("_bIsNsfw")]
         public bool IsNsfw { get; set; }
+        [JsonIgnore]
+        public GameBananaGame Game { get; set; } = new GameBananaGame
+        {
+            Name = "Pizza Tower",
+        };
+        [JsonIgnore]
+        public bool ForceCompatibleFalse { get; set; } = false;
+        [JsonIgnore]
+        public bool ToolCompatible => Game.Name == "Pizza Tower" && !ForceCompatibleFalse;  
+        [JsonIgnore]
+        public string NotCompatibleString { get; set; } = "Doesn't Work with this Launcher";
     }
     public class GameBananaModList
     {
@@ -299,5 +316,86 @@ namespace PizzaOven
         public Uri File { get; set; }
         [JsonPropertyName("_sCaption")]
         public string Caption { get; set; }
+    }
+    public class GameBananaCollectionList
+    {
+        public ObservableCollection<GameBananaCollection> Records { get; set; }
+        public double TotalPages { get; set; }
+        public DateTime TimeFetched = DateTime.UtcNow;
+        public bool IsValid => (DateTime.UtcNow - TimeFetched).TotalMinutes < 15;
+    }
+    public class GameBananaCollection
+    {
+        [JsonIgnore]
+        public string Source = "Gamebanana";
+        [JsonIgnore]
+        public bool IsLocal => string.Equals(Source, "Local", StringComparison.OrdinalIgnoreCase);
+        [JsonIgnore]
+        public string OpenActionText => IsLocal ? "Open File" : "Open Link";
+        [JsonIgnore]
+        public Uri Image => new Uri("https://images.gamebanana.com/static/img/DefaultEmbeddables/Collection.jpg");
+        [JsonPropertyName("_idRow")]
+        public int Id { get; set; }
+        [JsonIgnore]
+        public int Records { get; set; } = 0;
+        [JsonIgnore]
+        public string RecordsString => StringConverters.FormatNumber(Records);
+        [JsonPropertyName("_sName")]
+        public string Name { get; set; }
+        [JsonPropertyName("_sProfileUrl")]
+        public Uri Link { get; set; }
+        [JsonPropertyName("_aSubmitter")]
+        public GameBananaMember Owner { get; set; }
+        [JsonPropertyName("_aGame")]
+        public GameBananaGame Game { get; set; }
+        [JsonPropertyName("_bIsPrivate")]
+        public bool IsPrivate { get; set; }
+
+        [JsonPropertyName("_bHasContentRatings")]
+        public bool HasContentRatings { get; set; }
+        [JsonPropertyName("_tsDateUpdated")]
+        public long DateUpdatedLong { get; set; }
+        private static readonly DateTime Epoch = new DateTime(1970, 1, 1);
+
+        [JsonIgnore]
+        public DateTime DateUpdated => Epoch.AddSeconds(DateUpdatedLong);
+        [JsonPropertyName("_tsDateAdded")]
+        public long DateAddedLong { get; set; }
+
+        [JsonIgnore]
+        public DateTime DateAdded => Epoch.AddSeconds(DateAddedLong);
+        [JsonIgnore]
+        public string DateAddedFormatted => $"Added {StringConverters.FormatTimeAgo(DateTime.UtcNow - DateAdded)}";
+        [JsonIgnore]
+        public bool HasUpdates => DateAdded.CompareTo(DateUpdated) < 0;
+        [JsonIgnore]
+        public string DateUpdatedAgo => $"Updated {StringConverters.FormatTimeAgo(DateTime.UtcNow - DateUpdated)}";
+    }
+
+    public class GameBananaCollectionInfo
+    {
+        [JsonPropertyName("_aMetadata")]
+        public GameBananaCollectionInfoMetadata Metadata { get; set; }
+        [JsonPropertyName("_aRecords")]
+        public List<GameBananaCollectionInfoRecords> Records { get; set; } = new();
+    }
+    public class GameBananaCollectionInfoMetadata
+    {
+        [JsonPropertyName("_nRecordCount")]
+        public int RecordCount { get; set; } = 0;
+        [JsonPropertyName("_nPerpage")]
+        public int PerPage { get; set; } = 15;
+    }
+    public class GameBananaCollectionInfoRecords
+    {
+        [JsonPropertyName("_idRow")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("_sModelName")]
+        public string ModelName { get; set; }
+        [JsonPropertyName("_sProfileUrl")]
+        public Uri Link { get; set; }
+        [JsonPropertyName("_sGame")]
+        public GameBananaGame Game { get; set; }
     }
 }

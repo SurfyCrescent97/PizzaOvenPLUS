@@ -11,11 +11,12 @@ namespace PizzaOven
     public static class PLUSMUSIC
     {
         private static WaveOutEvent? outputDevice;
-        private static AudioFileReader? startReader;
-        private static AudioFileReader? loopReader;
+        private static WaveStream? startReader;
+        private static WaveStream? loopReader;
         private static LoopStream? loopStream;
 
         private static FileSystemWatcher? bgMusicWatcher;
+        private static readonly object musicWatcherLock = new();
 
         public static bool unfocusedMuteEnabled = true;
         public static bool MuteEnabled = true;
@@ -25,6 +26,10 @@ namespace PizzaOven
         private static WaveStream tutorialReader;
         private static LoopStream tutorialLoop;
 
+        private static CancellationTokenSource initCts;
+
+        private static readonly SemaphoreSlim initLock = new SemaphoreSlim(1, 1);
+
         public static string musicfolder = PLUSSavesystem.read_ini("Audio", "MusicFolder", "Default");
         public static async Task Play_TutorialMusic()
         {
@@ -32,9 +37,7 @@ namespace PizzaOven
             {
                 string resourceUri = "PizzaOven;component/OvenRonnie/TutorialMusic.wav";
 
-                var streamResourceInfo = Application.GetResourceStream(
-                    new Uri($"pack://application:,,,/{resourceUri}")
-                );
+                var streamResourceInfo = Application.GetResourceStream(new Uri($"pack://application:,,,/{resourceUri}"));
 
                 var memoryStream = new MemoryStream();
                 streamResourceInfo.Stream.CopyTo(memoryStream);
@@ -121,63 +124,95 @@ namespace PizzaOven
                     tutorialOutput.Play();
             }
         }
+        public static async Task ReloadAsync()
+        {
+            Stop();
+            await InitializeAsync();
+        }
         public static async Task InitializeAsync()
         {
-            if (Global.ronnietutorial)
-                return;
-            if (outputDevice != null)
-            {
-                outputDevice.Stop();
-                outputDevice.Dispose();
-                outputDevice = null;
-            }
-
-            startReader?.Dispose();
-            loopReader?.Dispose();
-            loopStream?.Dispose();
-            startReader = null;
-            loopReader = null;
-            loopStream = null;
-
-            unfocusedMuteEnabled = PLUSSavesystem.read_ini_bool("Audio", "UnfocusedMute", true);
-            MuteEnabled = PLUSSavesystem.read_ini_bool("Audio", "Mute", true);
-
-            
-            string customAssets = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),"PizzaOvenPLUS","CustomAssets");
-
-            string startFile = $"{Global.customassetsfolder}{Global.s}Music{Global.s}{musicfolder}{Global.s}BGMusic_Start.mp3";
-            string loopFile = $"{Global.customassetsfolder}{Global.s}Music{Global.s}{musicfolder}{Global.s}BGMusic_Loop.mp3";
-
-            outputDevice = new WaveOutEvent();
-            ApplyCurrentVolume();
-
+            await initLock.WaitAsync();
             try
             {
-                if (Application.Current != null)
+                if (Global.ronnietutorial)
+                    return;
+
+                lock (musicWatcherLock)
                 {
-                    Application.Current.Activated += OnAppActivated;
-                    Application.Current.Deactivated += OnAppDeactivated;
+                    bgMusicWatcher?.Dispose();
+                    bgMusicWatcher = null;
                 }
+
+                if (outputDevice != null)
+                {
+                    outputDevice.Stop();
+                    outputDevice.Dispose();
+                    outputDevice = null;
+                }
+
+                startReader?.Dispose();
+                loopReader?.Dispose();
+                loopStream?.Dispose();
+                startReader = null;
+                loopReader = null;
+                loopStream = null;
+
+                unfocusedMuteEnabled = PLUSSavesystem.read_ini_bool("Audio", "UnfocusedMute", true);
+                MuteEnabled = PLUSSavesystem.read_ini_bool("Audio", "Mute", true);
+
+                string customAssets = Global.customassetsfolder;
+                string musicDirectory = Path.Combine(customAssets, "Music", musicfolder);
+                string startFile = Path.Combine(musicDirectory, "BGMusic_Start.mp3");
+                string loopFile = Path.Combine(musicDirectory, "BGMusic_Loop.mp3");
+
+                outputDevice = new WaveOutEvent();
+                ApplyCurrentVolume();
+
+                try
+                {
+                    if (Application.Current != null)
+                    {
+                        Application.Current.Activated += OnAppActivated;
+                        Application.Current.Deactivated += OnAppDeactivated;
+                    }
+                }
+                catch { }
+
+                try
+                {
+                    if (File.Exists(startFile))
+                    {
+                        startReader = await CreateMp3ReaderFromFileAsync(startFile);
+                        if (startReader != null)
+                        {
+                            outputDevice.Init(startReader);
+                            outputDevice.Play();
+                            await WaitForPlaybackEndAsync(outputDevice);
+                        }
+                    }
+                }
+                catch { }
+
+                try
+                {
+                    if (File.Exists(loopFile))
+                    {
+                        loopReader = await CreateMp3ReaderFromFileAsync(loopFile);
+                        if (loopReader != null)
+                        {
+                            loopStream = new LoopStream(loopReader);
+                            outputDevice.Init(loopStream);
+                            outputDevice.Play();
+                        }
+                    }
+                }
+                catch { }
+
+                StartMusicWatcher();
             }
-            catch { }
-
-            if (File.Exists(startFile))
+            finally
             {
-                startReader = new AudioFileReader(startFile);
-
-                outputDevice.Init(startReader);
-                outputDevice.Play();
-
-                await WaitForPlaybackEndAsync(outputDevice);
-            }
-
-            if (File.Exists(loopFile))
-            {
-                loopReader = new AudioFileReader(loopFile);
-                loopStream = new LoopStream(loopReader);
-
-                outputDevice.Init(loopStream);
-                outputDevice.Play();
+                initLock.Release();
             }
         }
 
@@ -252,45 +287,114 @@ namespace PizzaOven
             }
             catch { }
 
-            outputDevice?.Stop();
+            StopAndDisposeOutputDevice();
+
             startReader?.Dispose();
             loopReader?.Dispose();
-            outputDevice?.Dispose();
+            loopStream?.Dispose();
 
             startReader = null;
             loopReader = null;
-            outputDevice = null;
             loopStream = null;
+        }
+
+        private static async Task<WaveStream?> CreateMp3ReaderFromFileAsync(string filePath)
+        {
+            if (!File.Exists(filePath))
+                return null;
+
+            try
+            {
+                byte[] data = await File.ReadAllBytesAsync(filePath);
+                var stream = new MemoryStream(data, writable: false);
+                return new Mp3FileReader(stream);
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         public static void StartMusicWatcher()
         {
-            string customAssets = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PizzaOvenPLUS","CustomAssets");
-
-            if (!Directory.Exists(customAssets))
-                Directory.CreateDirectory(customAssets);
-
-            bgMusicWatcher = new FileSystemWatcher(customAssets)
+            lock (musicWatcherLock)
             {
-                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.Size,
-                Filter = "*.mp3",
-                EnableRaisingEvents = true,
-                IncludeSubdirectories = false
-            };
+                if (bgMusicWatcher != null)
+                {
+                    bgMusicWatcher.EnableRaisingEvents = false;
+                    bgMusicWatcher.Dispose();
+                    bgMusicWatcher = null;
+                }
 
-            bgMusicWatcher.Created += OnMusicFileChanged;
-            bgMusicWatcher.Deleted += OnMusicFileChanged;
-            bgMusicWatcher.Changed += OnMusicFileChanged;
-            bgMusicWatcher.Renamed += OnMusicFileChanged;
+                string musicRoot = Path.Combine(Global.customassetsfolder, "Music");
+                if (!Directory.Exists(musicRoot))
+                    Directory.CreateDirectory(musicRoot);
+
+                bgMusicWatcher = new FileSystemWatcher(musicRoot)
+                {
+                    NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.Size | NotifyFilters.DirectoryName,
+                    Filter = "*.mp3",
+                    EnableRaisingEvents = true,
+                    IncludeSubdirectories = true
+                };
+
+                bgMusicWatcher.Created += OnMusicFileChanged;
+                bgMusicWatcher.Deleted += OnMusicFileChanged;
+                bgMusicWatcher.Changed += OnMusicFileChanged;
+                bgMusicWatcher.Renamed += OnMusicFileChanged;
+            }
         }
 
         private static void OnMusicFileChanged(object sender, FileSystemEventArgs e)
         {
-            string fileName = Path.GetFileName(e.FullPath);
-            if (fileName == "BGMusic_Start.mp3" || fileName == "BGMusic_Loop.mp3")
+            try
             {
-                Task.Delay(100).ContinueWith(async _ => await InitializeAsync());
+                string fileName = Path.GetFileName(e.FullPath);
+                string targetFolder = Path.Combine(Global.customassetsfolder, "Music", musicfolder);
+                string changedFolder = Path.GetDirectoryName(e.FullPath);
+
+                if (string.Equals(fileName, "BGMusic_Start.mp3", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(fileName, "BGMusic_Loop.mp3", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (string.Equals(changedFolder, targetFolder, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(Path.GetDirectoryName(changedFolder), targetFolder, StringComparison.OrdinalIgnoreCase))
+                    {
+                        _ = Task.Run(async () =>
+                        {
+                            await Task.Delay(150);
+                            await InitializeAsync();
+                        });
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private static void StopAndDisposeOutputDevice()
+        {
+            if (outputDevice == null) return;
+
+            using var mre = new ManualResetEventSlim(false);
+            void handler(object? s, StoppedEventArgs e) => mre.Set();
+
+            outputDevice.PlaybackStopped += handler;
+            try
+            {
+                try 
+                { 
+                    outputDevice.Stop(); 
+                } 
+                catch { }
+                mre.Wait(2000); 
+            }
+            finally
+            {
+                outputDevice.PlaybackStopped -= handler;
+                try 
+                { 
+                    outputDevice.Dispose(); 
+                } catch { }
+                outputDevice = null;
             }
         }
     }
@@ -316,21 +420,25 @@ namespace PizzaOven
         public override int Read(byte[] buffer, int offset, int count)
         {
             int totalBytesRead = 0;
-
-            while (totalBytesRead < count)
+            try
             {
-                int bytesRead = sourceStream.Read(buffer, offset + totalBytesRead, count - totalBytesRead);
-                if (bytesRead == 0)
+                while (totalBytesRead < count)
                 {
-                    sourceStream.Position = 0;
+                    int bytesRead = sourceStream.Read(buffer, offset + totalBytesRead, count - totalBytesRead);
+                    if (bytesRead == 0)
+                    {
+                        if (sourceStream.Length == 0) break;
+                        sourceStream.Position = 0;
+                        bytesRead = sourceStream.Read(buffer, offset + totalBytesRead, count - totalBytesRead);
+                        if (bytesRead == 0) break;
+                    }
+                    totalBytesRead += bytesRead;
                 }
-                totalBytesRead += bytesRead;
             }
-
+            catch (ObjectDisposedException) { }
+            catch (InvalidOperationException) { }
             return totalBytesRead;
         }
-
-
 
     }
 }
